@@ -101,3 +101,4 @@ Some useful tools for working on the command line such as *Vim* are preinstalled
     docker exec -it container_id bash
     service mysql restart
     ```
+ 
