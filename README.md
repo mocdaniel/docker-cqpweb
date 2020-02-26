@@ -46,7 +46,7 @@ Then build the image.
     docker image build -t imagename:version .
     
 ## First start
-After getting/building the needed image, you can run your image in a container instance, optionally providing additional setup information via *environment variables*. Basically, all of the usable variables are optional and populated with default values, but some are heavily suggested. In the table below you can see their default values plus additional notes where useful.
+After getting/building the needed image, you can run your image in a container instance, optionally providing additional setup information via *environment variables*. Basically, all of the usable variables are optional and populated with default values, but some are heavily suggested. In the table below you can see their default values plus additional notes where useful. If you already set these variables before building the image, you do not need to define them at startup again.
 
 Rule of thumb is, **if you can't derive the function from the variables' names, just stick to the default values, they *should* suffice:**
 
