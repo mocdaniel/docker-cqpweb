@@ -1,6 +1,8 @@
 # Docker-CQPweb
 
-This repository contains the necessary Dockerfile and Scripts to build an all-in-one image for the usage of [CQPweb](http://cwb.sourceforge.net/cqpweb.php). This Readme is meant to provide a short overview over its configuration as well as installation process and known _"gotchas"_.
+This repository contains the necessary Dockerfile, source code and Scripts to build an all-in-one image for the usage of [CQPweb](http://cwb.sourceforge.net/cqpweb.php). If you want to compile different versions of CQPweb's source code, [get them here](http://cwb.sourceforge.net/download.php).
+
+This Readme is meant to provide a short overview over its configuration as well as installation process and known _"gotchas"_.
 
 ## Features
 This container features a full stack of CQPweb and its surroundings, including
@@ -34,6 +36,7 @@ There will always be a precompiled image built with these files here on DockerHu
 
 ### Building your own image
 Alternatively, you can always pull this repository in order to configure and tweak your own image to your purposes by using
+    
     git clone https://https://github.com/mocdaniel/docker-cqpweb.git
     
 Before building your image you may want to configure the used setup variables located at `setup-scripts/run_cqp` which define the credentials of the admin user, database user, email and domain needed for SSL-certification etc.
@@ -43,7 +46,7 @@ Then build the image.
     docker image build -t imagename:version .
     
 ## First start
-After getting/building the needed image, you can run your image in a container instance, optionally providing additional setup information via *environment variables*. Basically, all of the usable variables are optional and populated with default values, but some are heavily suggested. In the table below you can see their default values plus additional notes where useful.
+After getting/building the needed image, you can run your image in a container instance, optionally providing additional setup information via *environment variables*. Basically, all of the usable variables are optional and populated with default values, but some are heavily suggested. In the table below you can see their default values plus additional notes where useful. If you already set these variables before building the image, you do not need to define them at startup again.
 
 Rule of thumb is, **if you can't derive the function from the variables' names, just stick to the default values, they *should* suffice:**
 
