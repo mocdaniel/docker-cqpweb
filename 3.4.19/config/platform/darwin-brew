@@ -1,0 +1,52 @@
+##   -*-Makefile-*-
+## 
+##  IMS Open Corpus Workbench (CWB)
+##  Copyright (C) 1993-2006 by IMS, University of Stuttgart
+##  Copyright (C) 2007-     by the respective contributers (see file AUTHORS)
+## 
+##  This program is free software; you can redistribute it and/or modify it
+##  under the terms of the GNU General Public License as published by the
+##  Free Software Foundation; either version 2, or (at your option) any later
+##  version.
+## 
+##  This program is distributed in the hope that it will be useful, but
+##  WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+##  Public License for more details (in the file "COPYING", or available via
+##  WWW at http://www.gnu.org/copyleft/gpl.html).
+
+##
+##  PLATFORM CONFIGURATION FILE:
+##  Natively tuned 64-bit binaries for Mac OS X 10.10 (Yosemite) and newer 
+##  with prerequisite libraries provided by HomeBrew package manager
+##
+
+## Inherits from basic Darwin configuration
+include $(TOP)/config/platform/darwin
+
+## Make sure that Apple's gcc is used (not e.g. a fink-installed version)
+CC = /usr/bin/gcc
+
+## Tune for CPU of the build machine, compiling only 64-bit code
+CFLAGS = -Wall -O3 -arch x86_64 -march=native -mtune=native
+
+DEPEND_CFLAGS = -Wall -O3
+
+## Use stable paths to HomeBrew installed Glib, PCRE and Readline libraries,
+## so binaries will continue to work if prerequisites are updated.
+READLINE_DEFINES = -I/usr/local/opt/readline/include
+READLINE_LIBS = -L/usr/local/opt/readline/lib -lreadline -lhistory
+
+PCRE_DEFINES = -I/usr/local/opt/pcre/include
+PCRE_LIBS = -L/usr/local/opt/pcre/lib -lpcre
+
+GLIB_DEFINES = -I/usr/local/opt/glib/include/glib-2.0 -I/usr/local/opt/glib/lib/glib-2.0/include -I/usr/local/opt/gettext/include
+GLIB_LIBS = -L/usr/local/opt/glib/lib -L/usr/local/opt/gettext/lib -lglib-2.0 -lintl
+
+## CPU architecture and operating system used to name binary releases
+RELEASE_ARCH = x86_64
+RELEASE_OS = osx-10.10
+
+## Optionally use newer Bison from HomeBrew (MacOS ships bison 2.3, which is > 15 years old)
+# YACC = /usr/local/opt/bison@2.7/bin/bison -d -t
+# YACC = /usr/local/opt/bison/bin/bison -d -t

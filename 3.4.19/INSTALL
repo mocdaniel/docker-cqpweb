@@ -1,0 +1,400 @@
+
+        IMS Open Corpus Workbench (CWB)
+        Release 3.5 BETA
+
+        Installation Guide
+
+
+This file describes how to build and install the CWB from source code.  Binary
+packages for popular platforms are available from the CWB homepage
+
+    http://cwb.sourceforge.net/
+
+together with detailed installation instructions.
+
+If you encounter a problem that you cannot solve with the information provided
+in this installation guide or on the website, you can join the CWBdev mailing 
+list
+
+    http://devel.sslmit.unibo.it/mailman/listinfo/cwb
+
+and ask your question there.
+
+A companion file to this one, INSTALL-WIN, covers additional info related to 
+building/installing on Windows. It can be ignored if you are building on Unix.  
+
+
+        PREREQUISITES
+
+ - any modern Unix flavour (must be POSIX compatible)
+ - GCC 3.3 or newer recommended (other ANSI C compilers might also work)
+ - the ar and ranlib code archive utilities
+ - GNU make or a compatible program
+ - GNU bison & flex for updating automatically generated parsers
+ - the pkg-config program
+ - the ncurses library (or a similar terminal control library)
+ - the PCRE library (see notes below)
+ - the Glib library (see notes below)
+
+
+        RECOMMENDED SOFTWARE (not essential)
+
+ - the GNU Readline library for command-line editing (strongly recommended)
+ - GNU install or a compatible program
+ - Perl with pod2man script for rebuilding manual pages
+ - GNU less pager for interactive display of query results in CQP 
+   (strongly recommended)
+
+
+        PREREQUISITE LIBRARIES ON LINUX: A WARNING
+
+If you have installed the prerequisite libraries listed above from source,
+then you will have all the files you need. However, if you are on Linux and
+have installed the libraries via your distro's repository, you may have to
+install *more than one package per library* to be able to build CWB 
+properly. For instance, on Fedora, installing the package "ncurses" is not
+sufficient to have the library available for building extra software - 
+you also need the "ncurses-devel" package. The details of precisely what 
+packages you need vary from distro to distro, but in many cases packages
+for building software end in "-devel"  or "-dev".
+
+
+        QUICK INSTALLATION
+
+[There are one-step setup scripts for some operating systems: see 
+"AUTO-INSTALL SCRIPTS", below. You will also find specific instructions
+for Windows and Mac OS X in sections "BUILDING WINDOWS BINARIES" and
+"INSTALLATION GUIDE FOR MAC OS X". Otherwise, follow the instructions here.]
+
+Edit "config.mk", selecting suitable platform and site configuration files
+for your system (available options are documented in "config.mk").  You
+can also override individual settings manually there.  If you cannot find an
+appropriate configuration, see WRITING YOUR OWN CONFIGURATION FILES below.
+
+Alternatively, platform and site settings can be overriden by adding
+appropriate flags "PLATFORM=### SITE=###" to the end of each of the
+make commands below.  This approach is particularly recommended if you
+are working from a SVN sandbox.
+
+Now, to compile the Corpus Library, CQP, CQPcl, CQPserver, and the
+command-line utilities, type
+
+        make clean
+        make depend
+        make all
+
+If your default make program is not GNU make, you may have to type "gmake"
+instead of "make" (the current Makefile system only works with GNU make and
+fully compatible programs).  To install the corpus library, all programs, and
+the man pages, type
+
+        make install
+
+Note that you must have write permission in the installation directories in
+order to do so (usually the "/usr/local" tree, but site configuration files may
+specify a different location with the PREFIX configuration variable).
+
+You are now set to go.  If you are new to the CWB, you should read the 
+"Corpus Encoding Tutorial" and "CQP Query Language Tutorial" available from
+the CWB homepage.  You may also want to install pre-encoded sample corpora
+for your first experiments.
+
+If you want to make sure that all automatically generated files are up to
+date, you should type
+
+        make realclean
+
+before starting the build process.  This will update makefile dependencies,
+the generated bison/flex parsers and all man pages.  Note that this will only
+work if the recommended software is installed (bison, flex and pod2man).
+
+
+        AUTO-INSTALL SCRIPTS
+
+There are now configuration/installation scripts for Unix and Mac OS X
+systems - note that these are single-step ALTERNATIVES to following the
+instructions above.
+
+From the main CWB directory (the one containing this INSTALL file), run
+
+        sudo ./install-scripts/install-linux
+
+for a Linux install (or other Unix: SunOS, Cygwin; if no particular system
+is detected, then the script will try a generic Unix install).
+
+The install-linux script must be run as root (e.g. with sudo as shown above). 
+Here's what it does for you:
+
+ - downloads and installs all prerequisite software packages,
+   if you are using a package-management Linux version
+ - sets the right configuration platform for compiling
+ - compiles CWB from the source code
+ - installs the CWB programs to the "usual" place on your system. 
+ 
+After running these scripts, you are ready to start using CWB.
+
+For recent Mac OS X releases, the install script is semi-automatic.
+It requires either the HomeBrew or the MacPorts package manager to be
+available. Use the package manager to install the prerequisite external 
+libraries, then run
+
+         sudo ./install-scripts/install-mac-osx
+
+This script will check whether all prerequisites are satisfied and prompt
+you to install missing libraries; then it will compile and install CWB.
+
+However, it is recommended to follow the step-by-step instructions in
+section "INSTALLATION GUIDE FOR MAC OS X" for a trouble-free install process.
+
+These scripts both depend on the autoconfigure script to detect the platform.
+You can alternatively use this script yourself to detect the correct default 
+settings to use. Running the autoconfigure script as follows will print
+out variables to append to "make" commands when you run them:
+
+        ./install-scripts/config-basic
+
+This removes the need to manually edit "config.mk", and allows you to take a
+shortcut: you can go straight to compiling.
+
+Note that the autoconfigure/auto-install scripts may not work if you are
+using Linux on an Opteron system. The autoconfigure script, and the 
+auto-install script for Mac OS X, are likewise unable to distinguish 
+most variants of Darwin; they will mostly use the Darwin-universal 
+configuration even if a more specific configuration file exists. 
+In this case, manually editing "config.mk" may be better.
+
+
+        WRITING YOUR OWN CONFIGURATION FILES
+
+If you cannot find a suitable platform and site configuration files, or if 
+you need to override some settings and expect to install future CWB releases
+on the same system, you can write your own configuration files.
+
+All configuration files can be found in the "config/platform/" and
+"config/site/" subdirectories.  A listing of configuration variables with
+short usage explanations can be found in the template files (aptly named
+"template") in these directories, which provide good starting points for
+your own configuration files.  In many cases, the easiest solution is to 
+make a copy of a sufficiently similar configuration file and add your own
+settings, or to inherit from this configuration with an appropriate 
+"include" statement.  The "linux-*" and "darwin-*" configuration files in
+the standard distribution are good examples of this strategy.
+
+It is recommended that you store your personal configuration files in a
+separate directory outside the CWB tree, so you can easily re-use them with
+future versions of the software.  You just have to modify the "include"
+statements in "config.mk" to use absolute paths to your configuration files.
+If your configuration files inherit from standard configurations, use include
+paths of the form "$(TOP)/config/...".
+
+
+        BUILDING BINARY RELEASES
+        
+If you want to create a binary package for your platform, type
+
+        make release
+
+This will install the CWB locally in a subdirectory of "build/" and wrap it
+in a ".tar.gz" archive for distribution.  The filename of this archive (which
+is the same as the installation directory) indicates the CPU architecture and
+operating system which the binary package has been compiled for.
+
+It is recommended to select a site configuration named "*-release", which will
+build statically linked programs if possible (some operating systems do not
+support static linking). Note that individual settings for installation
+directories (except for the general PREFIX) and access permissions will be
+ignored when building a binary release.
+
+
+        BUILDING SOURCE RELEASES
+
+In order to "clean up" the source code tree for a standard source distribution,
+the recommended command sequence is
+
+        make realclean
+        make depend
+        make clean
+
+This will remove all automatically generated files, and then recreate the 
+makefile dependencies and bison/flex parsers, so that the CWB can be compiled
+from source with a minimal set of prerequisites.
+
+
+        BUILDING RPM PACKAGES FOR LINUX
+
+In order to create a binary Linux distribution in RPM format, edit the file
+"rpm-linux.spec" as necessary, then copy the sourcecode archive (whose precise
+name must be listed in the "Source:" field of the RPM specification) into
+"/usr/src/packages/SOURCES", and run
+
+        rpmbuild -bb --clean --rmsource rpm-linux.spec
+
+The ready-made binary RPM package will then be available in the appropriate
+subdirectory of "/usr/src/packages/RPMS/".  It may be necessary to select the
+appropriate Linux configuration (e.g. to build a 64-bit version of the CWB) in
+"config.mk" and rewrap the source archive before building the RPM package.
+Otherwise, the build process will automatically select the generic Linux 
+configuration for standard i386-compatible processors.
+
+
+        INSTALLATION GUIDE FOR MAC OS X
+
+On recent versions of Mac OS X (10.6 "Snow Leopard" and newer), it is
+quite easy to compile and install CWB.
+
+ - install XCode Command Line Tools
+
+   Mavericks (10.9) and newer:
+     - enter "xcode-select --install" in a terminal window
+
+   Lion (10.7) and Mountain Lion (10.8):
+     - install XCode from the Mac App store (XCode 4.2.1 or newer)
+     - start XCode and accept Apple license agreement (requires admin password)
+     - depending on your XCode version, do one of the following
+        - go to Preferences dialog, select Downloads | Components, 
+          then install Command Line Tools
+        - enter "xcode-select --install" in a terminal window
+
+   Snow Leopard (10.6):
+      - obtain a free Apple developer account
+      - install XCode from https://developer.apple.com/xcode/ (XCode 3.2.6 or newer)
+
+ - install HomeBrew package manager from http://brew.sh/
+
+Make sure that no other package managers (Fink, MacPorts) are installed on your
+system, as they might conflict with the build process described here.  Now install
+the required external libraries with the following shell commands:
+
+        brew -v install glib
+        brew -v install pcre
+        brew -v install readline
+
+Now edit the file "config.mk", setting the platform entry to
+
+        include $(TOP)/config/platform/darwin-brew
+
+and the site configuration as desired.  This will build a version of CWB tuned
+to your hardware platform.  See comments at the end of this section if you prefer
+to build universal binaries (with support for 32-bit and 64-bit CPUs).
+
+Then enter the shell commands
+
+        make clean
+        make depend
+        make all
+        make install
+
+as shown in the section "QUICK INSTALLATION" above.
+
+If you want to build universal binaries or another configuration that is not
+tuned to the hardware of the build machine, you cannot use HomeBrew to install
+the required libraries.  Follow the instructions in the section below, then 
+select platform "darwin-universal" (for universal binaries) or "darwin-64"
+(for an explicit 64-bit build).  Note that Apple is phasing out support for
+32-bit code beginning with MacOS Sierra (10.12).
+
+A non-HomeBrew build will attempt to auto-detect a version of GNU Readline
+installed manually or with a package manager such as HomeBrew or MacPorts.  It
+will fall back on the system-provided Editline library only if no installation
+of GNU Readline can be found.  In order to check which library CQP will use for
+command-line editing, type
+
+        instutils/find_readline.perl --check
+
+The other libraries have to be set up so that configuration information can
+be determined with pkg-config (Glib) and pcre-config (PCRE).
+
+
+        INSTALLING PREREQUISITE EXTERNAL LIBRARIES
+
+The Glib and PCRE libraries are needed to compile CWB. If you are using a 
+Linux flavour such as Debian, Fedora etc. then the easiest way to do this is
+via your package repository, which should almost certainly include both. 
+In fact, the auto-install scripts will actually check that you have got
+the packages in question using the package-management tool. So if you are
+using the auto-install scripts, you don't need to worry about it. 
+
+Otherwise, PCRE and Glib are available to download from these addresses:
+
+        http://www.pcre.org/
+        http://www.gtk.org/download.html
+
+Use the instructions included in the source code downloads to build the 
+libraries.
+
+For Glib, at least version 2 is required.
+
+For PCRE, at least version 8.10 is required. You must use a copy of PCRE
+which has been compiled with Unicode (UTF-8) support and Unicode
+properties support. (You can find out whether this is the case using the
+pcretest utility with the -C option.) Note that the new-and-improved PCRE2
+library (PCRE v10.0.0 and up) is NOT a suitable substitute. 
+
+We strongly recommend to use a recent version of PCRE v8 (>= 8.32) with JIT
+compilation enabled (check with "pcretest -C") in order to ensure good
+performance. For complex regular expressions, this will make the lexicon
+search A LOT faster (see http://sljit.sourceforge.net/regex_perf.html).
+Note that standard packages shipped with various Linux distributions may
+not include JIT support and you may have to compile PCRE yourself for
+optimal performance. The following Linux distributions appear to include 
+a PCRE version high enough to include JIT:
+
+        Ubuntu 14.10 ("Utopic") and newer
+        Debian 7 ("Wheezy") and newer
+        Fedora 20 ("Heisenbug") and newer
+
+For info on PCRE and Glib on Mac OS X, see the specific section above for 
+that OS.
+
+The CWB build process makes the following assumptions:
+
+ - that the location of header/library files for Glib can be discovered
+   using the pkg-config utility (should be the case if you have used the
+   standard installation procedure);
+
+ - that the location of header/library files for PCRE can be discovered
+   using the pcre-config utility (which should also be the case if you
+   have used the standard installation procedure).
+
+If you want to use your own copy of Glib or PCRE instead of the version
+provided by a standard package, set up your search path so that the 
+appropriate pkg-config or pcre-config binary is found first.
+
+If you cannot provide installation details through pkg-config and
+pcre-config, quite a bit of tinkering with the Makefile includes will be
+needed to make things work.
+
+
+        PACKAGE CONTENTS
+
+Makefile                top-level makefile
+config.mk               makefile configuration
+definitions.mk          standard settings and definitions for make system
+rpm-linux.spec          configuration file for building binary RPM packages
+install.sh              a GNU-compatible install program (shell script)
+README                  the usual open source "boilerplate"
+INSTALL                 this file
+INSTALL-WIN             supplement to this file on Windows-specific matters
+COPYING                 licence info
+CHANGES                 change log
+AUTHORS                 info on who wrote CWB, copyright, etc. 
+
+doc/                    some technical documentation
+
+config/                 platform and site configuration files 
+  config/platform/        compiler flags and settings for various platforms
+  config/site/            site-specific settings (installation paths etc.)
+
+instutils/              utilities for installing and binary packages
+
+install-scripts         shell scripts that automate building/installing for
+                        common systems
+
+cl/                     corpus library (CL) source code
+cqp/                    corpus query processor (CQP) source code
+CQi/                    cqpserver source code (inc client-server interface CQi)
+utils/                  source code of command-line utilities
+
+man/                    manpages for CQP and the command-line utilities
+
+editline/               local copy of the CSTR Editline library (no longer used)

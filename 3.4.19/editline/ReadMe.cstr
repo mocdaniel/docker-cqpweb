@@ -1,0 +1,198 @@
+
+			CSTR Editline Distribution
+			==========================
+
+	Authors: Rich Salz <rsalz@osf.org>,
+		 Simmule Turner,
+		 Alan W. Black <awb@cstr.ed.ac.uk>
+		 Richard Caley <R.Caley@ed.ac.uk>
+		 J.G. Vons <vons@cesar.crbca1.sinet.slb.com>
+	   Date: 15th July 1999
+	Version: 1.2-cstr
+
+Contents
+--------
+
+	1 Which, What, Where, Who, Why
+	2 Changes from Rich $alz' comp.sources.misc version
+	3 Instalation
+	  3.1 Unix, Cygwin and similar systems
+	  3.2 Visual C++
+	4 Discussion
+
+
+			--o--oOo--o--
+
+1 Which, What, Where, Who, Why
+------------------------------
+
+Editline is a replacement for the (simple bits of the) FSF readline
+library. It is intended to be useful when readline is too big and/or
+when the readline licencing conditions make it unusable.
+
+Editline was posted to comp.sources.misc by Rich Salz in August 1992,
+The file ReadMe.rsalz contains the read-me file for that distribution,
+including the copyright and copying conditions, so you should read
+that now.
+
+When we (CSTR) needed a replacement for readline because the FSF
+General Public Licence was incompatable with other licences on code
+used in our freely available speech synthesys system, festival (plug,
+plug, http://www.cstr.ed.ac.uk/projects/festival/), Alan Black took
+editline and made the necessary changes to support what we
+needed. Richard Caley Added some (very basic) support for Win32
+(Windows 95/98/NT) systems, added an autoconf configure scrips and
+created what you see here.
+
+The bulk of the system remains under Rich Salz original
+copyright. Some new files (eg the new Makefile) are under the standard
+CSTR BSD/X11 style copyright conditions. Hopefully the result should
+be free enough for whatever you want to use it for.
+
+We have called this version 1.2-cstr to distinguish it from possible
+new releases by Rich Salz.
+
+			--o--oOo--o--
+
+2 Changes from Rich Salz's comp.sources.misc version
+---------------------------------------------------
+
+The most visible change from the comp.sources.misc version is that the
+files have been shuffled around (mostly so they can live inside a
+bigger system unix.h => el_unix.h for instance), and an autoconf
+configure script has been added.
+
+The following significant changes have been made to the behaviour of the
+system:
+
+	History retained in a file between sessions.
+
+	User definable completion function.
+
+	Listing of possibilities in completion.
+
+	Incremental search through history.
+
+	Handles input lines longer than window (mostly).
+
+	Better support for 8 bit non-English characters.
+
+	Some limited Win32 support: 
+		Just basic editing, no completion and handling of long
+		input lines isn't all it could be.
+
+	OS/9 support almost certainly broken. We aren't able to test
+	it. 
+
+(from Rich Salz)
+
+	Can use TERMIO for terminal control.
+
+	Input from non-terminals handled better.
+
+(from J.G. Vons)
+
+	Added ESC-ESC as synonym for ESC-?
+
+Some other chages from Rich Salz and J.G. Vons have been partially
+integrated, but the new behaviour has not been enabled.
+
+			--o--oOo--o--
+
+3 Instalation
+-------------
+
+3.1 Unix, Cygwin and similar systems
+....................................
+
+To be reading this file, you have presumably unpacked the tar archive
+containing the system. In this directory you should have a shell
+script named `configure' and some other files.
+
+Run the configure script:
+
+	unix$ ./configure
+
+This will create a Makefile and a header file editline_config.h which
+are tailored to your system. Now compile with:
+
+	unix$ make
+
+This should build the library and use it to compile two test programs
+`test' and `test_sh'. Run test to see that command line editing
+works for you:
+
+	unix$ ./test
+	editline> 
+
+Type your end-of-file character (probably control-D) to exit the test
+program. 
+
+The program test_sh is also built, this is a renamed version of Rich
+Salz's testit program, a very tiny shell. 
+
+If all is well, install:
+
+	unix$ make install
+
+3.2 Visual C++
+..............
+
+This directory contains a makefile and a hand crafted config file
+suitable for compileing with Microsoft Visual C++ (we have tried it
+with v5, professional edition, but others will probably work, there is
+nothing too strange).
+
+While it works and produces a system which provides enough of the
+feel of the unix version to make life on windoes with your application
+bearable, it has some limitations. It doesn't currently do file
+completion, and because of limitations of the Windows command window,
+long lines are not handled properly in all cases. Still, it's better
+than nothing.
+
+Before you can compile from the DOS command prompt in windoes you need
+to run the vcvars.bat script which is located in the Visual C++ bin
+directory, this sets some environment variables. 
+
+Once you have done that, compile with
+
+	X> nmake /fVCMakefile
+
+and the library and test program should be compiled. Run the test
+program to check all is well. To exit form the test program type
+control-Z, the standard DOS end-of-input character.
+
+No instalation target is defined in the Visual C makefile since
+it's hard to guess where you might want things. Copy the headers from
+the include directory and the library to wherever you want them.
+
+
+			--o--oOo--o--
+
+
+4 Discussion
+------------
+
+Many thanks to Rich Salz and Simmule Turner for the original editline
+library. 
+
+This is version 1.2-cstr, the comp.sources.misc release by Rich Salz is
+retroactively dubbed 1.1. At some future date there will hopefully be
+a meeting of Rich Salz's codebase and ours. 
+
+It would be nice if someone could test the OS/9 stuff and fix it, just
+so we don't go backwards.
+
+The win32 stuff needs to be extended to do (at least) filename
+completion. 
+
+Perhaps some limited understanding of .readlinerc syntax would be
+good. But perhaps that would bloat editline beyond sanity.
+
+In rebuilding editline inside the Edinburgh Speech Tools and then
+extracting it some things got renamed, this may have broken some
+points of readline compatability.
+
+Some more work should be done on the manual page.
+
+			--o--oOo--o--

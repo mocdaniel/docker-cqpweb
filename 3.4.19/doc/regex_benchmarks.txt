@@ -1,0 +1,182 @@
+Some regular expression benchmarks carried out with CWB 3.4.9/3.4.10 during reimplementation of case/accent-insensitive matching and the regexp optimizer.
+
+All timing were obtained on MacBook Pro, 2.6 GHz, Core i7, 16 MiB RAM, OS X 10.10.5 with warm cache, so hard disk performance should play no role.
+
+Unmarked figures are based on the traditional implementation in CWB 3.4.9, which produced incorrect results in certain edge cases. The new implementation in CWB 3.4.10 uses PCRE_CASELESS for case-insensitive (%c) matching and preprocesses regexp + string only for accent-folding (%d).
+
+===============================================================
+
+Results on FRWAC_UTF8 with lots of accents in UTF-8
+(word form lexicon with 5.9 million entries, 75 MiB on disk):
+
+---------------------------------------------
+"Besançon" %c
+	PCRE:		8.01s
+	PCRE JIT:	7.79s
+	optimizer:	7.48s
+
+Without the unnecessary NFC step in cl_string_canonical():
+	PCRE JIT:	3.4s
+	optimizer:	3.1s
+
+New implementation:
+	PCRE:		0.58s
+	PCRE JIT:	0.28s	\o/
+	optimizer:	3.03s
+
+---------------------------------------------
+"Besançon" %d
+	PCRE:		8.88s
+	PCRE JIT:	8.48s
+	optimizer:	8.33s
+
+New:
+	PCRE:		8.89s
+	PCRE JIT:	8.48s
+	optimizer:	8.33s
+
+---------------------------------------------
+"Besançon" %cd
+	PCRE:		11.4s
+	PCRE JIT:	11.1s
+	optimizer:	10.8s
+
+New:
+	PCRE:		8.73s
+	PCRE JIT:	8.64s
+	optimizer:	11.3s	:-((
+
+---------------------------------------------
+".+-.idelite"
+	PCRE:		1.20s
+	PCRE JIT:	0.38s
+	optimizer:	0.13s
+
+Unchanged, of course.
+
+---------------------------------------------
+".+-.idelite"%d
+	PCRE:		9.43s
+	PCRE JIT:	8.94s
+	optimizer:	8.41s
+
+New:
+	PCRE:		9.45s
+	PCRE JIT:	8.69s
+	optimizer:	8.23s
+
+---------------------------------------------
+And new for
+".+-.idelite"%c
+	PCRE:		1.25s
+	PCRE JIT:	0.41s
+	optimizer:	3.09s	:-((
+
+---------------------------------------------
+Also new for a hard-core infix search:
+".+(hyper|super|ultra).+"
+	PCRE:		4.43s
+	PCRE JIT:	0.69s
+	optimized:	0.23s
+
+".+(hyper|super|ultra).+" %c
+	PCRE:		6.12s
+	PCRE JIT:	0.76s
+	optimized:	3.17s
+
+".+(hyper|super|ultra).+" %cd	
+	PCRE:		14.4s
+	PCRE JIT:	8.9s
+	optimized:	11.3s
+
+===============================================================
+
+Results on UKWAC with Latin1 encoding and few accented letters
+(word form lexicon has 12 million entries, 154 MiB on disk):
+
+---------------------------------------------
+".+minables"
+	PCRE:		1.95s
+	PCRE JIT:	0.73s
+	optimizer:	0.26s
+
+Unchanged, as expected.
+
+---------------------------------------------
+".+minables" %cd
+	PCRE:		2.64s
+	PCRE JIT:	1.36s
+	optimizer:	0.83s
+
+New:
+	PCRE:		2.89s
+	PCRE JIT:	1.38s
+	optimizer:	1.31s	??? no idea why this has become slower (perhaps the two-stage normalization mapping?)
+
+---------------------------------------------
+"und.+ably"
+	PCRE:		0.84s
+	PCRE JIT:	0.68s
+	optimizer:	0.24s	
+
+Unchanged (except for small fluctuations).	
+
+---------------------------------------------
+"und.+ably" %c
+	PCRE:		1.45s
+	PCRE JIT:	1.27s
+	optimizer:	0.84s
+
+New:
+	PCRE:		0.90s
+	PCRE JIT:	0.72s
+	optimizer:	0.81s
+
+---------------------------------------------
+"und.+ably" %cd
+	PCRE:		1.44s
+	PCRE JIT:	1.30s
+	optimizer:	0.83s
+
+New:
+	optimizer:	1.31s	(very probably the overhead of two-step normalization)
+
+---------------------------------------------
+".+(hyper|super|ultra).+"
+	PCRE:		8.40s
+	PCRE JIT:	1.28s
+	optimizer:	0.42s
+
+Unchanged.
+
+---------------------------------------------
+".+(hyper|super|ultra).+" %c
+	PCRE:		9.09s
+	PCRE JIT:	1.83s
+	optimizer:	0.98s
+
+New:
+	PCRE:		8.42s
+	PCRE JIT:	1.30s	(may be incomplete if there's a "süperband" in the corpus, at least until we implement our own character tables for case-flipping)
+	optimizer:	0.98s
+
+---------------------------------------------
+"neighbou?red"
+	PCRE:		0.85s
+	PCRE JIT:	0.63s
+	optimizer:	0.24s
+
+Unchanged.
+
+---------------------------------------------
+"neighbou?red"%c
+	PCRE:		1.47s
+	PCRE JIT:	1.25s
+	optimizer:	0.78s
+
+New:
+	PCRE:		0.89s
+	PCRE JIT:	0.65s
+	optimizer:	0.78s
+
+===============================================================

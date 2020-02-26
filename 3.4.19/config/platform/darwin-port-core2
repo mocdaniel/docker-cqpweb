@@ -1,0 +1,36 @@
+##   -*-Makefile-*-
+## 
+##  IMS Open Corpus Workbench (CWB)
+##  Copyright (C) 1993-2006 by IMS, University of Stuttgart
+##  Copyright (C) 2007-     by the respective contributers (see file AUTHORS)
+## 
+##  This program is free software; you can redistribute it and/or modify it
+##  under the terms of the GNU General Public License as published by the
+##  Free Software Foundation; either version 2, or (at your option) any later
+##  version.
+## 
+##  This program is distributed in the hope that it will be useful, but
+##  WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+##  Public License for more details (in the file "COPYING", or available via
+##  WWW at http://www.gnu.org/copyleft/gpl.html).
+
+##
+##  PLATFORM CONFIGURATION FILE:
+##  Universal binaries (i386, x86_64) on Mac OS X 10.6 or newer with optimisation for Intel Core 2 CPUs
+##  with prerequisite libraries provided by MacPorts package manager (deprecated)
+##
+
+## Inherits from basic Darwin configuration
+include $(TOP)/config/platform/darwin
+
+## Core 2 optimisations are only available with GCC 4.2 and newer (default for XCode 4.x)
+CC = /usr/bin/gcc
+
+## Universal build for Intel 32-bit & 64-bit CPUs tuned to Intel Core 2 architecture
+CFLAGS = -Wall -O3 -arch x86_64 -arch i386 -march=core2 -mtune=core2
+
+DEPEND_CFLAGS = -Wall -O3
+
+## CPU architecture and operating system used to name binary releases
+RELEASE_ARCH = core2

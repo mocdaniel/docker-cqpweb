@@ -1,0 +1,75 @@
+-------- OLD DISCLAIMER: nroff format --------
+
+.SH COPYRIGHT
+This program is part of the
+.B IMS Corpus Workbench,
+(C) 1993-2002 Institute for Natural Language Processing (IMS),
+University of Stuttgart, Germany. The
+.B Corpus Workbench
+was developed by Oliver Christ and Bruno M. Schulze 1993-1997,
+and by Stefan Evert 1998-2002.
+.P
+This program is licensed for non-commercial use only.
+.SH DISCLAIMER
+Neither the authors, nor IMS, nor the University of Stuttgart make any
+representations about the suitability of this software for any
+purpose. It is provided AS IS without express or implied warranty.
+.P
+IN NO EVENT WILL THE AUTHORS OR THE IMS BE LIABLE TO YOU FOR ANY
+CONSEQUENTIAL, INCIDENTAL OR SPECIAL DAMAGES, INCLUDING ANY LOST
+PROFITS OR LOST SAVINGS, EVEN IF AN IMS REPRESENTATIVE HAS BEEN
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGES, OR FOR ANY CLAIM BY ANY
+THIRD PARTY.
+
+-------- OLD DISCLAIMER: POD format --------
+
+=head1 COPYRIGHT
+
+This program is part of the B<IMS Corpus Workbench>,
+(C) 1993-2002 Institute for Natural Language Processing (IMS),
+University of Stuttgart, Germany. The B<Corpus Workbench>
+was developed by Oliver Christ and Bruno M. Schulze 1993-1997,
+and by Stefan Evert 1998-2002.
+
+This program is licensed for non-commercial use only.
+
+=head1 DISCLAIMER
+
+Neither the authors, nor IMS, nor the University of Stuttgart make any
+representations about the suitability of this software for any
+purpose. It is provided AS IS without express or implied warranty.
+
+IN NO EVENT WILL THE AUTHORS OR THE IMS BE LIABLE TO YOU FOR ANY
+CONSEQUENTIAL, INCIDENTAL OR SPECIAL DAMAGES, INCLUDING ANY LOST
+PROFITS OR LOST SAVINGS, EVEN IF AN IMS REPRESENTATIVE HAS BEEN
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGES, OR FOR ANY CLAIM BY ANY
+THIRD PARTY.
+
+-------- NEW DISCLAIMER --------
+
+=head1 COPYRIGHT
+
+=over 4
+
+=item
+B<IMS Open Corpus Workbench (CWB)> L<http://cwb.sourceforge.net/>
+
+=item
+Copyright (C) 1993-2006 by IMS, University of Stuttgart
+
+=item
+Copyright (C) 2007- by the respective contributers (see file F<AUTHORS>)
+
+=back
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details
+(in the file F<COPYING>, or available via WWW at
+L<http://www.gnu.org/copyleft/gpl.html>).
+
+=cut

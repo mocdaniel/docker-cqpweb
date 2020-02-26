@@ -1,0 +1,425 @@
+=head1 NAME
+
+cqp - The CWB Corpus Query Processor (interactive or slave-process version)
+
+=head1 SYNOPSIS
+
+B<cqp> [-eC] [-hvmpscixS] [-D I<corpus>] [-r I<registry_dir>] [-l I<data_dir>]
+    [-I I<init_file>] [-M I<macro_file>] [-f I<script_file>] [-P I<pager>]
+    [-W I<num>] [-L I<num>] [-R I<num>] [-b I<num>] [-d I<mode>]
+
+=head1 DESCRIPTION
+
+The B<Corpus Query Processor> or CQP is the central component of the B<IMS Open Corpus Workbench>.
+
+CQP is a fast, flexible concordancer with an extremely powerful and I<de facto> standardised
+search syntax. 
+
+Queries are evaluated as regular expressions at two levels. At the I<string> level,
+the values of corpus attributes at particular positions in the corpus's token stream are matched
+against regular expressions using PCRE (I<Perl Compatible Regular Expressions>). As well as 
+providing access to a very popular dialect of regex (that of the Perl scripting language), PCRE
+makes available the full set of Unicode character properties, if the underlying corpus is encoded 
+as UTF-8.
+
+String-level regex matches against p-attributes can be combined using Boolean logic to build a 
+specification for a single token. Regular expression operators can then be applied to the token
+specifiers, creating a second level of regex syntax - the level of the token sequence - at which
+regex operators apply to tokens in the same way that they apply to characters in string-based regex.
+Token-sequence regexes are evaluated by being compiled into finite state automata. 
+
+All this, in short, makes CQP-syntax one of the most powerful query languages available. 
+
+CQP can be run either as an interactive application, or as a "child mode" (a.k.a. slave mode)
+process. The latter is typical when CQP is being used as the back-end to a program providing
+a friendlier user-interface, for instance over the web. In both cases the command syntax is
+the same. 
+
+This manual file describes only the invocation of CQP from the command line. For
+information on the syntax of commands, the variables that can be set within CQP's internal environment,
+and the types of queries that can be run, please refer to the CWB project's I<CQP Tutorial> document.
+
+
+
+=head1 OPTIONS
+
+Please note that CQP does not currently support GNU-style C<--long-options>.
+
+
+=over 4
+
+=item B<-b> I<num>
+
+Sets a hard boundary for the kleene star in token-sequence regular expressions (I<not> string-matching
+regular expressions). Matches will be made across no more than I<num> tokens. 
+This is basically the same as adding a C<within I<num>> clause to the CQP query; 
+an explicit C<within> clause overrides the hard boundary, if specified.
+If this option is not used, the hard boundary is set to a default of 500 tokens.
+
+Equivalent to the interactive command C<set HardBoundary I<num>>.  
+
+=item B<-c>    
+
+Puts CQP into child-process mode (or, to use a less nurture-centric metaphor, I<slave mode>). This mode is 
+optimised for programmatic control by a scripting language such as Perl or PHP. As such, the interface
+becomes much more plaintext-friendly than in interactive mode.
+
+Putting CQP into child mode: 
+
+=over 4
+
+=item (a) 
+
+dispenses with user-friendly messages and boilerplate on standard-output or standard-error
+(equivalently to the interactive command C<set Silent on>); 
+
+=item (b) 
+
+turns off the use of a pager for concordance output
+(equivalently to the interactive command C<set Paging off> or to the B<-p> option);
+ 
+=item (c) 
+
+turns off highlighting of the match in concordance output
+(equivalently to the interactive command C<set Highlighting off>); 
+
+=item (d) 
+
+turns off automatic printing of concordances after query evaluation
+(equivalently to the interactive command C<set AutoShow off>); 
+
+=item (e) 
+
+turns off auto-saving of queries and other subcorpora
+(equivalently to the interactive command C<set AutoSave off>);
+
+=item (f) 
+
+switches the display of the progress-bar from a pretty-printed format 
+on standard-error to a simple format on stadnard-output. 
+
+=back
+
+=item B<-C>
+
+Enables the use of ANSI colour codes, when CQP is running in a terminal that supports these codes.
+When this "colourful" mode is enabled, different parts of a concordance, for example, will be highlighted
+in different font and/or background colours. This is only possible (or of use) in interactive mode.
+
+Note that this functionality is I<experimental>, and this option is not available in Windows.
+
+=item B<-d> I<mode>      
+
+Configures CQP's debug mode, which determines what messages concerning CQP's internal doings will be printed. Most users
+should avoid using this option and thus stick with the default values, which in most cases means no messages printed;
+however, using this option can help in writing bug reports that pin down the cause of a problem as precisely as possible.
+
+I<mode> must be one of the following: 
+
+=over 4
+
+=item CLDebug 
+
+Activates debug messages from the Corpus Library (low-level data access functions, including the regex engine).
+
+=item DebugSimulation
+
+Activates debug messages from the function that simulates a query's nondeterministic finite automaton. 
+
+=item EvalDebug
+
+Activates assorted debug messages related to query evaluation.
+
+=item InitialMatchlistDebug
+
+Activates debug messages relating to the retrieval of an initial set of possible matches based on searching for a particular 
+form on a particular p-attribute.
+
+=item MacroDebug
+
+Activates debug messages related to the process of expanding macros;
+plus also causes a set of Macro Hash Statistics to be printed when CQP shuts down.
+
+=item ParseOnly
+
+Puts CQP into a mode where it will only parse queries, not actually evaluate them (handy for debugging queries that would
+take a very long time to actually run repeatedly).
+
+=item ParserDebug
+
+Turns on the CQP-syntax command parser's internal Bison-generated debug setting.
+
+=item SearchDebug
+
+Activates pretty-printing of evaluation trees when a search pattern is executed.
+
+=item ShowCompDFA
+
+Shows the complete deterministic finite automaton when printing an evaluation environment.
+
+=item ShowDFA
+
+Activates a printout of the state of a query pattern's deterministic finite automaton.
+
+=item ShowEvaltree
+
+Shows the evaluation tree when printing an evaluation environment.
+
+=item ShowGConstraints
+
+Shows the tree of global contraints when printing an evaluation environment.
+
+=item ShowPatList
+
+Shows the pattern list when printing an evaluation environment.
+
+=item ShowSymtab
+
+Has no effect at present.
+
+=item SymtabDebug
+
+Prints additional messages about the symbol table for labels in the evaluation environment when 
+debugging the simulation of a query's nondeterministic finite automaton.
+
+Only takes effect if DebugSimulation is also active.
+
+=item TreeDebug 
+
+Embeds extra messages when an evaluation tree is pretty-printed.
+
+=item VerboseParser
+
+When this is set, absolutely all messages from the CQP-syntax command parser get printed.
+
+=item ALL
+
+Activates all types of debug message listed above, but does I<not> turn on ParseOnly mode.
+
+=back
+
+Some debug messages are printed to CQP's standard-out (e.g. TreeDebug); others are printed to standard-error (e.g. CLDebug). 
+
+Note that each of these modes, except C<ALL>, works as a I<toggle> to the default setting; so specifying I<mode> will turn I<mode> 
+on if its default mode is off, and off if its default setting is on - the phrasing given
+above assumes the former situation. The B<-d> option can be specified multiple times, and its effects are cumulative. 
+So if you want debug messages from the CL and from the DFA module, for instance, you would specify C<-d ShowDFA -d CLDebug>.
+
+Each of the debug options can also be turned on or off interactively, using the CQP commands C<set I<mode> on> and
+C<set I<mode> off> respectively. These settings work the same way as all other CQP-internal configuration settings.
+
+The B<-d> option only works when C<Silent> mode is not switched on. For example, in child mode,
+C<Silent> is turned on, so once in child mode CQP will ignore the B<-d> option. 
+
+=item B<-D> I<corpus>
+
+Sets the default corpus on startup to I<corpus>.
+
+=item B<-e>
+
+Enables input line editing. Without this option, each interactive CQP command or query must be typed without errors 
+(because backspace won't work). With this option, you get useful goodies like tab-completion, a command history,
+and so on. You should only use this option in interactive mode. 
+
+=item B<-f> I<script_file>
+
+Puts CQP into I<batch mode>. In this mode, CQP will take command input from I<script_file>,
+rather than interacting with the user. 
+
+A CQP batch file is simply a text file containing a sequence of commands and/or qeuries to be 
+carried out by CQP. CQP batch files may also contain comment lines - these must begin in a #; everything 
+from the # to the next linebreak is a comment and is thus ignored by the CQP parser.
+
+=item B<-h>
+
+Displays the CQP help message with short information about the usage of the command line options.  
+This usage message will be also shown if CQP is called with invalid options.
+After the usage message is printed, CQP will exit.
+
+=item B<-i>           
+
+Switches CQP into "binary output" mode. In this mode, actual concordances are not printed in concordance output.
+Instead, only a pair of integer corpus positions are printed for each match or each corpus segment
+(note, this does not mean I<integers printed in ASCII decimals>, it actually means I<literally binary integers written
+to the output stream>.)
+
+This option also turns off all printing of debug messages.
+
+This option is depracated and may (will probably) be removed in future versions of CQP.
+
+=item B<-I> I<init_file>
+
+Sets I<init_file> as the initialisation file. If the B<-I> option is not used, then I<in interactive mode only>
+CQP will look for the default initialisation file: 
+C<$HOME/.cqprc> under Unix, or C<%HOMEDRIVE%%HOMEPATH%\.cqprc> under Windows. 
+
+An initialisation file contains a series of commands in the normal CQP syntax that will run automatically
+on startup.
+
+=item B<-l> I<data_dir>
+
+Sets I<data_dir> as the active directory for subcorpus files to be stored in and loaded from.
+This includes saved queries. Actual file read access is implicit: a query is loaded from disk
+when necessary to fulfil a command referencing that query. File write is controlled by 
+the interactive command C<save>.
+
+This option is equivalent to the interactive command C<set DataDirectory I<dir>>.
+
+=item B<-L> I<num>
+
+Sets the amount of left-hand context to be displayed in concordances; 
+I<num> characters to the left of the match will be shown.
+
+(See B<-W> for details.)
+
+=item B<-m>
+
+Disables the expansion of user-defined macros in CQP queries.
+
+=item B<-M> I<macro_file>
+
+Specifies that user macro definitions should be read from I<file>. For more on user macros, see the I<CQP Tutorial>.
+
+=item B<-p>           
+
+Turns off the use of an external pager program (such as B<less>) to display the output from a concordance.
+In this mode, concordance output is sent directly to the user's terminal. 
+
+Equivalent to the interactive command C<set Paging off>.
+
+=item B<-P> I<pager>     
+
+Sets I<pager> as the external pager program that CQP will use to display query results. 
+
+In CQP's interactive mode, concordances are not simply printed to the user's terminal. Rather, they are
+piped through to a specified external tool, the I<pager>, whose role is to present the concordance output to
+the user, normally one screenful at a time.
+
+The default pager is either B<more> or B<less>, depending on the operating system. This option can be used
+either to specify a different pager, or to specify a differently-configured call to the usual pager. 
+
+The pager may also be set by the environment variable C<CQP_PAGER>.
+
+Equivalent to the interactive command C<set Pager I<pager>>.
+
+=item B<-r> I<registry_dir>
+
+Specifies that the registry directory should be I<registry_dir> on startup,
+instead of the standard registry. If this option is not specified, then a directory 
+specified by the CORPUS_REGISTRY environment variable will be used; if that is not available, 
+the built-in CWB default will be used.
+
+=item B<-R> I<num>
+
+Sets the amount of right-hand context to be displayed in concordances; 
+I<num> characters to the right of the match will be shown.
+
+(See B<-W> for details.)
+
+=item B<-s>         
+
+Switches on auto-subquery mode. In this mode, whenever a query is executed, its result is set as
+the current subcorpus. This means that subsequent queries will search I<only> the subset of the 
+original corpus which falls within the matches of that earlier query - unless that query-subcorpus
+is manually deactivated. 
+
+Equivalent to the interactive command C<set AutoSubquery on>.
+
+=item B<-S>
+
+Switches the SIG_PIPE handler on or off (that is, toggles it from whatever its value was previously).
+This option does not have any effect under Windows.
+
+=item B<-v>
+
+Shows program version and copyright information, then exits.
+
+=item B<-W> I<num>       
+
+Sets the width in characters of the context displayed when a concordance is printed. When this option is
+specified, I<num> characters of left-hand context and I<num> characters of right-hand context will be
+displayed.  The default width is 25 characters each way.
+
+The amount of left- and right-hand context to display can be set separately using the B<-L> and B<-R> options.
+
+Note that setting the context interactively allows you much more flexibility than the B<-L>, B<-W>
+and B<-R> options : you can specify the width
+of the context not only in characters, but also in tokens, or in terms of any suitable
+s-attribute (i.e. XML element).
+
+=item B<-x>           
+
+Turns on CQP's insecure mode. In insecure mode, the use of pipes to external programs for certain functions 
+(grouping, sorting, output-paging) is disallowed. ("Insecure mode" is thus "the mode for insecure circumstances"
+I<not> "the mode that is insecure".) 
+
+This option was previously recommended when CQP was slaved by a CGI script, to prevent input from the web from executing
+arbitrary shell commands as pipes. However, a new and better way to achieve the same result is to use query-locking before
+executing commands from untrusted sources. So while this option is retained for backwards-compatability, it should
+not normally be used.
+
+=back
+
+
+
+=head1 ENVIRONMENT
+
+=over 4
+
+=item B<CQP_LOCAL_CORP_DIR>
+
+If set, this environment variable specifies the active directory for subcorpus files to be stored in and loaded from.
+This includes saved queries. For more information, see discussion of the B<-l> option, which does the same thing as this 
+environment variable (but overrules it). 
+
+Note that if this environment variable is not set I<and> the B<-l> option has not been used, it will not be possible
+to save any queries until the active directory has been set manually using the interactive command 
+C<set DataDirectory -I<dir>>.
+
+=item B<CORPUS_REGISTRY>
+
+If set, this environment variable specifies the location of the corpus registry directory. This
+registry directory is scanned for available corpora when CQP starts up. 
+
+The CORPUS_REGISTRY is overruled by the B<-r> option, if present; if neither of these means
+of specifying the registry is used, then the built-in CWB default registry location will be used.
+
+=item B<CQP_PAGER>
+
+If set, this environment variable specifies a pager program that will be used to filter 
+printed concordance output from CQP in interactive mode.
+
+B<CQP_PAGER> overrules the built-in default pager, which is either B<more> or B<less>, 
+depending on the operating system.
+
+For more information, see discussion of the B<-P> option, which does the same thing as this 
+environment variable (but overrules it). 
+
+=back
+
+=head1 SEE ALSO
+
+L<cqpserver>, L<cwb-align>, L<cwb-align-show>, L<cwb-align-encode>, L<cwb-align-decode>, L<cwb-atoi>, L<cwb-compress-rdx>, 
+L<cwb-config>, L<cwb-decode-nqrfile>, L<cwb-decode>, L<cwb-describe-corpus>, L<cwb-encode>, L<cwb-huffcode>, 
+L<cwb-itoa>, L<cwb-lexdecode>, L<cwb-makeall>, L<cwb-scan-corpus>, L<cwb-s-decode>, L<cwb-s-encode>.
+
+=head1 COPYRIGHT
+
+B<IMS Open Corpus Workbench (CWB)> L<http://cwb.sourceforge.net/>
+
+Copyright (C) 1993-2006 by IMS, University of Stuttgart
+
+Copyright (C) 2007- by the respective contributers (see file F<AUTHORS>)
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details
+(in the file F<COPYING>, or available via WWW at
+L<http://www.gnu.org/copyleft/gpl.html>).
+
+=cut
+

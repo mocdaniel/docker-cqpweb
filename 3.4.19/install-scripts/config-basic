@@ -1,0 +1,51 @@
+#!/bin/sh
+
+## NB: this script prints command-line flags that should be appended to all make commands,
+##     i.e. typical usage will be:  CONFIG_FLAGS=`install-scripts/config-basic`
+
+platform=""
+siteflags=""
+uname_output=$(uname -a)
+
+case "$uname_output" in
+    Linux*)
+        platform="linux"
+        case "$uname_output" in
+            *x86_64*)
+                platform="${platform}-64"
+                ;;
+        esac
+        ;;
+    Darwin*)
+        case "$uname_output" in
+            *ppc)
+                echo "*** Mac OS X is no longer supported on PowerPC processors ***"
+                exit
+                ;;
+            *)
+                # build core2-optimised universal binaries (i386 + x86_64) by default on recent Mac OS X
+                if [ -f /opt/local/lib/libglib-2.0.dylib ] || [ -f /opt/local/lib/libglib-2.0.a ]
+                then
+                    platform="darwin-port-core2" # GLib seems to be provided by MacPorts
+                else
+                    platform="darwin-64" # assume that GLib is provided by HomeBrew or has been compiled by user
+                fi
+                ;;
+        esac
+        ;;
+    CYGWIN*)
+        platform="cygwin"
+        # and force site to be cygwin
+        siteflags="SITE=cygwin"
+        ;;
+    SunOS*)
+        platform="solaris"
+        ;;
+    *)
+        # go for generic unix
+        platform="unix"
+        ;;
+esac
+
+
+echo "PLATFORM=$platform $siteflags"

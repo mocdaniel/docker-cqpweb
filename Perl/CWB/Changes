@@ -1,0 +1,38 @@
+
+Version 3.0.3
+-------------
+
+This is the first official release of the redesigned CWB/Perl interface.
+It is compatible with version 3.0.3 of the IMS Open Corpus Workbench.
+
+New features:
+
+  - complete reorganisation of CWB/Perl modules into packages CWB (utility functions,
+    corpus encoding, CQP interface) and CWB-CL (API for low-level corpus access);
+    WebCqp functionality and demo Web interface will be released as a separate package
+    at a later time (with improved and extended implementation)
+
+  - all modules are in the CWB namespace now (e.g. CWB::CQP instead of CQP)
+
+  - new implementation of standard simple query language CEQL for Web interfaces,
+    providing a common core syntax that can easily be adapted and extended
+
+  - CQP interface has been re-implemented with better consistency and ease of use,
+    faster performance, and non-blocking operation
+
+  - new "managed mode" in CQP interface automatically converts between Perl Unicode
+    strings and character encoding of each CWB corpus
+
+  - improved auto-configuration, using information from the "cwb-config" utility
+
+  - CWB::CQP objects now offer quote() and quotemeta() methods for safe quoting of
+    regular expressions and literal strings in CQP queries (and other commands)
+
+  - CWB::Shell::Cmd now takes array of program and arguments, which are individually
+    quoted through the CWB::Shell::Quote() function
+
+  - new utility "cwb-convert-to-utf8" for convenient upgrade of existing CWB-indexed
+    corpora to UTF-8 encoding; this should ease the transition to CWB 3.5
+
+  - two-argument form of CWB::OpenFile now supports encoding layers on the mode
+    argument, even for files that are automagically (de)compressed

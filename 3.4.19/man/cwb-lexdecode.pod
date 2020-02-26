@@ -1,0 +1,204 @@
+=head1 NAME
+
+cwb-lexdecode - Access lexicon of token-level annotations in a CWB corpus
+
+=head1 SYNOPSIS
+
+B<cwb-lexdecode> [-fnlbsh] [-r I<registry_dir>] [-P I<attribute>]
+    [-p I<regexp> [-cd]] [-F I<file> [-0N]]  I<corpus>
+
+B<cwb-lexdecode> [-r I<registry_dir>] [-P I<attribute>] -S I<corpus>
+
+=head1 DESCRIPTION
+
+This utility can be used to print all or part of the lexicon of a positional
+attribute to standard output. Optionally, frequency information can also be
+printed.
+
+There are several ways to print out only a part of the p-attribute. If a file
+input is specified, words will be read from that file (on a line-by-line basis)
+and the matching lexicon entries output in the same order they are encountered.
+The file can also specify which items are to be printed by giving lexicon ID
+numbers: for this mode, use the B<-N> option.
+The file input can be from standard input if C<-F -> is specified; this allows
+both piping and a rudimentary interactive mode.
+
+Alternatively, a regular expression can be specified (with B<-p>); in this
+case only entries that match that regular expression will be printed out. This
+is a normal CWB regular expression, and so all the usual rules for
+string-level regular expressions in CQP apply: the PCRE syntax for regular
+expressions is used, the regexp matches the whole item, and it is
+case-sensitive and accent-sensitive by default.  Case-sensitivity and
+accent-sensitivity can be turned off with the B<-c> and B<-d> flags
+respectively.
+
+Command-line B<options> must be specified before the I<corpus> name. The
+corpus name is compulsory, and must be given in the ALL-UPPERCASE version.
+
+B<cwb-lexdecode> will look for the specified corpus in the registry directory,
+as usual. If a registry location is not specified with the B<-r> option, then
+either a directory specified by the CORPUS_REGISTRY environment variable, or
+CWB's built-in default registry will be used.
+
+
+=head1 OPTIONS
+
+Please note that the CWB utilities do not currently support GNU-style C<--long-options>.
+
+=over 4
+
+=item B<-0>
+
+Allows zero-frequency output for items that do not exist in the lexicon. In file-input
+mode (reading strings, not integers), specification of an item that is not found in the lexicon will usually result
+in an error message to standard error and nothing to standard output. But if B<-0>
+is set, it will instead result in a zero-frequency item being printed to standard
+output.
+
+=item B<-b>
+
+Turns off the use of extra "blanks" (spaces) to pad numeric columns to a fixed width.
+By default, the frequency (B<-f>), string-length (B<-l>) and lexicon ID number (B<-n>)
+columns are printed with extra spaces used as necessary to fill up a minimum width
+of seven characters; this option inhibits this behaviour.
+
+=item B<-c>
+
+Turns off case-sensitivity in regexp matching (only useful with B<-p> I<regexp>). 
+This corresponds directly to the C<%c> flag in CQP-syntax.
+
+=item B<-d>
+
+Turns off accent-sensitivity in regexp matching (only useful with B<-p> I<regexp>). 
+This corresponds directly to the C<%d> flag in CQP-syntax. (In both cases, the 'd'
+is for "diacritics".)
+
+=item B<-f>
+
+Displays the corpus frequency of each item that is printed out.
+
+=item B<-F> I<file>
+
+Activates file-input mode. The specified I<file> is opened and read, one line
+at a time (files with suffix C<.gz> are automatically decompressed; use C<->
+to read from standard input). Each line is treated as a single word or
+annotation string, and the corresponding lexicon entry is printed. Note that
+only precise, character-for-character matches are found; no regexp matching is
+used.
+Also note that the B<-N> option changes this behaviour significantly: numbers
+are expected in the input file instead.
+
+=item B<-h>
+
+Displays B<cwb-lexdecode>'s help message, with short information about the usage of the command line options.  
+This usage message will be also shown if B<cwb-lexdecode> is called with invalid options.
+After the usage message is printed, B<cwb-lexdecode> will exit.
+
+=item B<-l>
+
+Displays the string-length of each item that is printed out.
+
+=item B<-n>
+
+Displays the internal lexicon ID number of each item that is printed out.
+
+=item B<-N>
+
+In file-input mode, switches the expected format of the input from strings which
+are matched against the lexicon entries (the default), to integers that represent
+the internal ID numbers of the p-attribute's lexicon.
+
+=item B<-p> I<regexp>
+
+Prints out only lexicon entries that match the specified I<regexp>. 
+
+=item B<-P> I<attribute>
+
+Specifies that the p-attribute to be decoded is I<attribute>. If no p-attribute is specified, 
+then the default I<word> attribute will be compressed.
+
+=item B<-r> I<registry_dir>
+
+Specifies that the registry directory should be I<registry_dir> on startup,
+instead of the standard registry. If this option is not specified, then a directory 
+specified by the CORPUS_REGISTRY environment variable will be used; if that is not available, 
+the built-in CWB default will be used.
+
+=item B<-s>
+
+Sorts the output alphabetically  by item. Normally, the internal order of the lexicon is
+used (which typically represents the order in which the different types were originally
+encountered when the corpus was being encoded). 
+
+=item B<-S>
+
+Specifies that only the size (in types and tokens) of this p-attribute should be printed.
+No individual lexicon entries are output in this mode. Note that if this option is given,
+the B<-F> and B<-p> options are ignored.
+
+=back
+
+
+=head1 OUTPUT FORMAT
+
+One line for each (selected) lexicon entry with the following TAB-delimited fields:
+
+=over 4
+
+=item B<[ lexicon id ]>
+
+The internal lexicon ID number (only shown with the B<-n> option).
+
+=item B<[ frequency ]>
+
+The frequency of this lexicon item in the corpus (only shown with the B<-f> option).
+
+=item B<[ length ]>
+
+The length of the p-attribute (word or annotation) string (only shown with the B<-l> option).
+
+=item B<string>
+
+The actual p-attribute annotation string itself (always shown).
+
+=back
+
+
+=head1 ENVIRONMENT
+
+=over 4
+
+=item B<CORPUS_REGISTRY>
+
+If set, this environment variable specifies the location of the corpus registry directory. 
+The CORPUS_REGISTRY is overruled by the B<-r> option, if present; if neither of these means
+of specifying the registry is used, then the built-in CWB default registry location will be used.
+
+=back
+
+
+=head1 SEE ALSO
+
+L<cqp>, L<cwb-describe-corpus>, L<cwb-encode>, L<cwb-decode>, L<cwb-s-decode>, L<cwb-align-decode>, L<cwb-scan-corpus>.
+
+
+=head1 COPYRIGHT
+
+B<IMS Open Corpus Workbench (CWB)> L<http://cwb.sourceforge.net/>
+
+Copyright (C) 1993-2006 by IMS, University of Stuttgart
+
+Copyright (C) 2007- by the respective contributers (see file F<AUTHORS>)
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details
+(in the file F<COPYING>, or available via WWW at
+L<http://www.gnu.org/copyleft/gpl.html>).
+
+=cut
+

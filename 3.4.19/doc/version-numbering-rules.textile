@@ -1,0 +1,52 @@
+h1. How to assign version numbers in CWB, CWB-Perl, and CQPweb
+
+
+h2. Plan for versions: the road ahead
+
+* Version numbering has hitherto been a bit haphazard
+* CWB < v3.0 basically represents work done at IMS Stuttgart
+** (plus some betas for subsequent work)
+* CWB-Perl version numbering basically indicates what version of the core CWB it is intended to be compatible with
+* CQPweb originally had entirely separate version numbering (with only major and minor distinguished) 
+** ... but then switched (in July 2011) to the same system as the CWB-Perl
+
+Clearly all this is confusing. So, we have put in place the following policies for subsequent version numbers.
+
+h2. Version numbers for the core CWB
+
+* All version numbers will be of the form x.y.z
+* Major public releases of the core CWB will be 3.0.z, 4.0.z, etc.
+** In these releases, the z indicates the maintenance/bugfix release version
+* Major releases are allowed to break backwards compatibility, both of library APIs and of user interface.
+* There may be intermediate stable public versions, which will not break compatibility (or will do so in a trivial way)
+** These will have the numbers 3.5.z, 4.5.z, etc.
+* Any other minor release number represents an unstable beta.
+** Users who want to take advantage of the latest improvements are encouraged to use these intermediate releases.
+** Minor release numbers x.4.z and x.9.z are reserved for betas working up to a new release (stable or backwards-incompatible).
+** Other minor release numbers will not be used by the core CWB. They are reserved for the user-interface components.
+
+h2. Version numbers for CWB-Perl and CQPweb
+
+* All version numbers will follow the same general format as the core CWB.
+* All versions of CWB-Perl and CQPweb will have the same major number as the version of the core that they are compatible with.
+** Minor numbers x.0 to x.3 denote compatibility with the stable version x.0 of the core
+** Minor numbers x.5 to x.8 denote compatibility with the stable version x.5 of the core
+** Minor numbers x.4 or x.9, if used, denote compatibiltiy with the upcoming stable version x.5 or (x+1).0 of the core
+* An increment in the minor number (say, from 3.5 to 3.6) indicates some major change in the user interface
+** Such a change may possibly break backward-compatibility in the front end, without changing how compatibility with the core works
+* An increment in the maintenance/bugfix number represents a smaller change that does not majorly affect the user interface. 
+
+h2. Additional caveats for CQPweb
+
+* Increments in CQPweb's capabilities will normally be indicated by an increment in the bugfix (z) number
+** Upgrading from x.y.z to x.y.(z+1) will require updating the code files, and may require manual changes to the database
+** Upgrading from x.y.z to x.y.(z+1):
+*** will not require reinstalling the CQPweb system
+*** will not require reindexing any corpora (although old corpora may not be able to access new features)
+*** will not change the format of any configuration files
+*** will not require user accounts to be re-created
+** Upgrading from x.y.z to x.(y+1).0 may require one or more of the above changes, however. 
+
+
+
+

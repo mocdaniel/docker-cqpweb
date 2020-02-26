@@ -1,0 +1,402 @@
+
+/* Some resets to override unhelpful user-agent stylesheet stuff */
+
+form {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+/* TODO we want to do this also for some but not all inputs....
+   Note in particular we currently rely on the user agent stylesheet to make
+   "submit" buttons not crap... we should supply some decent styling ourselves for that! */
+
+/* end of resets */
+
+
+
+/* alignment classes for positioning divs and tables. */
+
+.tblRight {
+	float: right;
+	clear: both;
+}
+.tblLeft {
+	float: left;
+	clear: both;
+}
+.tblCentre {
+	float: center;
+	clear: both;
+}
+
+
+/* top page heading */
+
+h1 {
+	font-family: Verdana;
+	text-align: center;
+}
+
+
+
+/* different paragraph styles */
+
+p.errormessage {
+	font-family: verdana;
+	font-size: large;
+}
+
+p.instruction {
+	font-family: verdana;
+	font-size: 10pt;
+}
+
+p.helpnote {
+	font-family: verdana;
+	font-size: 10pt;
+}
+
+p.bigbold {
+	font-family: verdana;
+	font-size: medium;
+	font-weight: bold;
+}
+
+p.spacer {
+	font-size: small;
+	padding: 0pt;
+	line-height: 0%;
+	font-size: 10%;
+}
+
+span.hit {
+	color: red;
+	font-weight: bold;
+}
+
+span.contexthighlight {
+	font-weight: bold;
+}
+
+span.concord-time-report {
+	color: gray;
+	font-size: 10pt;
+	font-weight: normal
+}
+
+
+/* table layout */
+
+/* class for making any kind of table take up all horizontal space */
+table.fullwidth {
+	width:100%;
+}
+
+
+table.controlbox {
+	border: large outset;
+}
+
+td.controlbox {
+	font-family: Verdana;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	padding-left: 10px;
+	padding-right: 10px;
+	border: medium outset;
+}
+
+
+
+/* layout ; layoutFG ; layoutBG*/
+table.concordtable {
+	border-style: solid;
+	border-color: #ffffff; 
+	border-width: 5px;
+}
+
+th.concordtable {
+	padding-left: 3px;
+	padding-right: 3px;
+	padding-top: 7px;
+	padding-bottom: 7px;
+	background-color: #ff00ff;
+	font-family: verdana;
+	font-weight: bold;
+	border-style: solid;
+	border-color: #ffffff; 
+	border-width: 2px;
+}
+
+td.concordgeneral {
+	padding-left: 7px;
+	padding-right: 7px;
+	padding-top: 3px;
+	padding-bottom: 3px;
+	background-color: #ffa6ff;
+	font-family: verdana;
+	font-size: 10pt;
+	border-style: solid;
+	border-color: #ffffff; 
+	border-width: 2px;
+}
+
+
+td.concorderror {
+	padding-left: 7px;
+	padding-right: 7px;
+	padding-top: 3px;
+	padding-bottom: 3px;
+	background-color: #00ff00;
+	font-family: verdana;
+	font-size: 10pt;
+	border-style: solid;
+	border-color: #ffffff; 
+	border-width: 2px;
+}
+
+
+td.concordgrey {
+	padding-left: 7px;
+	padding-right: 7px;
+	padding-top: 3px;
+	padding-bottom: 3px;
+	background-color: #d5d5d5;
+	font-family: verdana;
+	font-size: 10pt;
+	border-style: solid;
+	border-color: #ffffff; 
+	border-width: 2px;
+}
+
+
+td.before {
+	padding: 3px;
+	background-color: #ffa6ff;
+	border-style: solid;
+	border-color: #ffffff; 
+	border-top-width: 2px;
+	border-bottom-width: 2px;
+	border-left-width: 2px;
+	border-right-width: 0px;
+	text-align: right;
+}
+
+td.after {
+	padding: 3px;
+	background-color: #ffa6ff;
+	border-style: solid;
+	border-color: #ffffff; 
+	border-top-width: 2px;
+	border-bottom-width: 2px;
+	border-left-width: 0px;
+	border-right-width: 2px;
+	text-align: left;
+}
+
+td.node {
+	padding: 3px;
+	background-color: #f0f0f0;
+	border-style: solid;
+	border-color: #ffffff;
+	border-top-width: 2px;
+	border-bottom-width: 2px;
+	border-left-width: 0px;
+	border-right-width: 0px;
+	text-align: center;
+}
+
+td.lineview {
+	padding-left: 7px;
+	padding-right: 7px;
+	padding-top: 3px;
+	padding-bottom: 3px;
+	background-color: #ffa6ff;
+	border-style: solid;
+	border-color: #ffffff;
+	border-width: 2px;
+}
+
+td.parallel-line {
+	padding-left: 7px;
+	padding-right: 7px;
+	padding-top: 3px;
+	padding-bottom: 3px;
+	background-color: #f0f0f0;
+	border-style: solid;
+	border-color: #ffffff;
+	border-width: 2px;
+}
+
+td.parallel-kwic {
+	padding-left: 7px;
+	padding-right: 7px;
+	padding-top: 3px;
+	padding-bottom: 3px;
+	background-color: #f0f0f0;
+	border-style: solid;
+	border-color: #ffffff;
+	border-width: 2px;
+	text-align: center;
+}
+
+td.text_id {
+	padding: 3px;
+	background-color: #ffa6ff;
+	border-style: solid;
+	border-color: #ffffff;
+	border-width: 2px;
+	text-align: center;
+}
+
+td.end_bar {
+	padding: 3px;
+	background-color: #d5d5d5;
+	font-family: verdana;
+	border-style: solid;
+	border-color: #ffffff;
+	border-width: 2px;
+	text-align: center;
+}
+
+
+td.basicbox {
+	padding-left: 7px;
+	padding-right: 7px;
+	padding-top: 10px;
+	padding-bottom: 10px;
+	background-color: #ffa6ff;
+	font-family: verdana;
+	font-size: 10pt;
+}
+
+
+/* like basic box, but with no padding */
+td.tightbox {
+	padding-left: 0px;
+	padding-right: 0px;
+	padding-top: 0px;
+	padding-bottom: 0px;
+	background-color: #ffa6ff;
+	font-family: verdana;
+	font-size: 10pt;
+}
+
+
+td.cqpweb_copynote {
+	padding-left: 7px;
+	padding-right: 7px;
+	padding-top: 3px;
+	padding-bottom: 3px;
+	background-color: #ffffff;
+	font-family: verdana;
+	font-size: 8pt;
+	color: gray;
+	border-style: solid;
+	border-color: #ffffff;
+	border-width: 2px;
+}
+
+
+/* different types of link */
+/* first, for left-navigation in the main query screen */
+a.menuItem:link {
+	white-space: nowrap;
+	font-family: verdana;
+	color: black;
+	font-size: 10pt;
+	text-decoration: none;
+}
+a.menuItem:visited {
+	white-space: nowrap;
+	font-family: verdana;
+	color: black;
+	font-size: 10pt;
+	text-decoration: none;
+}
+a.menuItem:hover {
+	white-space: nowrap;
+	font-family: verdana;
+	color: red;
+	font-size: 10pt;
+	text-decoration: underline;
+}
+
+/* next, for the currently selected menu item 
+ * will not usually have an href 
+ * ergo, no visited/hover */
+a.menuCurrentItem {
+	white-space: nowrap;
+	font-family: verdana;
+	color: black;
+	font-size: 10pt;
+	text-decoration: none;
+}
+
+
+/* next, for menu bar header text item 
+ * will not usually have an href 
+ * ergo, no visited/hover 
+a.menuHeaderItem {
+	white-space: nowrap;
+	font-family: verdana;
+	color: black;
+	font-weight: bold;
+	font-size: 10pt;
+	text-decoration: none;
+
+}*/
+
+
+/* the next three classes support the tooltip system. */
+
+
+div.floatingToolTip  {
+	/* configurable */
+	width            : 350px;                        /* initial width of each tooltip box. */
+	background-color : #003399;                      /* colour parameter -- colour of border */
+	padding          : 0px;                          /* padding controls width of "border", which is 1 + padding */
+	opacity          : 1.0;                          /* should the floating tooltip box be opaque ? */
+	/* end configurable */
+
+	/* these are part of the system: should not be changed. */
+	visibility       : hidden;
+	position         : absolute;
+	z-index          : -1010;
+	left             : 0px;
+	top              : 0px;
+}
+
+table.floatingToolTipFrame {
+	width      : 100%;
+	opacity    : inherit;
+}
+
+td.floatingToolTipTarget {
+	/* configurable */
+	background-color : #e6ecff;                      /* colour parameter -- colour of background */
+	color            : #000066;                      /* colour parameter -- colour of tooltip text */
+	font-family      : Verdana,Arial,Helvetica,sans-serif;
+	font-size        : 11px;
+	font-weight      : normal;
+	text-align       : left; 
+	/* end configurable */
+	padding          : 2px;
+	opacity          : inherit;
+}
+
+
+
+/* here, for footer link to help */
+a.cqpweb_copynote_link:link {
+	color: gray;
+	text-decoration: none;
+}
+a.cqpweb_copynote_link:visited {
+	color: gray;
+	text-decoration: none;
+}
+a.cqpweb_copynote_link:hover {
+	color: red;
+	text-decoration: underline;
+}

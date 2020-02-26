@@ -1,0 +1,433 @@
+#!/usr/bin/perl
+## -*-cperl-*-
+## Author:  Andrew Hardie / Stefan Evert
+## Purpose: create a beadfile (.align format) from one or more TMX files. 
+##
+$| = 1;
+use warnings;
+use strict;
+
+#use CWB;
+
+use Getopt::Long qw(:config no_ignore_case);
+use Pod::Usage;
+use File::Basename;
+use Data::Dump qw(dump);
+
+
+## configuration variables
+our @Opt_TmxFile   = ();     # -i <tmx-input> ... input file (TMX format; can be used many times)
+our $Opt_BeadFile  = undef;  # -o <bead-file> ... output file (.align format; if unspecified, STDOUT)
+our $Opt_DummyHdr  = 0;      # -H ... include dummy header line in the output (for user to adjust later)
+our $Opt_SrcLang   = undef;  # -s <source-lang> ... the source language (ISO 639 code). If unspecified, sort order used.
+our $Opt_WriteTxt  = 0;      # -w ... write monolingual texts with auto-generated filenames 
+our $Opt_TextAtt   = "text"; # -t <attribute> ... name to use for the generated text-root attribute, if -w.
+our $Opt_GridAtt   = "seg";  # -g <attribute> ... name to use for the generated align-grid attribute, if -w.
+our $Opt_Help      = 0;      # -h ... show usage message
+our $Verbose       = 0;      # -v ... show progress & status messages (on STDERR)
+
+
+# global var to hold lowercase language codes.
+our @realLangs;
+
+our $bead_dst;
+
+OPTIONS_AND_USAGE:
+{
+  my $ok = GetOptions(
+    "i|tmx-input=s"      => \@Opt_TmxFile,
+    "o|bead-output=s"    => \$Opt_BeadFile,
+    "H|dummy-header"     => \$Opt_DummyHdr,
+    "s|source-lang=s"    => \$Opt_SrcLang,
+    "w|write-text"       => \$Opt_WriteTxt,
+    "t|text-attribute=s" => \$Opt_TextAtt,
+    "g|grid-attribute=s" => \$Opt_GridAtt,
+    "h|help"             => \$Opt_Help,
+    "v|verbose"          => \$Verbose,
+  );
+
+  # HELP
+  pod2usage(-msg => "Displaying basic HELP for cwb-align-tmx2beads.\n(Type 'perldoc cwb-align-tmx2beads' for more information.)",
+    -exitval => 0, -verbose => 1) if $Opt_Help;
+
+  # ERROR
+  pod2usage(-msg => "There was an error in your use of this program's options.\n(Type 'cwb-align-tmx2beads -h' for more information.)",
+    -exitval => 1, -verbose => 0) unless $ok;
+
+  # NO FILES
+  our $N_Opt_TmxFile = scalar @Opt_TmxFile;
+  print STDERR "<cwb-align-tmx2beads>  Detected $N_Opt_TmxFile specified input files...\n" if $Verbose;
+  pod2usage(-msg =>  "No input files specified (-i <file> or --tmx-input=<file>).",
+    -exitval => 0, -verbose => 0) if $N_Opt_TmxFile == 0;
+
+  # BAD ATT
+  pod2usage(-msg =>  "<$Opt_GridAtt> is not a valid name for a CWB attribute / XML element.",
+    -exitval => 0, -verbose => 0) unless $Opt_GridAtt =~ /^[_a-zA-Z][_a-zA-Z0-9\-]*$/ ;
+  pod2usage(-msg =>  "<$Opt_TextAtt> is not a valid name for a CWB attribute / XML element.",
+    -exitval => 0, -verbose => 0) unless $Opt_TextAtt =~ /^[_a-zA-Z][_a-zA-Z0-9\-]*$/ ;
+
+  
+  $Opt_SrcLang = lc $Opt_SrcLang if defined $Opt_SrcLang;
+
+  if ( (! defined $Opt_BeadFile) or ("-" eq $Opt_BeadFile) ) {
+    $bead_dst = *STDOUT;
+    print STDERR "<cwb-align-tmx2beads>  Using standard out as destination for Beads...\n" if $Verbose;
+  }
+  else {
+    open $bead_dst, '>', $Opt_BeadFile or die "Can't open file $!";
+    print STDERR "<cwb-align-tmx2beads>  File $Opt_BeadFile opened for Write as destination for Beads...\n" if $Verbose;
+  }
+
+  if ($Opt_DummyHdr) {
+    print $bead_dst "DUMMY_SourceLangCorpusCwbName\tDUMMY_TargetLangCorpusCwbName\t$Opt_GridAtt\t{id}\n";
+    print STDERR "<cwb-align-tmx2beads>  Dummy header line has been written to output.\n" if $Verbose;
+  }
+}
+
+
+MAIN_LOOP:
+{
+  foreach my $infile (@Opt_TmxFile) {
+
+    # read in whole file, get text ID code from filename. 
+    open my $fh, '<', $infile or die "Can't open file $!";
+    read $fh, my $data, -s $fh;
+    my $id = basename($infile,(".tmx"));
+    close $fh;
+
+    # Get array of languages. 
+    my @matches;
+    push @matches, (lc $1) while ($data =~ /\b(?:xml:)?lang=['"]([a-zA-Z]{2,3})['"]/g );
+    my %tmphash  = map { $_, 1 } @matches;
+    my @langs = keys %tmphash; 
+    unless (0 < @langs) {
+      print STDERR "<cwb-align-tmx2beads>  No 'lang=' attributes found in $infile; skipping whole file.\n" ;
+      next;
+    }
+    # for the moment, this script only deals with more than 2 languages.
+    unless (2 == @langs) {
+      print STDERR "<cwb-align-tmx2beads>  There should be exactly two language codes per file (more than 2 langs not yet supported.\n";
+      print STDERR "<cwb-align-tmx2beads>  But in $infile there were ", (scalar @langs), " ; therefore skipping whole file.\n" ;
+      next;
+    }
+    if (! defined $Opt_SrcLang) {
+      print STDERR "<cwb-align-tmx2beads>  Source language wasn't specified, so loking for it in file $infile ....\n" if $Verbose;
+      if ($data =~ /\b(?:xml:)?srclang=['"]([a-zA-Z]{2,3})(-[a-zA-Z]{2})?['"]/) {
+        $Opt_SrcLang = $1;
+        print STDERR "<cwb-align-tmx2beads>  ....found source language code in header: it's $Opt_SrcLang\n" if $Verbose;
+      }
+      else {
+        print STDERR "<cwb-align-tmx2beads>  ....didn't find it! Will assume alphabetical order as a fallback\n" if $Verbose;
+      }
+    }
+
+    # get a deterministic order of languages.
+    @langs = sort @langs;
+    if ( (defined $Opt_SrcLang) and ( ! grep {$_ eq $Opt_SrcLang} @langs ) ) {
+      print STDERR "<cwb-align-tmx2beads>  Error: the source language that was declared ($Opt_SrcLang) is not used in file $infile.";
+      print STDERR "<cwb-align-tmx2beads>  Skipping whole file.\n" ;
+      next;
+    
+    }    
+    if ( (defined $Opt_SrcLang) and ($langs[1] eq $Opt_SrcLang) ) {
+      $langs[1] = $langs[0];
+      $langs[0] = $Opt_SrcLang;
+    }
+    # which allows us to check langs against the canonical language pair for this corpus. */
+    if (0 == @realLangs) {
+      @realLangs = @langs;
+      print STDERR "<cwb-align-tmx2beads>  Found lang codes for the first time: source = $realLangs[0], target = $realLangs[1]\n" if $Verbose;
+    }
+    else {
+      unless ( ($realLangs[0] eq $langs[0]) and ($realLangs[1] eq $langs[1]) )   {
+        print STDERR "<cwb-align-tmx2beads>  The language codes in $infile ($langs[0], $langs[1]) don't match those seen previously.\n ",
+                     "<cwb-align-tmx2beads>  (Standard lang pair in this data is source = $realLangs[0], target = $realLangs[1] .)\n ",
+                     "<cwb-align-tmx2beads>  Skipping whole file.\n";
+        next;
+      }
+    }
+
+    # text-output handles
+    my %dsts;
+    if ($Opt_WriteTxt) {
+      foreach my $l (@langs) {
+        open my $wrh, '>', $id.'_'.$l.'.txt';
+        print STDERR ("<cwb-align-tmx2beads>  Successfully opened text output file", $id.'_'.$l.'.txt', "\n") if $Verbose;
+        print $wrh "<$Opt_TextAtt id=\"$id\">\n\n";
+        $dsts{$l} = $wrh;
+      }
+    }
+
+    # segment counts
+    my %n;
+    foreach my $l (@langs) {
+      $n{$l} = 1;
+    }
+
+    # now, loop across translation units. 
+    print STDERR ("<cwb-align-tmx2beads>  Now looping across <tu> elements...\n") if $Verbose;
+    while ( $data =~ /<tu>(.*?)<\/tu>/sg ) {
+      # setup bead holder
+      my %bead;
+      foreach my $l (@langs) {
+        $bead{$l} = "";
+      }
+
+      my $tu = $1;
+
+      # now, loop across aligned buits.
+      while ( $tu =~ /<tuv (?:xml:)?lang="([a-zA-Z]{2,3})">\s*<seg>(.*?)<\/seg>\s*<\/tuv>/sg ) {
+        my $segLang = lc $1;
+
+        my $segContent = $2;
+        $segContent =~ s/^\s+|\s+$//g ;  # trim both ends!
+
+        my $segID = $id . '_' . $segLang . sprintf("%04d", $n{$segLang});
+
+        $n{$segLang} += 1;
+
+        $bead{$segLang} = $bead{$segLang} . $segID . ' ';
+        
+        print { $dsts{$segLang} } "<$Opt_GridAtt id=\"$segID\">$segContent</$Opt_GridAtt>\n"  if $Opt_WriteTxt;
+      }
+
+      # we can now trim off the final space, and write the equivalence to file. 
+      $bead{$langs[0]} =~ s/^\s+|\s+$//g ;
+      $bead{$langs[1]} =~ s/^\s+|\s+$//g ;
+      print { $bead_dst } "$bead{$langs[0]}\t$bead{$langs[1]}\n";
+    }
+    print STDERR "<cwb-align-tmx2beads>  ...all <tu> elements in file $infile now done.\n" if $Verbose;
+    # done with this file. 
+
+
+    if ($Opt_WriteTxt) {
+      foreach my $l (@langs) {
+        print { $dsts{$l} } "\n</$Opt_TextAtt>\n";
+        close $dsts{$l};
+        print STDERR "<cwb-align-tmx2beads>  successfully closed output file for $l\n" if $Verbose;
+      }
+      print STDERR "<cwb-align-tmx2beads>  done with $infile\n" if $Verbose;
+    }
+  }
+}
+
+close $bead_dst unless ( (! defined $Opt_BeadFile) or ("-" eq $Opt_BeadFile) );
+
+
+our $theOriginalPhpCode = <<'orig_PHP_code'
+
+
+The following is the original PHP code that the Perl above is based on.
+
+
+$lang[1] = "ZH";
+$lang[2] = "EN";
+
+$langmap = array_flip($lang);
+
+if (! (isset($argv[1]) && is_file($argv[1])) )
+    exit("Please specify a TMX file to split.");
+    
+$data = file_get_contents($argv[1]);
+$id = basename($argv[1], '.tmx');
+
+$out[1] = '';
+$out[2] = '';
+
+preg_match_all('~<tu>(.*?)</tu>~s', $data, $outer_m, PREG_PATTERN_ORDER);
+
+$n[1] = 1;
+$n[2] = 1;
+
+
+
+foreach($outer_m[1] as $tu_data)
+{
+//var_dump($tu_data);
+    preg_match_all('~<tuv lang="(\w+)">\s*<seg>(.*?)</seg>\s*</tuv>~s', $tu_data, $m, PREG_SET_ORDER);
+//var_dump($m);
+    $bead = [1=>'', 2=>''];
+    
+    foreach($m as $set)
+    {
+        $ix = $langmap[$set[1]];
+        
+        $seg_id = $id . '_' . $lang[$ix] . sprintf("%04d", $n[$ix]);
+        
+        $n[$ix]++;
+        
+        $bead[$ix] .= $seg_id . ' ';
+        
+        $out[$ix] .= '<seg id="' . $seg_id . '">' . trim($set[2]) . '</seg>' . "\n";
+    }
+    
+    echo trim($bead[1]), "\t", trim($bead[2]), "\n";
+}
+
+
+file_put_contents("{$id}_{$lang[1]}.txt", $out[1]);
+file_put_contents("{$id}_{$lang[2]}.txt", $out[2]);
+
+
+orig_PHP_code
+;
+
+
+
+
+__END__
+
+=head1 NAME
+
+cwb-align-tmx2beads - Export existing aligned data from TMX for use with CWB.
+
+=head1 SYNOPSIS
+
+  cwb-align-tmx2beads [options]
+
+Options:
+
+  -i <file>, --tmx-input=<file>    specify input TMX file (can be used multiple times; required at least once)
+  -o <file>, --bead-output=<file>  specify target file for alignment beads; if absent, data written to STDOUT
+  -H, --dummy-header               include a "dummy" header line at the start of the output, before alignment beads
+  -s <ISO>, --source-lang=<ISO>    ISO 639-1 or 639-2 code for the source language (if unspecified, this will be guessed)
+  -w, --write-text                 write monolingual text files with auto-generated filenames, as well as bead data
+  -t <att>, --text-attribute=<att> name for the s-attribute to use for each text (defaults to just <text>)
+  -g <att>, --grid-attribute=<att> name for the s-attribute to use as alignment grid (defaults to <seg>, as in TMX)
+  -v, --verbose                    show progress messages during processing
+  -h, --help                       display short help page
+
+
+=head1 DESCRIPTION
+
+This is a CWB support tool which can be used to export parallel corpus data in the TMX format to files suitable for use in CWB.
+
+TMX (Translation Memory eXchange) is an XML-based standard for storing aligned bilingual data (or multilingual, but this tool only deals with bilingual right now). As of the time of writing, the TMX standard is maintained at L<https://www.gala-global.org/lisa-oscar-standards>; documentation with examples can be found here: L<https://www.gala-global.org/tmx-14b> . Multiple proprietary software packages for aligning parallel corpus data store their results as TMX. 
+
+However, TMX data operates on a very different principle to CWB-indexed corpora. When using CWB, a separate corpus is indexed for the source-language corpus and the target-language corpus; then, some structural attribute is used to identify stretches of text which should be linked together between the first and second corpora as aligned; this data is used to create an I<alignment attribute> which indexes those interlinks. In TMX format, by contrast, each text in the parallel corpus is stored in a single bilingual XML file; the corresponding regions of text are placed adjacent to one another within a grouping XML element. In other words, a TMX file consists of alternating chunks in the two languages. 
+
+B<cwb-align-tmx2beads> is designed to take a set of TMX files and to generate a file re-expressing the alignment information in a form that CWB can use (specifically, B<cwb-align-import>) to generate the necessary a-attribute(s) - a format that encodes what in CWB terms are called I<alignment beads>. B<cwb-align-tmx2beads> can also (optionally, but normally you would want to) create a pair of text files for each original TMX file, where the two files contain the source and the target language  text separately; the separated-out source language data and target language data can be then tagged or tokenised and ultimately indexed as CWB corpora. 
+
+The output, printed to STDOUT by default, is designed to generate an input file for B<cwb-align-import>: it contains one alignment bead per row, specifying first the ID(s) of the source language region(s) and then the ID(s) of the target language region(s). A full header row is B<not> included in the output; a "dummy" header can be included with the C<< -H >> option, but this contains placeholders which the user must replace manually before using the data. See L</"OUTPUT FILE FORMAT"> below.
+
+An example illustrating a typical use case can be found in the I<CWB Corpus Encoding Tutorial>. (NB - this is a B<TODO>!)
+
+
+=head1 OPTIONS
+
+=over 4
+
+=item --help, -h
+
+Show usage and options summary.
+
+=item --verbose, -v
+
+Verbose mode (shows progress messages during processing).
+
+=item --tmx-input=I<file>, -i I<file>
+
+Input filename: path to a TMX data file to process. This must be specified at least once, but can be specified any number of times. 
+
+=item --bead-output=I<file>, -o I<file>
+
+Output filename: if specified, the alignment data will be written to the file in question, otherwise it will be piped to STDOUT. See  L</"OUTPUT FILE FORMAT"> for its format. The conventional file extension is C<.align>.
+
+=item --dummy-header, -H
+
+Cause output to begin with a "dummy" header line; see L</"OUTPUT FILE FORMAT"> for more details. By default, the output contains no header line - just the sequence of lines representing alignment beads.
+
+=item --source-lang=I<ISO>, -s I<ISO>
+
+Specify the source language. Languages need to be declared using ISO-639 codes, either the two or three-letter version (but it must match what is in the TMX file(s)). It's best always to specify this, but if you don't, B<cwb-align-tmx2beads> will try to guess from the content of your TMX files.
+
+The language codes are case-insensitive; C<EN> and C<en> would have exactly the same effect. 
+
+=item --write-text, -w
+
+Write monolingual files containing the original text. 
+
+If this flag is present, then for each input file, a pair of text files will be generated in the current working directory (their names distinguished by the ISO-639 language codes); while the files are text/XML as produced, they can be tokenised and optionally tagged separately, in order to produce indexable C<.vrt> files for CWB corpus creation; they contain XML C<seg> elements with identifier attributes (C<id>) that correspond to those in the alignment bead file; the root element is C<text> (or specify otherwise with C<< -t >>), and has an C<id> attribute which is derived from the TMX filename. 
+
+If you intend to retain the auto-generated text ID attribute as the eventual CWB IDs for the texts, be aware that to be compatible with CQPweb, the part of the filenames that is incorporated into the text IDs should include only unaccented Latin letters, the digits 0 to 9, and the underscore character.
+
+=item --text-attribute=I<attribute>, -t I<attribute>
+
+Specify name for the text-level XML element (CWB structural attribute). 
+
+The files created with C<< -w >> or C<< --write-text >> are, by default,  of the following overall form:
+
+   <text id="myfile_en">
+      ... segments representing translation units here ...
+   </text>
+
+If you want a different root element, you can use this option to set it. It must be a valid CWB identifier (and you should make sure it is preserved, along with its ID, when you tokenise and/or tag and/or index the corpus files).
+
+=item --grid-attribute=I<attribute>, -g I<attribute>
+
+Specify the grid attribute to use in text files. 
+
+Alignment data in CWB relies on a single I<structural attribute> (represented in input text as a set of nonempty instances of the attribute's namesake XML element) used as the alignment grid. This s-attribute must have the same name in both the source and target language corpora; each alignment bead links I<n> consecutive grid regions in the source language to I<m> consecutive grid regions in the target language.
+
+Traditionally, the typical grid attribute is C<s>  (for sentence alignment). In TMX, however, aligned elements are contained within C<< <seg>...</seg> >>. By default, text files produced using the C<< -w >> / C<< --write-text >> flag preserve the C<< <seg> >> tags from the TMX data. However, you can use the C<< -g >> option to specify an alternative name for the grid attribute. For instance, if you specify C<< --grid=alignedChunk >> then the output files will contain lines like this:
+
+   <alignedChunk id="myfile_en34">I visit London. Then I visit Paris.</alignedChunk>
+
+      ... and in the corresponding target-language file ...
+
+   <alignedChunk id="myfile_fr32">Je visite Londres et puis je visite Paris.</alignedChunk>
+
+instead of forms like this:
+
+   <seg id="myfile_en34">I visit London. Then I visit Paris.</seg>
+
+   <seg id="myfile_fr32">Je visite Londres et puis je visite Paris.</seg>
+
+These XML elements (whether C<< <seg> ... </seg> >> or anything else) elements must be preserved, along with their IDs, when you tokenise and/or tag and/or index the corpus files; if not, then CWB will not be able to anchor the alignment data to the actual text.
+
+=back
+
+
+=head1 INPUT FILE FORMAT
+
+This program deals with one frequently-seen variant of the TMX format ("Translation Memory eXchange"). TMX is an XML-based language; it contains a sequence of XML elements that represent I<correspondence units>. Every such unit contains a segment of text in each of both the source and target language, such that the target-language segment is what has been identified as the translation of the source language segment. That is, it aligns regions of the source and target texts by I<placing them adjacently> in the structure of the TMX XML tree.
+
+The TMX format will not be explained further here. The TMX standard is, as of this writing, online at L<https://www.gala-global.org/lisa-oscar-standards> ; documentation with examples can be found here: L<https://www.gala-global.org/tmx-14b>; several versions of the TMX DTD exist, of which the most recent seems to be 1.5 circa 2011, downloadable here: L<https://sourceforge.net/projects/tmx/files/>.
+
+
+=head1 OUTPUT FILE FORMAT
+
+The output from this tool is designed to be used as input for B<cwb-align-import>. It therefore follows the format described in the manual page for B<cwb-align-import>, but without using the more advanced features described there. In particular, B<cwb-align-tmx2beads> cannot generate a full header row for its output - because the header must specify the source and target corpora, which is information that B<cwb-align-tmx2beads> does not have. There are two ways that B<cwb-align-tmx2beads> can deal with this. By default, the header row is omitted completely. In this case, it is necessary to use B<cwb-align-import> options to specify the information that would otherwise have been in the header line.
+
+Alternatively, if the C<< -H >> / C<< --dummy-header >> flag is set, a "dummy" header line, that is one that has placeholders (of the form C<DUMMY_SourceLangCorpusCwbName> for the CWB names of the two corpora, will be written before the rest of the output; you then need only adjust the placeholders to the correct corpus names and the file will be ready to use with B<cwb-align-import>.
+
+Without C<< -H >>, you can manually add a header line later, in the following form:
+
+   SOURCE_CORPUS     TARGET_CORPUS      s      {s_id}
+
+...  with the appropriate grid attribute in place of C<s>. 
+
+Each of the remaining lines in the output corresponds to a single alignment bead (that is, a single C<< <tuv> >> element in the TMX).  It consists of the ID of a region of the grid attribute in the source corpus, followed by a TAB character, and then the ID of the aligned grid region in the target corpus. For example, an output line might look like this:
+
+    mytext_en1 mytext_en2  <TAB>  mytext_fr4 
+
+This indicates that the source corpus translation segments with IDs C<mytext_en1> and C<mytext_en2> are aligned to the target corpus translation segment with ID \C<mytext_fr4> (where both originate from the file B<myfile.tmx>). The IDs are created automatically, and appear in the text files created when the C<< -w >> / C<< --write-text >> flag is set.
+
+
+
+=head1 SEE ALSO
+
+The manual for B<cwb-align-import> goes into much more detail on the format of the output file (C<man cwb-align-import>).
+
+
+=head1 COPYRIGHT
+
+Copyright (C) 2018- Corpus Workbench contributors (see file I<AUTHORS>)
+
+This software is provided AS IS and the author makes no warranty as to
+its use and performance. You may use the software, redistribute and
+modify it under the same terms as Perl itself.
+
+=cut
+
+

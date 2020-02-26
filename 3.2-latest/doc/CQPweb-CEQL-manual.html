@@ -1,0 +1,1623 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="OpenOffice.org 3.2  (Unix)">
+	<META NAME="AUTHOR" CONTENT="Andrew Hardie">
+	<META NAME="CREATED" CONTENT="20100619;13020000">
+	<META NAME="CHANGEDBY" CONTENT="Andrew Hardie">
+	<META NAME="CHANGED" CONTENT="20110224;22273900">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { margin: 2.54cm }
+		TD P { margin-bottom: 0.21cm; color: #000000; text-align: left }
+		TD P.western { font-family: "Times New Roman", serif; font-size: 12pt; so-language: en-US }
+		TD P.cjk { font-family: "Times New Roman", serif; font-size: 12pt; so-language: en-US }
+		TD P.ctl { font-family: "Times New Roman", serif; font-size: 12pt; so-language: ar-SA }
+		P { margin-bottom: 0.21cm; color: #000000; text-align: left }
+		P.western { font-family: "Times New Roman", serif; font-size: 12pt; so-language: en-US }
+		P.cjk { font-family: "Times New Roman", serif; font-size: 12pt; so-language: en-US }
+		P.ctl { font-family: "Times New Roman", serif; font-size: 12pt; so-language: ar-SA }
+		A:link { color: #0000ff }
+		A.ctl:link { font-family: "Times New Roman", serif }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-GB" TEXT="#000000" LINK="#0000ff" DIR="LTR" STYLE="border: none; padding: 0cm">
+<P LANG="en-US" CLASS="western" STYLE="margin-top: 0.85cm; margin-bottom: 0cm">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=4><I><B>CQPweb manual: Some
+instructions on setting up CEQL</B></I></FONT></FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">This
+component of the CQPweb manual was last updated on 2010-06-22 for
+CQPweb version 2.14.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.85cm; margin-bottom: 0cm">
+	<FONT FACE="Arial, sans-serif"><FONT SIZE=4><B>Introduction: What is
+	CEQL?</B></FONT></FONT></P>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">CEQL is
+the <I>Common Elementary Query Language</I>, designed by Stefan Evert
+as a novice-friendly alternative to the normal CQP query syntax. The
+most complete documentation of CEQL is in Hoffmann et al., <I>Corpus
+linguistics with BNCweb</I>. In the BNCweb and CQPweb interfaces, it
+is often referred to as “simple query syntax”.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><SPAN LANG="en-GB">CEQL
+has two major features: (1) simplified “wildcards” that make
+specifying patterns less complex than with </SPAN><A CLASS="western" HREF="http://www.regular-expressions.info/"><FONT COLOR="#0000ff"><SPAN LANG="en-GB"><U>regular
+expression</U></SPAN></FONT></A><SPAN LANG="en-US"> </SPAN><SPAN LANG="en-GB">syntax,
+(2) special shorthand for quick access to certain word-annotations,
+i.e. Corpus Workbench positional attributes (p-attributes: these are
+represented by the columns in a vertical input file). These are as
+follows.</SPAN></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-left: 5cm; text-indent: -5cm; margin-bottom: 0cm">
+<FONT FACE="Courier New, monospace">pattern</FONT> search for
+“pattern” in the default word p-attribute</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-left: 5cm; text-indent: -5cm; margin-bottom: 0cm">
+<FONT FACE="Courier New, monospace">_pattern</FONT> search for
+“pattern” in the <I>primary annotation</I></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-left: 5cm; text-indent: -5cm; margin-bottom: 0cm">
+<FONT FACE="Courier New, monospace">{pattern}</FONT> search for
+“pattern” in the <I>secondary annotation</I></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-left: 5cm; text-indent: -5cm; margin-bottom: 0cm">
+<FONT FACE="Courier New, monospace">_{pattern}</FONT> search for
+“pattern” in the <I>tertiary annotation</I></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-left: 5cm; text-indent: -5cm; margin-bottom: 0cm">
+<FONT FACE="Courier New, monospace">{pattern1/pattern2}</FONT> search
+for the combination of “pattern1” and “pattern2” in the
+<I>combination annotation</I> (or <I>combo annotation</I> for short)</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The terms
+<I>primary, secondary, tertiary, combination</I> annotation are a
+generalisation, within CQPweb, of the original BNCweb system, which
+was as follows:</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-left: 5cm; text-indent: -5cm; margin-bottom: 0cm">
+<FONT FACE="Courier New, monospace">word</FONT> search for a given
+word</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-left: 5cm; text-indent: -5cm; margin-bottom: 0cm">
+<FONT FACE="Courier New, monospace">_C5PosTag</FONT> search for a
+given Claws5 (BNC-style) POS tag</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-left: 5cm; text-indent: -5cm; margin-bottom: 0cm">
+<FONT FACE="Courier New, monospace">{Lemma}</FONT> search for a given
+lemma</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-left: 5cm; text-indent: -5cm; margin-bottom: 0cm">
+<FONT FACE="Courier New, monospace">_{SimpleTag}</FONT> search for a
+given “wordclass” from the Oxford Simplified Tagset</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-left: 5cm; text-indent: -5cm; margin-bottom: 0cm">
+<FONT FACE="Courier New, monospace">{Lemma/SimpleTag}</FONT> search
+for the combination of the given lemma and the given wordclass</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-left: 5cm; text-indent: -5cm; margin-bottom: 0cm">
+NB: this is an extension to CEQL originated in BNCweb and
+replicated/generalised in CQPweb.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Because of
+CQPweb’s design goal of user-interface compatibility with BNCweb,
+the system has been set up to make it as easy as possible to use CEQL
+in this “default” way. 
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">However,
+CEQL is fully configurable within CQPweb, so these different syntaxes
+can be used to target whatever p-attributes you like. For example,
+you could make the <B>{pattern}</B> syntax target a semantic tag, or
+make the <B>_pattern</B> syntax target a phonetic transcription.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">But, <I>as
+a general recommendation</I>, it is best to follow this default style
+unless you have a particular reason for doing otherwise, to minimise
+the number of surprises the user will face.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Similarly,
+it is recommended that unless you have a particular reason for doing
+otherwise, you should normally set up your tertiary annotation
+(simple tags) to use the same labels that are available in the Oxford
+Simplified Tagset and the aliases based on it – see below for more
+information.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL START=2>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.85cm; margin-bottom: 0cm">
+	<FONT FACE="Arial, sans-serif"><FONT SIZE=4><B>A short diversion:
+	The Oxford Simplified Tagset</B></FONT></FONT></P>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">In the
+previous section reference was made to the Oxford Simplified Tagset,
+and this will be mentioned at several points in the remainder of this
+document. 
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><SPAN LANG="en-GB">The
+“Oxford Simplified Tagset” (OST) is a label given in retrospect
+to the system of word classes established as an abstraction across
+the categories of the </SPAN><A CLASS="western" HREF="http://ucrel.lancs.ac.uk/claws5tags.html"><FONT COLOR="#0000ff"><SPAN LANG="en-GB"><U>Claws5
+tagset</U></SPAN></FONT></A><SPAN LANG="en-US"> </SPAN><SPAN LANG="en-GB">in
+the BNC-XML edition. They are defined as groupings of Claws5 tags; a
+description is available as part of the BNC </SPAN><SPAN LANG="en-GB"><I>User
+Reference Guide</I></SPAN><SPAN LANG="en-US"> </SPAN><SPAN LANG="en-GB">here:</SPAN></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><A CLASS="western" HREF="http://www.natcorp.ox.ac.uk/docs/URG/codes.html#klettpos"><FONT COLOR="#0000ff"><SPAN LANG="en-GB"><U>http://www.natcorp.ox.ac.uk/docs/URG/codes.html#klettpos</U></SPAN></FONT></A></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">They are
+also sometimes referred to as “lemma-tags”, because, while the
+different forms of a lemma might have different POS tags (e.g.
+different forms of a verb lemma would have VVZ, VVD, VVI and so on in
+Claws5/Claws7 tags) all forms of one lemma would have the same OST
+tag (VERB in this case).</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">In
+principle it is language-independent, because certain classes could
+be left unused, or supplementary classes added, depending on the
+grammatical structure of the language in question.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Because of
+its <I>de facto</I> standardisation as a simple tagset due to the
+wide distribution of the BNC and, especially, the wide usage of
+BNCweb, use of the OST for “simplified” POS annotation in corpora
+is recommended. However, the basic OST as in the BNC-XML edition has
+been extended by the use of mapping tables in the CEQL tertiary
+annotation. See below.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL START=3>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.85cm; margin-bottom: 0cm">
+	<FONT FACE="Arial, sans-serif"><FONT SIZE=4><B>The four types of
+	annotation</B></FONT></FONT></P>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.35cm; margin-bottom: 0cm">
+		<FONT FACE="Arial, sans-serif"><FONT SIZE=3 STYLE="font-size: 13pt"><B>Primary
+		annotation</B></FONT></FONT></P>
+	</OL>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The
+primary annotation is specified when you install a corpus into
+CQPweb, unlike the secondary, tertiary and combination annotations.
+If you have any annotation at all, it is compulsory for one of them
+to be primary – whereas you are entirely at liberty, if you want,
+to leave the secondary, etc., annotations unspecified.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><SPAN LANG="en-GB"><I>The
+recommended setup is for the primary annotation to be a
+part-of-speech tag</I></SPAN><SPAN LANG="en-GB">, at the level of
+detail found in tagsets like </SPAN><A CLASS="western" HREF="http://ucrel.lancs.ac.uk/claws5tags.html"><FONT COLOR="#0000ff"><SPAN LANG="en-GB"><U>Claws5</U></SPAN></FONT></A><SPAN LANG="en-US">
+</SPAN><SPAN LANG="en-GB">or </SPAN><A CLASS="western" HREF="http://ucrel.lancs.ac.uk/claws7tags.html"><FONT COLOR="#0000ff"><SPAN LANG="en-GB"><U>Claws7</U></SPAN></FONT></A><SPAN LANG="en-GB">.</SPAN></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">In CEQL,
+the primary annotation is accessed via the <B>_pattern</B> syntax –
+chosen because it is mnemonic of the now-antiquated encoding of POS
+tags with an underscore separating them from the word-form, thus:
+<FONT FACE="Courier New, monospace">The_ART cat_NN1 sat_VVD on_II
+the_ART mat_NN1</FONT>. 
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Note that
+searches for primary annotation are case-sensitive, even if the
+<I>Simple Query (ignore case)</I> option is selected. The
+case-sensitivity of a “simple query” applies only to matching
+words. This case-sensitivity is, again, an implication of the
+assumption that the primary annotation will be a POS tag – in some
+tagsets, different case forms may have a different meaning.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The
+primary annotation is assumed to be <I>primary</I> in the “most
+important” sense as well as int the “first” sense. It has the
+following special features:</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">It is
+	shown in the “tooltip” box that pops up when the mouse hovers
+	over a concordance hit (assuming JavaScript is enabled in the
+	browser).</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-left: 1.27cm; margin-bottom: 0cm">
+<BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><IMG SRC="CQPweb-CEQL-manual_html_m27fa6619.png" NAME="graphics1" ALIGN=BOTTOM WIDTH=597 HEIGHT=115 BORDER=0></P>
+<P LANG="en-US" CLASS="western" ALIGN=CENTER STYLE="margin-bottom: 0cm">
+<FONT SIZE=2><I>Primary annotation (in this case, Claws7 tag)
+displaying in a concordance.</I></FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">When
+	you sort a concordance, you can thin the results according to the
+	primary-annotation tag found at a particular location.</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" ALIGN=CENTER STYLE="margin-bottom: 0cm">
+<IMG SRC="CQPweb-CEQL-manual_html_2bdb1e3f.png" NAME="graphics2" ALIGN=BOTTOM WIDTH=333 HEIGHT=64 BORDER=0></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT SIZE=2><I>Control
+for specifying primary-annotation tag required at the sort-position</I></FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Likewise
+	you can filter collocation results according to the
+	primary-annotation tag of the collocate.</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" ALIGN=CENTER STYLE="margin-bottom: 0cm">
+<IMG SRC="CQPweb-CEQL-manual_html_100867a7.png" NAME="graphics3" ALIGN=BOTTOM WIDTH=595 HEIGHT=55 BORDER=0></P>
+<P LANG="en-US" CLASS="western" ALIGN=CENTER STYLE="margin-bottom: 0cm">
+<FONT SIZE=2><I>Collocation control allowing “filtering” of
+results.</I></FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The
+	primary annotation can be made visible in the “context” display
+	of a concordance hit by pressing the [show tags] button.</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" ALIGN=CENTER STYLE="margin-bottom: 0cm">
+<IMG SRC="CQPweb-CEQL-manual_html_4f7853d4.png" NAME="graphics4" ALIGN=BOTTOM WIDTH=476 HEIGHT=137 BORDER=0></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT SIZE=2><I>Concordance
+context display with primary annotation visible (Claws7 tags). Hit is
+in bold.</I></FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The
+	“frequency breakdown” function can work across
+	primary-annotation as well as / instead of word-form.</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" ALIGN=CENTER STYLE="margin-bottom: 0cm">
+<IMG SRC="CQPweb-CEQL-manual_html_74f17e0.png" NAME="graphics5" ALIGN=BOTTOM WIDTH=588 HEIGHT=289 BORDER=0></P>
+<P LANG="en-US" CLASS="western" ALIGN=CENTER STYLE="margin-bottom: 0cm">
+<FONT SIZE=2><I>Frequency breakdown across annotation (even though
+original query was wordform-based)</I></FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">So, as a
+general rule, it makes sense to choose as primary annotation the
+tagging that you think your users will need to use the most. Again,
+it is anticipated that for most setups and most corpora, this
+most-useful annotation will be POS tags.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=2>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.35cm; margin-bottom: 0cm">
+		<FONT FACE="Arial, sans-serif"><FONT SIZE=3 STYLE="font-size: 13pt"><B>Secondary
+		annotation</B></FONT></FONT></P>
+	</OL>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The
+secondary annotation is searched for with the <B>{pattern}</B>
+syntax. 
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><I>The
+recommended setup is for the secondary annotation to be a lemma</I>
+(otherwise sometimes referred to as a “headword” or “lexeme”,
+that is, an uninflected or citation form corresponding to a group of
+inflectionally-related word forms).</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Secondary
+annotation searches are case-insensitive, even if the <I>Simple Query
+(case-sensitive)</I> option is selected – since lemmatisation
+software may standardise to lowercase, uppercase, or some mixture.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=3>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.35cm; margin-bottom: 0cm">
+		<FONT FACE="Arial, sans-serif"><FONT SIZE=3 STYLE="font-size: 13pt"><B>Tertiary
+		annotation</B></FONT></FONT></P>
+	</OL>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The
+tertiary annotation is searched for with the <B>_{pattern}</B>
+syntax.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">This part
+of CEQL is critically different from the primary and secondary
+annotations in that the search is mediated by a <I>mapping table</I>.
+Mapping tables represent by far the most complex aspect of CEQL, and
+they are described in detail in a separate section. 
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">In brief:
+Every tertiary annotation must specify, as well as a p-attribute, a
+mapping table. The mapping table defines a list of strings that can
+be searched for in the tertiary annotation. These user-searchable
+strings (called <I>aliases</I>) are “mapped” to the query
+patterns that are actually used in searching the corpus.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">This
+rather complex setup has two purposes. First, it allows multiple
+aliases to be defined for a single value of the p-attribute being
+searched. Secondly, it allows aliases to correspond not to single
+annotation values, but to regular expressions across multiple values.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><I>The
+recommended setup is for the </I><I>tertiary</I><I> annotation to be
+a simplified POS tag</I> (that is, one which tags major word class
+distinctions, but not inflectional or lexico-semantic subcategories
+as many fine-grained POS tagsets do). Furthermore, <I>it is
+recommended that the tags of the Oxford Simplified Tagset be
+available</I> if relevant to the language of the corpus – whether
+the OST tags are used in the underlying p-attribute, or made
+available as aliases to an underlying set of tags that do not comply
+to the OST. Note that it is not necessarily recommended that the OST
+aliases should necessarily correspond to precisely the original OST
+categories developed on the basis of the C5 tagset. Exactly what word
+categories an OST tag like, say, ADJ corresponds to will be dependent
+on (a) the language of the corpus and the form of the underlying
+tagset and (b) the descriptive/theoretical preferences embedded in
+the mapping table used. What is important, from the point of view of
+maintaining consistency of user interface, is that a user typing
+<B>_{ADJ}</B> should get back something that corresponds roughly to
+what they would expect.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">There are
+two ways that this can be accomplished: with a separate p-attribute
+that contains simple POS values, or by targeting the tertiary
+annotation to the full-POS attribute (typically the one used for the
+primary annotation) and using a mapping table that contains regular
+expressions that group the complex POS tags together appropriately.
+Both of these will be illustrated below.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Tertiary
+annotation searches are case sensitive, even if the <I>Simple Query
+(ignore case)</I> option is selected – since, as with normal POS,
+simplified POS tags may potentially make meaningful distinctions
+based on case. 
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=4>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.35cm; margin-bottom: 0cm">
+		<FONT FACE="Arial, sans-serif"><FONT SIZE=3 STYLE="font-size: 13pt"><B>Combination
+		annotation</B></FONT></FONT></P>
+	</OL>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The
+combination annotation (<I>combo</I> for short) is searched for with
+the <B>{pattern1/pattern2}</B> syntax.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">There are
+two different ways that the combo annotation can be exploited,
+depending on <I>whether or not it is linked to a specific p-attribute</I>
+in the indexed corpus.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">If the
+combo annotation <I>is</I> linked to a specific p-attribute, then it
+is expected that the strings in that p-attribute will be of the form
+<B>ATT1_ATT2</B> – that is, a single “combo” field in which two
+distinct attributes are linked together. In this case, a search for
+<B>{pattern1/pattern2}</B> will match tokens where pattern1 matches
+ATT1 <I>and</I> pattern2 matches ATT2. The matching is
+case-insensitive; pattern2 is put through the same mapping table that
+is specified for the tertiary annotation prior to matching against
+ATT2.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">If the
+combo annotation is <I>not</I> linked to a specific p-attribute, then
+the fallback is to use the secondary and tertiary annotations as
+follows: <B>{pattern1/pattern2}</B> is a double-criteria: pattern1
+must match the secondary annotation, and pattern2 must match the
+tertiary annotation. Use of case sensitivity, a mapping table etc.
+are as normal for the secondary and tertiary annotations in this
+case.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Considered
+in isolation these functionality rules may seem moderately arbitrary.
+However, they have been tailored to the recommended usage of the
+combo annotation, which is as follows:</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">If a
+p-attribute is specified, <I>the recommended setup is for the combo
+annotation to be a tagged lemma</I> – that is, for ATT1 to be a
+headword/lemma (as in the secondary annotation) and for ATT2 to be a
+simplified part-of-speech (as in the tertiary annotation).</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">If a
+p-attribute is not specified, then the recommended configuration of
+the combo annotation is the sum of the recommended configurations for
+secondary and tertiary annotations.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">In either
+case, the upshot of the combo annotation in its recommended
+configuration is that it allows searches of this form: <B>{badger/V}</B>
+or <B>{badger/N}</B>, distinguishing the verbal lemma “to badger
+(pester)” from the nominal lemma “badger (stripy animal)”. This
+is useful in English where headwords are uninflected (stem) forms,
+and many headwords may be both nouns and verbs. In other languages,
+it may be less useful. (Note, it is because of this usage in English,
+where different simple POS tags may be deemed as indicating separate
+lemmata from a single root form, that in the BNCweb-style setup of
+CEQL, the combo annotation’s p-attribute is usually called <I>lemma</I>
+whereas the secondary attribute – a lemma – is called <I>hw</I>
+for “headword”. See also the discussion of BNCweb-style
+annotation below.)</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Given the
+two possible ways of using the combo annotation, it might be wondered
+which is better (assuming the recommended configuration). There are
+advantages and disadvantages to using a separate, conjoined
+p-attribute for the combo annotation. The advantages are that (a) it
+makes combo-annotation queries much fast if the corpus is very large,
+and (b) a frequency list of lemma-plus-wordclass is created. CQPweb
+creates a frequency list for each p-attribute in the corpus but not
+for the intersection of any two or more attributes. So if there is a
+separate conjoined p-attribute, you have a frequency list in which
+<I>badger(s)</I>-as-noun and <I>badger(s,ed,ing)</I>-as-verb are
+counted separately – as well as the normal “lemma” list where
+all <I>badger</I> are counted together. The disadvantage of having an
+actual p-attribute for the combo is that the corpus input files must
+be manipulated to add this p-attribute, and once the corpus indexed
+there is a great deal of duplicate information within both the Corpus
+Workbench index and the supporting frequency databases – so more
+disk space is used than is, strictly speaking, necessary.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">So if you
+have limited processor power but lots of disk space, prefer to use an
+actual conjoined p-attribute. If you have lots of disk space but
+limited processor power, prefer the fallback mechanism. If you have
+ample supplies of both, it probably does not make much difference.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=5>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.35cm; margin-bottom: 0cm">
+		<FONT FACE="Arial, sans-serif"><FONT SIZE=3 STYLE="font-size: 13pt"><B>Corpora
+		with minimal or no annotation</B></FONT></FONT></P>
+	</OL>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">For many
+corpora, the ability to access up to four different p-attributes via
+CEQL is overkill – the corpus data may consist solely of word-forms
+in a single column, or simply of word-forms plus either
+part-of-speech or lemma. 
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">If this is
+the case, simply configure the primary and/or secondary annotation on
+its own and leave the others unconfigured (of course, if there is
+absolutely no word-level annotation, then it <I>is not possible</I>
+to configure CEQL because there are no p-attributes to link up with
+the primary, secondary, tertiary etc. annotations).</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">If users
+attempt a query using CEQL syntax for an annotation which has not
+been configured, CQPweb will print an error message and abort – the
+query will not run at all.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL START=4>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.85cm; margin-bottom: 0cm">
+	<FONT FACE="Arial, sans-serif"><FONT SIZE=4><B>Mapping tables</B></FONT></FONT></P>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.35cm; margin-bottom: 0cm">
+		<FONT FACE="Arial, sans-serif"><FONT SIZE=3 STYLE="font-size: 13pt"><B>What
+		is a mapping table?</B></FONT></FONT></P>
+	</OL>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Within
+CEQL, a mapping table is a series of associations, either one-to-one
+or one-to-many, between <I>aliases</I> that may be used in a CEQL
+query of the form <B>_{pattern}</B> or <B>{pattern1/pattern2}</B>
+(that is, a tertiary annotation or second part of a combo
+annotation), and <I>regular expressions</I> that match one or more
+items found on the p-attribute(s) that the tertiary and combo
+annotations are linked to.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Within
+CEQL, the tertiary annotation can only be queried with the use of a
+mapping table. The mapping table thus adds a layer of abstraction or
+indirection between the user and the actual concrete contents of the
+corpus. Direct access to the tertiary annotation <I>is not possible</I>
+through CEQL (it is, of course, possible with CQP syntax). All
+queries referencing the tertiary annotation <I>must</I> go via the
+mapping table – and if no mapping table is defined, then tertiary
+annotation queries are not available. 
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The upshot
+is that <I>what the user enters</I> is separated from <I>what is
+actually there in the corpus</I>. Moreover, the user can <I>only</I>
+enter one of the values that is defined as an alias in the mapping
+table. There is, however, no reason that an alias can’t be the same
+string as the regular expression that it maps to. It is entirely
+legal if, say, VERB is a possible value for the tertiary annotation –
+to create within the mapping table an alias “VERB” which maps
+straightforwardly to the pattern “VERB”.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">When the
+user enters a query of the form <B>_{XXX}</B>, the form XXX is looked
+up in the mapping table. Assuming that XXX is a valid alias, it will
+be replaced in the query by the search pattern (regular expression)
+that that alias is linked to. So, for instance, in the standard
+BNCweb-style setup, the alias “N” is linked to the regular
+expression “SUBST”. So, the query <B>_{N}</B> actually searches
+the relevant p-attribute for the string “SUBST”. If XXX is <I>not</I>
+a valid alias, then the query will be rejected as invalid.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The
+purpose of aliases is linked to the recommended use of the tertiary
+annotation. As noted above, the tertiary annotation is optimised for
+use as a simplified part-of-speech tag. While it is <I>possible</I>
+for simplified tags to be encoded as a separate p-attribute – and,
+indeed, this is the case in the BNCweb-style setup – it is not
+necessary. Assuming that normal/“complex” POS tags are present,
+it is possible to define tertiary-annotation aliases such that they
+map to regular expressions across multiple tags. For instance, let us
+consider the Claws7 tags NN1 (singular common noun), NN2 (plural
+common noun), NP1 (singular proper noun) and NP2 (plural proper
+noun). In a corpus which is required to have a simple-POS tertiary
+annotation, there are two ways to set up CEQL.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">In
+	the vertical-format corpus, generate an extra p-attribute for simple
+	POS (e.g. by adding the simple tag NOUN to every word that has a
+	standard POS tag beginning in N) which is then indexed. Then, create
+	a mapping table where aliases – ideally the <I>de facto </I>standard
+	aliases of the OST and BNCweb – are mapped in a simple way to
+	these simple POS (e.g. mapping the alias “NOUN” to “NOUN”). 
+	</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Do
+	not generate any extra p-attributes; instead, when configuring CEQL,
+	set the tertiary annotation to search the p-attribute containing the
+	“complex”, but using a mapping table that links aliases to
+	appropriate regular expressions across the original tagset. So, in
+	this case, the mapping for nouns would need to be from the alias
+	“NOUN” to the regular expression “N.*”, which matches all
+	four of the tags we are thinking of, i.e. NN1, NN2, NP1, NP2.</P>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Of the
+“default” setups discussed below, the TreeTagger-style setup uses
+the second of these techniques, whereas the BNCweb-style and
+Lancaster-style setups use the first.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">As noted
+in the discussion of the tertiary annotation above, it is recommended
+that mapping tables for simplified part-of-speech tags should
+implement, if at all possible, the category labels and aliases used
+in BNCweb (the Oxford Simplified Tagset). These tags are:</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Aliases
+	used in BNCweb</P>
+	<UL>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">A as
+		a synonym for ADJ</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">ADJ
+		(adjective)&nbsp;</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">ADV
+		(adverb)&nbsp;</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">ART
+		(article)&nbsp;</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">CONJ
+		(conjunction)</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">INT
+		as a synonym for INTERJ</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">INTERJ
+		(interjection)&nbsp;</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">N as
+		a synonym for SUBST</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">PREP
+		(preposition)&nbsp;</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">PRON
+		(pronoun)&nbsp;</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">STOP
+		(punctuation)&nbsp;</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">SUBST
+		(nouns and similar)&nbsp;</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">UNC
+		(unclear / residual)&nbsp;</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">V as
+		a synonym for VERB</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">VERB
+		(verb)&nbsp;</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">$ as
+		a synonym for STOP</P>
+	</UL>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><SPAN LANG="en-GB">The
+OST’s own mappings from the Claws 5 tagset </SPAN><A CLASS="western" HREF="http://www.natcorp.ox.ac.uk/docs/URG/codes.html#klettpos"><FONT COLOR="#0000ff"><SPAN LANG="en-GB"><U>are
+given in the BNC user reference guide</U></SPAN></FONT></A><SPAN LANG="en-GB">.
+From this information, if desired, a mapping table using regular
+expressions could be compiled enabling OST queries to be run across a
+attribute that contained only Claws5 tags. </SPAN>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><SPAN LANG="en-GB">A
+mapping has also been defined from the </SPAN><A CLASS="western" HREF="http://ucrel.lancs.ac.uk/claws7tags.html"><FONT COLOR="#0000ff"><SPAN LANG="en-GB"><U>Claws7
+tagset</U></SPAN></FONT></A><SPAN LANG="en-US"> </SPAN><SPAN LANG="en-GB">to
+the OST, devised in such a way as to maximise consistency of
+behaviour between the Claws5-based OST and the Claws7-based OST; it
+is as follows:</SPAN></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<UL>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Any
+		Claws7 tag beginning with A goes to ART, except APPGE, which goes
+		to PRON.</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Any
+		Claws7 tag beginning with B or C goes to CONJ.</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Any
+		Claws7 tag beginning with D goes to ADJ, except DDQ*, which go to
+		PRON.</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Any
+		Claws7 tag beginning with E goes to PRON.</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Any
+		Claws7 tag beginning with I goes to PREP.</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Any
+		Claws7 tag beginning with J goes to ADJ.</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Any
+		Claws7 tag beginning with M goes to ADJ.</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Any
+		Claws7 tag beginning with N goes to SUBST.</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Any
+		Claws7 tag beginning with P goes to PRON.</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Any
+		Claws7 tag beginning with R goes to ADV.</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Any
+		Claws7 tag beginning with T goes to PREP.</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Any
+		Claws7 tag beginning with U goes to INTERJ.</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Any
+		Claws7 tag beginning with V goes to VERB.</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Any
+		Claws7 tag beginning with X goes to ADV.</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Any
+		Claws7 tag tagging a punctuation mark goes to STOP (these begin
+		with Y in C6, are actual punctuation marks in C7).</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Any
+		Claws7 tag beginning with Z goes to SUBST.</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Anything
+		else (including GE, FO, FU, FW) goes to UNC.</P>
+	</UL>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=2>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.35cm; margin-bottom: 0cm">
+		<FONT FACE="Arial, sans-serif"><FONT SIZE=3 STYLE="font-size: 13pt"><B>Built-in
+		mapping tables</B></FONT></FONT></P>
+	</OL>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">CQPweb
+currently comes with four built-in mapping tables, each for a
+different language; their purpose is to demonstrate the range of
+options available and the flexibility that is possible, while still
+maintaining meaningful uses for the tags defined in OST. They are as
+follows.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Oxford
+	Simplified Tagset (English)&nbsp;(<B>oxford_simplified_tags</B>)</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">This is
+the simplest of the built-in mapping tables, adopted directly from
+BNCweb-style CEQL setup. The mappings it contains are listed above
+(under “Aliases used in BNCweb”). Every OST tag is mapped to
+itself (so “SUBST” to “SUBST”, “ADJ” to “ADJ”, and so
+no), but in addition user-friendly aliases are defined (A, INT, N, V,
+$). 
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Oxford
+	Simplified Tagset (Nepali)&nbsp;(<B>simplified_nepali_tags</B>)</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The
+simplified Nepali tagset exemplifies how the OST may be modified for
+use in a language with structural differences to English, whilst
+still maintaining the familiar user search strings.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><SPAN LANG="en-US">The
+underlying simplified Nepali tags (derived from the “complex”
+</SPAN><A CLASS="western" HREF="http://www.bhashasanchar.org/pdfs/nelralec-wp-tagset.pdf"><FONT COLOR="#0000ff"><SPAN LANG="en-US"><U>Nelralec
+Tagset</U></SPAN></FONT></A><SPAN LANG="en-US">) are similar to the
+OST with some differences: ADJ, N, VERB, ADV, DEM, CONJ, POSTP, PRON,
+PART, PUNC, and MISC. Each of these is defined as an alias to itself.
+The remaining elements from the OST and the BNCweb-style set of
+aliases are defined as alternative aliases for these tags. So “SUBST”
+(an OST tag) is defined as an alias for “N”, “A” as an alias
+of “ADJ”, and “V” of “VERB”. Some OST tags remain
+undefined – notably ART and PREP – but these correspond to
+grammatical categories that do not exist in Nepali. Still, in most
+cases, a user could enter the simplified tags they had learned to use
+with English, and get some meaningful results.</SPAN></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">MyStem
+	Wordclasses&nbsp;(<B>russian_mystem_wordclasses</B>)</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">MyStem is
+a commonly used morphological analyser / lemmatiser for Russian. It
+outputs major word classes that are approximately equivalent, in
+level of granularity, to the OTS.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The CQPweb
+mapping table for MyStem word classes makes available <I>all</I> the
+tags in the underlying p-attribute, but adds aliases for the
+abbreviations of the OST where an equivalent class is clear. So, for
+example, “STOP” is defined as an alias of the regular expression
+“(PUNCT|SENT)” – the two tags PUNCT and SENT each covering a
+subset of the punctuation marks that in the OST are <I>all</I>
+covered by STOP.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">TIGER
+	tagset for German&nbsp;(<B>german_tiger_tag</B>)</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><SPAN LANG="en-US">The
+underlying p-attribute in this case actually contains just the tags
+of the </SPAN><A CLASS="western" HREF="http://www.ims.uni-stuttgart.de/projekte/corplex/TagSets/stts-table.html"><FONT COLOR="#0000ff"><SPAN LANG="en-US"><U>STTS
+tagset</U></SPAN></FONT></A><SPAN LANG="en-US">; the key factor about
+their use in the </SPAN><A CLASS="western" HREF="http://www.ims.uni-stuttgart.de/projekte/TIGER/TIGERCorpus/"><FONT COLOR="#0000ff"><SPAN LANG="en-US"><U>TIGER
+corpus</U></SPAN></FONT></A><SPAN LANG="en-US"> (for which this
+mapping table was devised) is that </SPAN><SPAN LANG="en-US"><I>full</I></SPAN><SPAN LANG="en-US">
+TIGER-format POS-tags </SPAN><SPAN LANG="en-US"><I>also</I></SPAN><SPAN LANG="en-US">
+contain morphological (inflectional) information, so in this context
+the bare STTS tags are a “simple” POS tag, even though the STTS
+tagset may be considered a “complex” tagset on its own terms.</SPAN></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">There are
+two major elements in the TIGER mapping. Firstly, every tag in the
+STTS tagset is defined as an alias for itself, giving access to the
+underlying STTS tags in this p-attribute. Secondly, a set of
+alias-to-regular-expression mappings are defined to make some of the
+main OST tags meaningful in terms of groupings across the STTS tags,
+as follows:</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Regular
+	expression mappings across STTS tags in the TIGER corpus setup</P>
+	<UL>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">&quot;ADJ&quot;
+		=&gt; &quot;ADJ.*&quot;</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">&quot;SUBST&quot;
+		=&gt; &quot;N.*&quot;</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">&quot;NOUN&quot;
+		=&gt; &quot;N.*&quot;</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">&quot;VERB&quot;
+		=&gt; &quot;V.*&quot;</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">&quot;N&quot;
+		=&gt; &quot;N.*&quot;</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">&quot;V&quot;
+		=&gt; &quot;V.*&quot;</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">&quot;PRON&quot;
+		=&gt; &quot;P.*&quot;</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">&quot;ADP&quot;
+		=&gt; &quot;AP.*&quot;</P>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">&quot;AUX&quot;
+		=&gt; &quot;VA.*&quot;</P>
+	</UL>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">So, for
+instance, the STTS tagset has two tags for adjectives – ADJA for
+attributive and ADJD for predicative adjectives. The ADJ alias maps
+to a regular expression which would match <I>both</I> these tags.
+Similarly, the NOUN and N aliases map to a regular expression which
+will capture all three STTS noun tags (NE, NN, and NNE).</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT COLOR="#0070c0"><B>[
+To be added to the code and then documented here:
+OST-simulators-by-regex from Claws5, Claws7, and TreeTagger output ]</B></FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">All the
+“built in” mapping tables are contained within the code of
+CQPweb. However, they are not available for use by default. They are
+activated by the following procedure:</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Go to
+	“Admin control panel”</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Click
+	on the “Mapping tables” option under “Misc” on the menu</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Scroll
+	down to the table headed “Built-in mapping tables”</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Click
+	on the button that says “Click here to regenerate built-in mapping
+	tables”</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Once the
+built-in mapping tables have been regenerated, they are available for
+use in CEQL configuration, but their underlying code can also be
+examined within the admin interface. This can be useful as a
+demonstration of how mapping tables should be entered into the system
+– the format of mapping tables is explained below, but examples are
+always helpful.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">To view
+the code of the built-in mapping tables:</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Go to
+	“Admin control panel”</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Click
+	on the “Mapping tables” option under “Misc” on the menu</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Click
+	on the link that says “Click here to view all stored mapping
+	tables”</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">See,
+	as well as the names, handles and code for the built-in mapping
+	tables, the details of any mapping tables you may have added
+	yourself.</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=3>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.35cm; margin-bottom: 0cm">
+		<FONT FACE="Arial, sans-serif"><FONT SIZE=3 STYLE="font-size: 13pt"><B>Creating
+		additional mapping tables</B></FONT></FONT></P>
+	</OL>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><SPAN LANG="en-GB"><B>Step
+1</B></SPAN><SPAN LANG="en-GB">: to create a mapping table, you must
+devise a list of alias-to-regular-expression mappings (see the
+sections above for background on these mappings).</SPAN></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Mapping
+tables must be expressed in a particular format. (If you know the
+Perl scripting language, it may interest you to know that the format
+is that of a Perl hash table.) The full definition of the mappings
+within a mapping table, laid out in the correct format, will be
+described here as the “code” of that mapping table.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Each
+mapping has the following form:</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT FACE="Courier New, monospace">&quot;ALIAS&quot;
+=&gt; &quot;SEARCH TERM&quot;</FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><SPAN LANG="en-GB">where
+</SPAN><SPAN LANG="en-GB"><I>ALIAS</I></SPAN> <SPAN LANG="en-GB">is
+what the user enters, and </SPAN><SPAN LANG="en-GB"><I>SEARCH TERM</I></SPAN>
+<SPAN LANG="en-GB">is what is actually searched for. This can be an
+actual value that is present on the p-attribute that the mapping
+table relates to, or it can be a regular expression that matches
+multiple annotations found on this p-attribute. Note also the
+quotation marks must be “straight quotes” not “curly (or smart)
+quotes”. If you use the latter style of quotation marks, it won’t
+work. If you want to include single or double quotation marks within
+the aliases or regular expressions, they must be escaped with a
+backslash.</SPAN></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">For
+example:</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT FACE="Courier New, monospace">&quot;V&quot;
+=&gt; &quot;VERB&quot;</FONT></P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">A
+	simple mapping creating an alias for the tag VERB.</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT FACE="Courier New, monospace">&quot;V&quot;
+=&gt; &quot;V.*&quot;</FONT></P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">A
+	mapping that makes the single letter V function as an alias that
+	will, ultimately, match any tag beginning with V on the relevant
+	p-attribute.</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><SPAN LANG="en-GB">The
+mappings within a mapping table, all of the form above, are placed
+one after the other, separated by commas. Note there must be </SPAN><SPAN LANG="en-GB"><I>no
+comma </I></SPAN><SPAN LANG="en-GB">after the </SPAN><SPAN LANG="en-GB"><I>last</I></SPAN>
+<SPAN LANG="en-GB">mapping in the list. Finally, the entire mapping
+table is surrounded by a pair of braces. The form of a mapping table
+containing N mappings is, then, something like this:</SPAN></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT FACE="Courier New, monospace">{</FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-left: 1.27cm; margin-bottom: 0cm">
+<FONT FACE="Courier New, monospace">&quot;ALIAS 1&quot; =&gt; &quot;SEARCH
+TERM 1&quot;,</FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-left: 1.27cm; margin-bottom: 0cm">
+<FONT FACE="Courier New, monospace">&quot;ALIAS 2&quot; =&gt; &quot;SEARCH
+TERM 2&quot;,</FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-left: 1.27cm; margin-bottom: 0cm">
+<FONT FACE="Courier New, monospace">&quot;ALIAS 3&quot; =&gt; &quot;SEARCH
+TERM 3&quot;,</FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-left: 1.27cm; margin-bottom: 0cm">
+<FONT FACE="Courier New, monospace">[...]</FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-left: 1.27cm; margin-bottom: 0cm">
+<FONT FACE="Courier New, monospace">&quot;ALIAS N MINUS 1&quot; =&gt;
+&quot;SEARCH TERM N MINUS 1&quot;,</FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-left: 1.27cm; margin-bottom: 0cm">
+<FONT FACE="Courier New, monospace">&quot;ALIAS N&quot; =&gt; &quot;SEARCH
+TERM N&quot;</FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT FACE="Courier New, monospace">}</FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">You are
+strongly recommended to keep a copy of your mapping table offline
+somewhere, say in a plain text file, to avoid losing the work you put
+into composing it if something goes amiss in the CQPweb database! 
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><B>Step 2</B>:
+To enter your own mapping table into the system, follow this
+procedure:</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Go to
+	“Admin control panel”</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Click
+	on the “Mapping tables” option under “Misc” on the menu</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">See a
+	form with three slots: one for the handle of the mapping table, one
+	for a descriptive title, and one for the code.</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Complete
+	all three slots.</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Click
+	on the “Create mapping table!” button.</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0cm">As noted above, the
+CEQL tertiary and combo annotations, because they make use of mapping
+tables that define all the possible searches that users are allowed
+to input, are not really suitable for linking to p-attributes that
+can have an indefinite number of different values. They are optimised
+for p-attributes like simple POS, where every word has one of a
+finite (probably small) set of possible values, all of which can be
+specified. 
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><SPAN LANG="en-GB">That
+said, it is certainly not compulsory, when designing your own mapping
+table, to make every tag in the underlying tagset searchable. Any
+</SPAN>tags which cannot be matched by at least one of the regular
+expressions in the “target” half of your mapping will, simply,
+not be accessible via the tertiary annotation syntax <B>_{pattern}</B>.
+For instance, if you don’t specify a mapping that leads to the tag
+“XX” (either verbatim or via a possible regular expression
+match), it would then not be possible to search for words that have
+the tag “XX” using the form <B>_{XX}</B>. 
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Neither is
+it compulsory to make use of the flexibility granted by aliases. If
+you just want users to have direct access to the underlying values of
+the p-attribute to which the tertiary annotation syntax is linked,
+all you need is a mapping table with one mapping for each possible
+tag on that p-attribute, mapping it to itself.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL START=5>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.85cm; margin-bottom: 0cm">
+	<FONT FACE="Arial, sans-serif"><FONT SIZE=4><B>How to configure CEQL</B></FONT></FONT></P>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.35cm; margin-bottom: 0cm">
+		<FONT FACE="Arial, sans-serif"><FONT SIZE=3 STYLE="font-size: 13pt"><B>Linking
+		secondary, tertiary and combo annotations to p-attributes</B></FONT></FONT></P>
+	</OL>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The
+procedure for linking CEQL annotations to p-attributes is simple. 
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Log
+	<SPAN LANG="en-GB">on as an administrator, and go to the main query
+	page for the corpus you want to work with</SPAN></P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Click
+	on “Manage annotation” – under “Admin tools” in the menu</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><SPAN LANG="en-GB">At
+	the bottom of the page is a form for managing metadata on each
+	p-attribute. </SPAN><SPAN LANG="en-GB"><I>This is not relevant to
+	CEQL</I></SPAN><SPAN LANG="en-GB">. The part of the page that
+	matters for CEQL is at the top of the screen, and looks like this:</SPAN></P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" ALIGN=CENTER STYLE="margin-bottom: 0cm">
+<IMG SRC="CQPweb-CEQL-manual_html_5f5ec79c.png" NAME="graphics6" ALIGN=BOTTOM WIDTH=597 HEIGHT=283 BORDER=0></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT SIZE=2><I>CEQL
+setup controls (example for a Nepali corpus)</I></FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Each
+	dropdown box except the fourth lists all the available p-attributes
+	in the indexed corpus.</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" ALIGN=CENTER STYLE="margin-bottom: 0cm">
+<IMG SRC="CQPweb-CEQL-manual_html_2f19cdcd.png" NAME="graphics7" ALIGN=BOTTOM WIDTH=196 HEIGHT=119 BORDER=0></P>
+<P LANG="en-US" CLASS="western" ALIGN=CENTER STYLE="margin-bottom: 0cm">
+<FONT SIZE=2><I>Dropdown listing available p-attributes</I></FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Use
+	these to link each CEQL annotation format that you wish to a
+	p-attribute.</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Note
+	that changing the primary annotation affects <I>all the uses </I>of
+	the primary annotation outlined in the section describing the
+	different purposes for which it is treated as the most important.</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">You
+	can link more than one CEQL annotation format to the same
+	p-attribute if you want. One typical reason to do this would be if
+	you had only one POS p-attribute, which was both the primary and
+	tertiary annotation (but with a mapping table making the tertiary
+	annotation act as a simplified tag: see above),.</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">If
+	you want to leave one or more CEQL annotation formats unlinked to
+	any p-attribute, select the option “Not in use in this corpus”</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">“Not
+	in use in this corpus” is the default value which will be set
+	before you configure the CEQL.</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">When
+	you are done, press “Update annotation settings”.</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=2>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.35cm; margin-bottom: 0cm">
+		<FONT FACE="Arial, sans-serif"><FONT SIZE=3 STYLE="font-size: 13pt"><B>Linking
+		a mapping table to the tertiary annotation</B></FONT></FONT></P>
+	</OL>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">This is
+done using the same form explained in the previous section.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The
+	fourth dropdown lists the available mapping tables</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">You
+	should see the built-ins, if you have regenerated them, plus any you
+	have loaded in yourself.</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" ALIGN=CENTER STYLE="margin-bottom: 0cm">
+<IMG SRC="CQPweb-CEQL-manual_html_m1e9e450e.png" NAME="graphics8" ALIGN=BOTTOM WIDTH=237 HEIGHT=113 BORDER=0></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT SIZE=2><I>Dropdown
+listing available mapping tables.</I></FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Select
+	the mapping table you wish to use, and then press “Update
+	annotation settings”</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">If
+	you do not wish to specify a mapping table – for instance, if you
+	are not using the tertiary and combo annotations – then it can be
+	set to “Not in use in this corpus”</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Note
+	that if you select a p-attribute for the tertiary annotation, as
+	above, but do not select a mapping table, all queries using the
+	tertiary annotation will result in a CEQL syntax error – <I>but
+	there will be no warning on the “Manage annotation” page</I>!</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL START=6>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.85cm; margin-bottom: 0cm">
+	<FONT FACE="Arial, sans-serif"><FONT SIZE=4><B>The three “normal”
+	setups</B></FONT></FONT></P>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Three
+combinations of particular p-attributes and particular wasy in which
+these p-attributes relate to 
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The
+“normal” setups include:</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Specified
+	names for the p-attributes</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Specified
+	associations between CEQL and those p-attributes</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Preferred
+	mapping tables / tertiary annotation tagsets</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">In the
+future, these three will all be available for default setup (so that
+CEQL will be configured at the same time as 
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.35cm; margin-bottom: 0cm">
+		<FONT FACE="Arial, sans-serif"><FONT SIZE=3 STYLE="font-size: 13pt"><B>TreeTagger-style
+		setup</B></FONT></FONT></P>
+	</OL>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><SPAN LANG="en-GB">The
+</SPAN><A CLASS="western" HREF="http://www.ims.uni-stuttgart.de/projekte/corplex/TreeTagger/"><FONT COLOR="#0000ff"><SPAN LANG="en-GB"><U>TreeTagger
+program</U></SPAN></FONT></A><SPAN LANG="en-US"> </SPAN><SPAN LANG="en-GB">outputs
+text in columnar format with part-of-speech tags and lemmata, as
+shown in this example (borrowed from the TreeTagger website).</SPAN></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm; border-top: none; border-bottom: 1px solid #000000; border-left: none; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0cm; padding-right: 0cm">
+<FONT FACE="Courier New, monospace"><B>word pos lemma </B></FONT>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT FACE="Courier New, monospace">The
+DT the </FONT>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT FACE="Courier New, monospace">TreeTagger
+NP TreeTagger </FONT>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT FACE="Courier New, monospace">is
+VBZ be </FONT>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT FACE="Courier New, monospace">easy
+JJ easy </FONT>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT FACE="Courier New, monospace">to
+TO to </FONT>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT FACE="Courier New, monospace">use
+VB use </FONT>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT FACE="Courier New, monospace">.
+SENT .</FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><SPAN LANG="en-GB">Note
+that </SPAN><SPAN LANG="en-GB"><I>pos</I></SPAN><SPAN LANG="en-US">
+</SPAN><SPAN LANG="en-GB">contains Penn Treebank POS tags. This
+three-column format is, of course, also a highly appropriate input
+format for Corpus Workbench. In fact, the example data provided for
+the </SPAN><A CLASS="western" HREF="http://cwb.sourceforge.net/files/CWB_Encoding_Tutorial.pdf"><FONT COLOR="#0000ff"><SPAN LANG="en-GB"><U>Corpus
+Workbench indexing tutorial</U></SPAN></FONT></A><SPAN LANG="en-US">
+</SPAN><SPAN LANG="en-GB">is in this format.</SPAN></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The
+recommended CEQL setup for a TreeTagger-style corpus in CQPweb is as
+follows:</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<UL>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">the
+	primary annotation will be <B>pos</B></P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">the
+	secondary annotation will be <B>lemma</B></P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">the
+	tertiary annotation will be <B>pos</B></P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">the
+	combo annotation will fall back to secondary/tertiary (<B>lemma</B>
+	and <B>pos</B>)</P>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">the
+	mapping table used for the tertiary and combo annotations will map
+	OST-style class handles like “SUBST” or “ADJ” to regular
+	expressions such as “N.*” or “J.*” respectively, and so on.</P>
+</UL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">There is
+not yet a built-in mapping table create simple POS classes by regular
+expressions across the Penn Treebank tagset (<FONT COLOR="#0070c0"><B>but
+this is on the things-to-do list</B></FONT>).</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=2>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.35cm; margin-bottom: 0cm">
+		<FONT FACE="Arial, sans-serif"><FONT SIZE=3 STYLE="font-size: 13pt"><B>BNCweb-style
+		setup</B></FONT></FONT></P>
+	</OL>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The XML
+edition of the BNC has the following format for tokens:</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-left: 1.27cm; margin-bottom: 0cm">
+<FONT FACE="Courier New, monospace">&lt;w&nbsp;c5=&quot;VVD&quot;&nbsp;hw=&quot;finish&quot;&nbsp;pos=&quot;VERB&quot;&gt;finished
+&lt;/w&gt;</FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">In the
+vertical CWB-input format used for BNCweb, this format is transmuted
+to the following:</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm; border-top: none; border-bottom: 1px solid #000000; border-left: none; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0cm; padding-right: 0cm">
+<FONT FACE="Courier New, monospace"><B>word pos hw class lemma</B></FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT FACE="Courier New, monospace">finished
+VVD finish VERB finish_VERB</FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">CEQL was
+initially designed for this kind of input format, and <I>pos</I>, <I>hw</I>,
+<I>class</I> and <I>lemma</I> correspond directly to the primary,
+secondary, tertiary, and combo annotations respectively (note the
+somewhat misleading distinction between the handles <I>hw</I> and
+<I>lemma</I>, already discussed, and the fact that the <I>pos</I>
+p-attribute does not refer to the same information as the <I>pos</I>
+XML-attribute in the original files). 
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The
+mapping table used for <I>class</I> is the standard OST for English
+that is built into CQPweb.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=3>
+		<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.35cm; margin-bottom: 0cm">
+		<FONT FACE="Arial, sans-serif"><FONT SIZE=3 STYLE="font-size: 13pt"><B>Lancaster-style
+		setup</B></FONT></FONT></P>
+	</OL>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><SPAN LANG="en-GB">Lancaster-style
+setup extends the BNCweb-style setup by adding semantic tags from the
+</SPAN><A CLASS="western" HREF="http://ucrel.lancs.ac.uk/usas/"><FONT COLOR="#0000ff"><SPAN LANG="en-GB"><U>USAS
+tagset</U></SPAN></FONT></A><SPAN LANG="en-GB">. Input files look
+like this:</SPAN></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm; border-top: none; border-bottom: 1px solid #000000; border-left: none; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0cm; padding-right: 0cm">
+<FONT FACE="Courier New, monospace"><B>word pos hw semtag class lemma</B></FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT FACE="Courier New, monospace">finished
+VVD finish T2d VERB finish_VERB</FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">USAS
+semantic tags are represented in a regular-expression-friendly format
+that avoid the use of regex metacharacters as part of any semtag. The
+use of <B>+</B> and – in the original tagset is changed to <B>u</B>
+and <B>d</B> (for “up” and “down”). Full stops are replaced
+with colons. Forward slashes are replaced with tildes. The semantic
+tags are not accessible via CEQL but only through full CQP syntax.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The <I>pos</I>
+field represents a Claws6/Claws7 tag rather than a Claws5 tag, as is
+the case in BNCweb.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">Otherwise,
+it all works the same as a BNCweb-style corpus in terms of the links
+between CEQL and the p-attributes. The mapping table used for <I>class</I>
+is the standard OST for English that is built into CQPweb.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">If you
+have input files in this format, you can use the “Use default setup
+for P-attributes” option when indexing the corpus. This will not
+only install all the info for these p-attributes, but also configure
+all the CEQL syntax as well, so no further set up should be
+necessary. <FONT COLOR="#0070c0"><B>Note: this is an
+under-development feature, and the fact that only the Lancaster-style
+is supported is a known limitation. In future we hope to have
+multiple built-in formats, including BNCweb-style and
+TreeTagger-style.</B></FONT></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL START=7>
+	<LI><P LANG="en-US" CLASS="western" STYLE="margin-top: 0.85cm; margin-bottom: 0cm">
+	<FONT FACE="Arial, sans-serif"><FONT SIZE=4><B>Summary</B></FONT></FONT></P>
+</OL>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm">The
+following table summarises the key features of the CEQL annotation
+query formats.</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<TABLE WIDTH=616 CELLPADDING=4 CELLSPACING=0>
+	<COL WIDTH=76>
+	<COL WIDTH=174>
+	<COL WIDTH=77>
+	<COL WIDTH=76>
+	<COL WIDTH=83>
+	<COL WIDTH=79>
+	<TR VALIGN=TOP>
+		<TD WIDTH=76 STYLE="border-top: 1.00pt solid #000000; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0.11cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt"><B>Annotation</B></FONT></P>
+		</TD>
+		<TD WIDTH=174 STYLE="; border-top: 1.00pt solid #000000; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0.11cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt"><B>Syntax</B></FONT></P>
+		</TD>
+		<TD WIDTH=77 STYLE="; border-top: 1.00pt solid #000000; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0.11cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt"><B>Uses
+			mapping table?</B></FONT></P>
+		</TD>
+		<TD WIDTH=76 STYLE="; border-top: 1.00pt solid #000000; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0.11cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt"><B>Case
+			sensitive?</B></FONT></P>
+		</TD>
+		<TD WIDTH=83 STYLE="; border-top: 1.00pt solid #000000; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0.11cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt"><B>Usually
+			used for…</B></FONT></P>
+		</TD>
+		<TD WIDTH=79 STYLE="; border: 1.00pt solid #000000; padding: 0.11cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt"><B>BNCweb-style
+			p-att</B></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=76 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">Word</FONT></P>
+		</TD>
+		<TD WIDTH=174 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT FACE="Courier New, monospace"><FONT SIZE=2 STYLE="font-size: 11pt">pattern</FONT></FONT></P>
+		</TD>
+		<TD WIDTH=77 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">No</FONT></P>
+		</TD>
+		<TD WIDTH=76 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">Optionally</FONT></P>
+		</TD>
+		<TD WIDTH=83 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">Word
+			form</FONT></P>
+		</TD>
+		<TD WIDTH=79 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: 1.00pt solid #000000; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0.11cm">
+			<P LANG="en-US" CLASS="western"><FONT FACE="Courier New, monospace"><FONT SIZE=2 STYLE="font-size: 11pt">word</FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=76 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">Primary</FONT></P>
+		</TD>
+		<TD WIDTH=174 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT FACE="Courier New, monospace"><FONT SIZE=2 STYLE="font-size: 11pt">_pattern</FONT></FONT></P>
+		</TD>
+		<TD WIDTH=77 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">No</FONT></P>
+		</TD>
+		<TD WIDTH=76 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">Yes</FONT></P>
+		</TD>
+		<TD WIDTH=83 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">POS
+			tag</FONT></P>
+		</TD>
+		<TD WIDTH=79 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: 1.00pt solid #000000; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0.11cm">
+			<P LANG="en-US" CLASS="western"><FONT FACE="Courier New, monospace"><FONT SIZE=2 STYLE="font-size: 11pt">pos</FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=76 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">Secondary</FONT></P>
+		</TD>
+		<TD WIDTH=174 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT FACE="Courier New, monospace"><FONT SIZE=2 STYLE="font-size: 11pt">{pattern}</FONT></FONT></P>
+		</TD>
+		<TD WIDTH=77 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">No</FONT></P>
+		</TD>
+		<TD WIDTH=76 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">No</FONT></P>
+		</TD>
+		<TD WIDTH=83 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">Lemma</FONT></P>
+		</TD>
+		<TD WIDTH=79 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: 1.00pt solid #000000; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0.11cm">
+			<P LANG="en-US" CLASS="western"><FONT FACE="Courier New, monospace"><FONT SIZE=2 STYLE="font-size: 11pt">hw</FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=76 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">Tertiary</FONT></P>
+		</TD>
+		<TD WIDTH=174 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT FACE="Courier New, monospace"><FONT SIZE=2 STYLE="font-size: 11pt">_{pattern}</FONT></FONT></P>
+		</TD>
+		<TD WIDTH=77 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">Yes</FONT></P>
+		</TD>
+		<TD WIDTH=76 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">Yes</FONT></P>
+		</TD>
+		<TD WIDTH=83 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">Simple tag</FONT></P>
+		</TD>
+		<TD WIDTH=79 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: 1.00pt solid #000000; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0.11cm">
+			<P LANG="en-US" CLASS="western"><FONT FACE="Courier New, monospace"><FONT SIZE=2 STYLE="font-size: 11pt">class</FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=76 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">Combo</FONT></P>
+		</TD>
+		<TD WIDTH=174 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT FACE="Courier New, monospace"><FONT SIZE=2 STYLE="font-size: 11pt">{pattern1/pattern2}</FONT></FONT></P>
+		</TD>
+		<TD WIDTH=77 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">No/yes</FONT></P>
+		</TD>
+		<TD WIDTH=76 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><FONT SIZE=2 STYLE="font-size: 11pt">Normally:
+			no</FONT></P>
+			<P LANG="en-US" CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">Fallback:
+			no/yes</FONT></P>
+		</TD>
+		<TD WIDTH=83 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0cm">
+			<P CLASS="western"><FONT SIZE=2 STYLE="font-size: 11pt">Lemma +
+			simple tag joined by _</FONT></P>
+		</TD>
+		<TD WIDTH=79 STYLE="; border-top: none; border-bottom: 1.00pt solid #000000; border-left: 1.00pt solid #000000; border-right: 1.00pt solid #000000; padding-top: 0cm; padding-bottom: 0.11cm; padding-left: 0.11cm; padding-right: 0.11cm">
+			<P LANG="en-US" CLASS="western"><FONT FACE="Courier New, monospace"><FONT SIZE=2 STYLE="font-size: 11pt">lemma</FONT></FONT></P>
+		</TD>
+	</TR>
+</TABLE>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><IMG SRC="CQPweb-CEQL-manual_html_18678810.gif" NAME="graphics9" ALIGN=BOTTOM WIDTH=601 HEIGHT=2 BORDER=0></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-top: 0.18cm; margin-bottom: 0.18cm">
+<FONT COLOR="#808080"><FONT FACE="Verdana, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">CQPweb
+v2.13 © 2008-2010 – documentation by Andrew
+Hardie,</FONT></FONT></FONT><FONT COLOR="#808080">&nbsp;</FONT><A CLASS="western" HREF="mailto:andrewhardie@user.ssourceforge.net"><FONT COLOR="#0000ff"><FONT FACE="Verdana, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><U>andrewhardie@users.sourceforge.net</U></FONT></FONT></FONT></A></P>
+<P LANG="en-US" CLASS="western" STYLE="margin-bottom: 0cm"><BR>
+</P>
+</BODY>
+</HTML>

@@ -1,0 +1,85 @@
+#!/bin/bash
+
+# check that Xcode is installed
+
+if [[ !( -x /usr/bin/gcc && -x /usr/bin/flex && -x /usr/bin/bison ) ]]
+then
+    echo "You must install the Xcode suite (available from Apple) in order to compile CWB from source."
+    exit
+fi
+
+readline_check=`instutils/find_readline.perl --prefix`
+
+if [[ -f /opt/local/lib/libglib-2.0.dylib || -f /opt/local/lib/libglib-2.0.a || (-x /opt/local/bin/port && !(-f /usr/local/lib/libglib-2.0.dylib || -f /usr/local/lib/libglib-2.0.a)) ]]
+then
+    echo "External libraries seem to be provided by MacPorts (/opt/local)"
+    if [[ !(-f /opt/local/lib/libglib-2.0.dylib || -f /opt/local/lib/libglib-2.0.a) ]]
+    then
+        echo " *** cannot find external GLib2 library (libglib-2.0) ***"
+        echo "Please install Glib2 with 'port install glib2 +universal', then re-run this script."
+        exit
+    fi
+    if [[ !(-f /opt/local/lib/libpcre.dylib || -f /opt/local/lib/libpcre.a) ]]
+    then
+        echo " *** cannot find external PCRE library (libpcre) ***"
+        echo "Please install PCRE with 'port install pcre +universal', then re-run this script."
+        exit
+    fi
+    if [[ ! `echo "$readline_check" | grep /opt/local` ]]
+    then
+        if [[ "$readline_check" && "$readline_check" != "/usr" ]]
+        then
+            echo " *** found non-MacPorts version of GNU Readline library in $readline_check ***"
+            echo "Please uninstall this version, then install GNU Readline with 'port install readline +universal'"
+        else
+            echo " *** cannot find external GNU Readline library (libreadline + libhistory) ***"
+            echo "Please install GNU Readline with 'port install readline +universal', then re-run this script."
+        fi
+        exit
+    fi
+    PLATFORM=darwin-port-core2
+else
+    echo "External libraries seem to be provided by HomeBrew or installed manually (/usr/local)"
+    if [[ !(-f /usr/local/lib/libglib-2.0.dylib || -f /usr/local/lib/libglib-2.0.a) ]]
+    then
+        echo " *** cannot find external GLib2 library (libglib-2.0) ***"
+        echo "Please install Glib2 with 'brew install glib2', then re-run this script."
+        exit
+    fi
+    if [[ !(-f /usr/local/lib/libpcre.dylib || -f /usr/local/lib/libpcre.a) ]]
+    then
+        echo " *** cannot find external PCRE library (libpcre) ***"
+        echo "Please install PCRE with 'brew install pcre', then re-run this script."
+        exit
+    fi
+    if [[ ! `echo "$readline_check" | grep /usr/local` ]]
+    then
+        echo " *** cannot find HomeBrew version of external GNU Readline library (libreadline + libhistory) ***"
+        echo "Please install GNU Readline with 'brew install readline', then re-run this script."
+        exit
+    fi
+    PLATFORM=darwin-brew
+fi
+
+# run as root! su or sudo.
+who=$(whoami)
+
+if [[ "$who" != root ]]
+then
+    echo "This script must be run as root."
+    echo "Please try again: sudo cwb-install-mac-osx"
+    echo "Thanks!"
+    exit
+fi
+
+CONFIG_FLAGS="PLATFORM=$PLATFORM"
+
+make clean $CONFIG_FLAGS \
+&& make depend $CONFIG_FLAGS \
+&& make cl $CONFIG_FLAGS \
+&& make utils $CONFIG_FLAGS \
+&& make cqp $CONFIG_FLAGS \
+&& make install $CONFIG_FLAGS \
+&& make realclean $CONFIG_FLAGS
+
+

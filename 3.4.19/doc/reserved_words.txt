@@ -1,0 +1,88 @@
+(Incomplete) list of special symbols:
+
+comparison:  = != < > <= >= not matches contains
+boolean:     ! & | -> (...) [...]
+regexp:      ? * + {..} | (...)
+query:       :: ;
+file i/o:    > < >>
+variables:   = < += -=
+misc:        .. ... 
+escape:	     `
+
+
+
+List of reserved tokens (must not be used for attributes, built-in functions, ...)
+
+asc
+ascending
+by
+cat
+cd
+collocate
+contains
+cut
+def
+define
+delete
+desc
+descending
+diff
+difference
+discard
+dump
+exclusive
+exit
+expand
+farthest
+foreach
+group
+host
+inclusive
+info
+inter
+intersect
+intersection
+join
+keyword
+left
+leftmost
+macro
+maximal
+match
+matchend
+matches
+meet
+MU
+nearest
+no
+not
+NULL
+off
+on
+randomize
+reduce
+RE
+reverse
+right
+rightmost
+save
+set
+show
+size
+sleep
+sort
+source
+subset
+TAB
+tabulate
+target
+target0 ... target9
+to
+union
+unlock
+user
+where
+with
+within
+without
+yes

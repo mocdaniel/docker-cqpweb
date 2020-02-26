@@ -1,0 +1,61 @@
+=head1 NAME
+
+cwb-atoi - Generate uncompressed binary CWB data file from ASCII numbers
+
+=head1 SYNOPSIS
+
+B<cwb-atoi> [-nl] I<file>
+
+=head1 DESCRIPTION
+
+Reads one integer per line from ASCII file I<file> or from standard input, 
+and writes values to standard output as 32bit integers in network format 
+(the format used by uncompressed CWB binary data files).
+
+
+=head1 OPTIONS
+
+Please note that the CWB utilities do not currently support GNU-style C<--long-options>.
+
+=over 4
+
+=item B<-n>
+
+Convert to network format (big endian, the default).
+
+=item B<-l>
+
+Convert to little endian format.
+
+=item B<-h>
+
+Displays B<cwb-atoi>'s help message, with short information about the usage of the command line options. 
+After the usage message is printed, B<cwb-atoi> will exit.
+
+=back
+
+
+=head1 SEE ALSO
+
+L<cwb-itoa>, L<cqp>, L<cwb-describe-corpus>.
+
+=head1 COPYRIGHT
+
+B<IMS Open Corpus Workbench (CWB)> L<http://cwb.sourceforge.net/>
+
+Copyright (C) 1993-2006 by IMS, University of Stuttgart
+
+Copyright (C) 2007- by the respective contributers (see file F<AUTHORS>)
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details
+(in the file F<COPYING>, or available via WWW at
+L<http://www.gnu.org/copyleft/gpl.html>).
+
+=cut
+

@@ -1,0 +1,108 @@
+##
+## CWB registry entry for corpus DICKENS
+##
+
+
+##
+## Corpus Header
+##
+
+# a long descriptive name for the corpus (not used by the CWB tools)
+NAME "IMS Corpus Workbench Demo Corpus (Novels by Charles Dickens)"
+
+# CWB name of the corpus
+# - must be lowercase (ID for corpus DICKENS is "dickens")
+# - must be identical to filename of registry entry
+ID dickens
+
+# data file directory (relative or absolute path)
+HOME "/corpora/Registry/DemoCorpus/data"
+
+# optional info file (displayed by "info" command in CQP)
+INFO "/corpora/Corpus Data/DemoCorpus/data/.info"
+
+# corpus properties provide additional information about the corpus:
+##:: charset  = "latin1" # change if your corpus uses different charset
+##:: language = en       # insert ISO code for language (de, en, fr, ...)
+
+
+
+##
+## p-attributes (token annotations)
+##
+
+ATTRIBUTE word
+ATTRIBUTE pos
+ATTRIBUTE lemma
+ATTRIBUTE nbc
+
+
+##
+## s-attributes (structural markup)
+##
+
+# <file name=".."> ... </file>
+# (no recursive embedding allowed)
+STRUCTURE file
+STRUCTURE file_name            # [annotations]
+
+# <novel title=".."> ... </novel>
+# (no recursive embedding allowed)
+STRUCTURE novel
+STRUCTURE novel_title          # [annotations]
+
+# <titlepage> ... </titlepage>
+STRUCTURE titlepage
+
+# <book num=".."> ... </book>
+# (no recursive embedding allowed)
+STRUCTURE book
+STRUCTURE book_num             # [annotations]
+
+# <chapter num=".." title=".."> ... </chapter>
+# (no recursive embedding allowed)
+STRUCTURE chapter
+STRUCTURE chapter_num          # [annotations]
+STRUCTURE chapter_title        # [annotations]
+
+# <title len=".."> ... </title>
+# (no recursive embedding allowed)
+STRUCTURE title
+STRUCTURE title_len            # [annotations]
+
+# <p len=".."> ... </p>
+# (no recursive embedding allowed)
+STRUCTURE p
+STRUCTURE p_len                # [annotations]
+
+# <s len=".."> ... </s>
+# (no recursive embedding allowed)
+STRUCTURE s
+STRUCTURE s_len                # [annotations]
+
+# <np h=".." len=".."> ... </np>
+# (2 levels of embedding: <np>, <np1>, <np2>)
+STRUCTURE np
+STRUCTURE np1
+STRUCTURE np2
+STRUCTURE np_h                 # [annotations]
+STRUCTURE np_h1                # [annotations]
+STRUCTURE np_h2                # [annotations]
+STRUCTURE np_len               # [annotations]
+STRUCTURE np_len1              # [annotations]
+STRUCTURE np_len2              # [annotations]
+
+# <pp h=".." len=".."> ... </pp>
+# (2 levels of embedding: <pp>, <pp1>, <pp2>)
+STRUCTURE pp
+STRUCTURE pp1
+STRUCTURE pp2
+STRUCTURE pp_h                 # [annotations]
+STRUCTURE pp_h1                # [annotations]
+STRUCTURE pp_h2                # [annotations]
+STRUCTURE pp_len               # [annotations]
+STRUCTURE pp_len1              # [annotations]
+STRUCTURE pp_len2              # [annotations]
+
+
+# Yours sincerely, the Encode tool.

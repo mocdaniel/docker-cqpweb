@@ -1,0 +1,347 @@
+FULL INSTALL OF CWB AND CQPWEB ON MAC OS X 10.13 High Sierra (Mac Pro Server)
+
+ - instructions should also work for MAC OS X 10.14 Mojave
+ - this assumes that everything is run from an admin account, which can write to /usr/local
+ - we'll sometimes use the environment variable $ADMIN to refer to the name of this account
+ 
+	export ADMIN=`whoami`
+
+
+1) Install XCode from Mac App Store
+
+ - don't forget to (re-)install the command-line tools
+
+	xcode-select --install
+
+ - and agree to the XCode license agreement so you can actually use the tools
+ 
+	sudo xcodebuild -license
+
+
+2) Install HomeBrew package manager
+
+ - from https://brew.sh with the command
+
+	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+
+ - NB: this is a fairly large download; if installation finishes quickly and prints out a message about the XCode license, you forgot the last step in 1)
+
+
+3) Obtain CWB code from SVN repository
+
+ - it's best to check out the entire repository so we have all necessary code as well as the manuals in one place
+
+	svn co http://svn.code.sf.net/p/cwb/code/ CWB
+
+ - $CWB always refers to the root of the SVN source code tree in the commands below
+ 
+	export CWB="`pwd`/CWB"
+
+
+4) Install CWB version 3.5
+
+	cd $CWB/cwb/trunk
+
+ - HomeBrew makes it easy to install the necessary libraries (as listed in the INSTALL file)
+ 
+	brew -v install glib pcre readline
+
+ - now compile CWB using HomeBrew libraries and install in standard location
+
+	make all PLATFORM=darwin-brew SITE=standard
+	make install PLATFORM=darwin-brew SITE=standard
+	make realclean
+
+ - test that CWB/CQP are installed and run properly
+ 
+	cqp -v			     # v3.4.15 or newer
+	cwb-config --prefix  # should be /usr/local
+
+ - create directories for the registry and CWB index files
+ 
+	mkdir -p /usr/local/share/cwb/registry
+	mkdir -p /usr/local/share/cwb/data
+
+
+5) Install CWB/Perl modules
+
+	cd $CWB/perl/trunk
+
+ - CQPweb needs only the basic CWB bundle
+
+	cd CWB
+	perl Makefile.PL
+	make
+	make test
+	sudo make install
+	make realclean
+	cd ..
+
+ - but it's recommended to install everything because they might come in handy
+ - repeat the procedure above for the other subdirectories, i.e.
+		
+	CWB-CL
+	CWB-CQI
+	CWB-Web
+
+
+6) Learn how to install and query CWB corpora
+
+ - work through the Corpus Encoding and CQP Query tutorials
+	
+	cd $CWB/doc/tutorials
+	open CWB_Encoding_Tutorial.pdf CQP_Tutorial.pdf
+
+ - you can also download the tutorials (or read them online) from http://cwb.sourceforge.net/documentation.php#tutorials
+ - but these versions might be slightly outdated
+
+ - for first corpus encoding experiments, you can index the small corpus at
+  
+	$CWB/doc/corpora/encoding_tutorial_data/vss.vrt
+
+ - you might also want to install the DICKENS-1.0 corpus for the CQP tutoria and as a minimal example corpus for CQPweb
+  
+	$CWB/doc/corpora/dickens/release/Dickens-1.0.xml.gz
+
+ - here we've played around in directory ~/Software/corpus_encoding (admin user)
+  
+	cd ~/Software/corpus_encoding
+
+ - there's a shell script for indexing the VSS corpus and a Perl script for the DICKENS corpus
+  
+	cat install_vss.sh
+	cat encode_dickens.perl
+
+ - further documentation for the relevant tools is obtained with
+  
+	man cwb-encode
+	perldoc cwb-make
+	perldoc CWB::Encoder
+	
+
+7) CQPweb installation
+
+ - getting CQPweb to run can be a bit tricky
+ - in my experience it's best to follow the CQPweb admin manual TO THE LETTER
+
+	open $CWB/gui/cqpweb/trunk/doc/CQPwebAdminManual.pdf
+
+ - enable the Apache Web server (this should be persistent after reboot)
+ 
+	sudo apachectl start
+
+ - verify that Apache is actually working: the Web page should say "It works!"
+  
+	open http://localhost/
+
+ - the HTML tree of the Apache Web server is found in
+  
+	cd /Library/WebServer/Documents
+
+ - check out latest CQPweb version from SVN (so we can easily upgrade later)
+
+	sudo svn co http://svn.code.sf.net/p/cwb/code/gui/cqpweb/trunk cqpweb
+
+   CAUTION: at the time of writing, the SVN trunk is in a transitional state between
+   CQPweb 3.2 and 3.3 and cannot be used; please check out the stable 3.2 branch instead:
+
+	sudo svn co http://svn.code.sf.net/p/cwb/code/gui/cqpweb/branches/3.2-latest cqpweb
+
+
+ - adjust permissions, assigning all files to our admin user account
+  
+	sudo chown -R $ADMIN cqpweb
+	sudo chgrp -R _www cqpweb
+	sudo chmod -R g+rwX,o+rX,o-w cqpweb
+	sudo find cqpweb -type d -exec chmod +s {} \+
+
+ - it might be a good idea to add the admin user to the group _www so it's easier to edit files
+
+	sudo dscl . append /Groups/_www GroupMembership $ADMIN
+
+ - we will use $CQPWEB to refer to the CQPweb root directory below
+ 
+	export CQPWEB=/Library/WebServer/Documents/cqpweb
+
+
+8) CQPweb prerequisites
+
+ - Apache, PHP and Perl are already included in Mac OS X
+ - we have already installed CWB and CWB/Perl
+
+ - install R from https://cloud.r-project.org/ (Mac OS X package)
+
+ - install MySQL Community Server from https://dev.mysql.com/downloads/ (.dmg download recommended)
+ - for MySQL 8.0+ it might be a good idea to use "legacy password encryption" in the installation procedure
+ - remember the password for the "root" MySQL user set in the installation! (here: password)
+ - NB: installation adds a preference pane from which MySQL server can be started and stopped
+
+ - we'd like to have the mysql command-line client in the search path, of course
+
+	ln -s /usr/local/mysql/bin/mysql /usr/local/bin
+
+
+9) Setting up PHP (Sec. 1.7)
+
+ - initialize the PHP configuration from defaults and give the admin user access
+  
+	cd /etc
+	sudo cp php.ini.default php.ini
+
+ - here we use TextMate to edit the init file, which can be invoked with the terminal command "mate"
+
+	mate php.ini
+	
+　 TextMate will automatically ask for a password when saving to overwrite the system file 	
+	
+ - for other editor programs, it may be necessary to assign the file to our admin account
+
+	sudo chown $ADMIN php.ini
+
+   (but this breaks TextMate, so don't enter this command if you're going to edit with TextMate)
+
+ - make the following changes on appropriate lines (cf. admin manual Sec. 1.7)
+ - note that some of these may be commented out and you have to remove the # at the start to activate them
+
+	max_execution_time = 600
+	memory_limit = 512M
+	post_max_size = 256M
+	upload_max_filesize = 256M
+	mysqli.allow_local_infile = On
+	mysqli.default_socket = /tmp/mysql.sock
+
+   you may need even higher limits if you want to upload and encode large corpora via the Web interface
+
+
+10) Set up directories and access permissions for CQPweb (Sec. 1.8)
+
+ - it is easiest to collect all CQPweb data directories in /usr/local/share/cqpweb
+ - note that this can also be symbolic links to an external drive if desired
+
+	mkdir /usr/local/share/cqpweb
+ 
+   OR
+   
+	ln -s /Volumes/LaCie/cqpweb /usr/local/share
+
+ - make sure that the Web server has write access to all directories
+
+	cd /usr/local/share/cqpweb
+	for dir in data registry temp upload; do mkdir $dir; done
+	chgrp www data registry temp upload
+	chmod +s data registry temp upload
+	chmod 775 data registry temp upload
+
+
+11) Apache configuration (Sec. 1.9)
+
+ - edit Apache2 configuration files using your favourite text editor (here: TextMate)
+ - if you use another editor than TextMate, you may have to make the files readable by the $ADMIN account as above for php.ini
+
+	mate httpd.conf
+
+ - uncomment the following lines in the configuration file
+
+	LoadModule ssl_module libexec/apache2/mod_ssl.so
+	LoadModule cgi_module libexec/apache2/mod_cgi.so
+	LoadModule php7_module libexec/apache2/libphp7.so
+	
+   (CGI is not required by CQPweb, but by many other Web interfaces)
+
+ - create an additional config file for CQPweb
+ 
+	sudo touch other/cqpweb.conf
+	mate other/cqpweb.conf
+
+ - enter the following lines in this file
+ 
+	<Directory "/Library/WebServer/Documents/cqpweb/">
+		Options FollowSymlinks
+		Require all granted
+	</Directory>
+
+	<Directory "/Library/WebServer/Documents/cqpweb/bin/">
+	  	Require all denied
+	</Directory>
+	<Directory "/Library/WebServer/Documents/cqpweb/lib/">
+	  	Require all denied
+	</Directory>
+
+  - now we have to restart Apache on order to activate the changes, after checking that there are no syntax errors
+  
+	 apachectl -t
+	 sudo apachectl restart
+
+
+12) MySQL configuration (Sec. 1.10)
+
+ - this is poorly explained in the CQPweb manual, which assumes that administrators are experienced in working with MySQL
+ - connect to MySQL as "root", using the password defined in the installation procedure
+ 
+	mysql -u root -p
+
+ - now enter the following SQL commands as explained in the CQPweb manual
+ - you'll want to choose a better password for the cqpweb user account below!
+ 
+	CREATE DATABASE cqpweb DEFAULT CHARSET utf8;
+	CREATE USER cqpweb IDENTIFIED BY 'CPQweb';
+	GRANT ALL ON cqpweb.* TO cqpweb;
+	GRANT FILE ON *.* TO cqpweb;
+	SET PERSIST local_infile = 1;
+	EXIT;
+
+
+13) Final CQPweb setup (Sec. 1.11 + 1.12 + 2.4)
+
+	cd $CQPWEB
+
+ - use the autoconfig.php to set up a basic configuration file
+
+	cd bin
+	php autoconfig.php
+
+ - when prompted, enter the following information; again, you'll want to choose a better password
+ 
+	sysadmin username: 		cqpwebadmin
+	directory for CWB data files: 	/usr/local/share/cqpweb/data
+	directory for CWB registry:	/usr/local/share/cqpweb/registry
+	directory for CQPweb cache: 	/usr/local/share/cqpweb/temp
+	directory for uploaded files: 	/usr/local/share/cqpweb/upload
+	MySQL username:			cqpweb
+	MySQL password:			CPQweb [as above]
+	MySQL database:			cqpweb
+	MySQL hostname:			localhost
+
+ - unfortunately, CQP and R are not on the Web server's standard search path, so we have to edit the configuration file
+ 
+	mate ../lib/config.inc.php
+
+ - add the following two lines anywhere within the file (between <?php and ?>)
+ 
+	$path_to_cwb = '/usr/local/bin';
+	$path_to_r = '/usr/local/bin';
+	
+ - now we can complete the setup of CQPweb
+ 
+	php autosetup.php
+
+   when prompted, enter a password for the cqpwebadmin user (e.g. "CPQweb", or rather a better one)
+
+ - you should now be able to log into CQPweb at
+ 
+	open http://localhost/cqpweb/
+
+
+14) You can later update CQPweb through SVN
+
+	cd $CQPWEB
+	svn update
+
+  - be sure to read the admin manual whether a database upgrade is required and follow the instructions there!
+  - to be on the safe side, always run
+  
+	cd bin
+	sudo -u _www php upgrade-database.php
+
+
+	

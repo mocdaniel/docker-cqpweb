@@ -1,0 +1,62 @@
+##   -*-Makefile-*-
+## 
+##  IMS Open Corpus Workbench (CWB)
+##  Copyright (C) 1993-2006 by IMS, University of Stuttgart
+##  Copyright (C) 2007-     by the respective contributers (see file AUTHORS)
+## 
+##  This program is free software; you can redistribute it and/or modify it
+##  under the terms of the GNU General Public License as published by the
+##  Free Software Foundation; either version 2, or (at your option) any later
+##  version.
+## 
+##  This program is distributed in the hope that it will be useful, but
+##  WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+##  Public License for more details (in the file "COPYING", or available via
+##  WWW at http://www.gnu.org/copyleft/gpl.html).
+
+##
+##  TEMPLATE FOR SITE-SPECIFIC CONFIGURATION FILES
+##
+
+#
+# A) Required settings
+#
+
+## Directory tree where binaries, libraries, header files and man pages will be installed
+PREFIX = /usr/local
+
+## Default registry directory (used unless -r option or CORPUS_REGISTRY variable is set)
+DEFAULT_REGISTRY = $(PREFIX)/share/cwb/registry
+
+## Access permission for installed files (octal code for regular files)
+INST_PERM = 644
+
+#
+# B) Optional settings
+#
+
+## Set owner and group of installed files (default: not changed)
+# INST_USER = ???
+# INST_GROUP = ???
+
+## Additional site-specific compiler and linker flags (e.g. include directories for libraries
+## that are not installed in standard locations).  These settings are _added_ to the platform-wide
+## CFLAGS and LDFLAGS options (if you need to override them, set CFLAGS / LDFLAGS directly).
+# SITE_CFLAGS = 
+# SITE_LDFLAGS = 
+
+## Install locations for different types of files are automatically computed from PREFIX, but
+## you can override any of the defaults shown below:
+# BININSTDIR = $(PREFIX)/bin
+# MANINSTDIR = $(PREFIX)/share/man
+# LIBINSTDIR = $(PREFIX)/lib
+# INCINSTDIR = $(PREFIX)/include/cwb
+
+## Change format of compilation date ("cqp -v"), or lie about the true date (must be quoted string):
+# COMPILE_DATE = "1 April 2007"
+
+
+
+
+

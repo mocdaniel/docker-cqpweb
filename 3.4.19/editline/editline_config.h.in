@@ -1,0 +1,45 @@
+/* editline_config.h.in.  Generated automatically from configure.in by autoheader.  */
+
+
+/* Define if the closedir function returns void instead of int.  */
+#undef CLOSEDIR_VOID
+
+/* Define if you have the ANSI C header files.  */
+#undef STDC_HEADERS
+
+/* Are we compiling under unix */
+#undef SYSTEM_IS_UNIX
+
+/* How do we control the tty */
+#undef HAVE_TCGETATTR
+
+/* Make Arrow keys work */
+#undef ANSI_ARROWS
+
+/* Make local functions static */
+#undef HIDE
+
+/* Define if you have the <dirent.h> header file.  */
+#undef HAVE_DIRENT_H
+
+/* Define if you have the <ndir.h> header file.  */
+#undef HAVE_NDIR_H
+
+/* Define if you have the <sys/dir.h> header file.  */
+#undef HAVE_SYS_DIR_H
+
+/* Define if you have the <sys/ndir.h> header file.  */
+#undef HAVE_SYS_NDIR_H
+
+/* Define if you have the <termio.h> header file.  */
+#undef HAVE_TERMIO_H
+
+/* Define if you have the <walloc.h> header file.  */
+#undef HAVE_WALLOC_H
+
+/* Define if you have the ncurses library (-lncurses).  */
+#undef HAVE_LIBNCURSES
+
+/* Define if you have the termcap library (-ltermcap).  */
+#undef HAVE_LIBTERMCAP
+

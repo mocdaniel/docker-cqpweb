@@ -1,0 +1,99 @@
+##   -*-Makefile-*-
+## 
+##  IMS Open Corpus Workbench (CWB)
+##  Copyright (C) 1993-2006 by IMS, University of Stuttgart
+##  Copyright (C) 2007-     by the respective contributers (see file AUTHORS)
+## 
+##  This program is free software; you can redistribute it and/or modify it
+##  under the terms of the GNU General Public License as published by the
+##  Free Software Foundation; either version 2, or (at your option) any later
+##  version.
+## 
+##  This program is distributed in the hope that it will be useful, but
+##  WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+##  Public License for more details (in the file "COPYING", or available via
+##  WWW at http://www.gnu.org/copyleft/gpl.html).
+
+## NB -- this file is currently a placeholder for what will later be a config file allowing
+## build-with-MinGW actually natively on Win64. 
+
+##
+##  TEMPLATE FOR PLATFORM CONFIGURATION FILES
+##
+
+#
+# A) Required settings
+#
+
+## C compiler: Gnu C compiler (GCC) is highly recommended
+CC = gcc
+
+## C compiler flags (optimisation, warning, additional include directories)
+CFLAGS = -O2 -Wall
+
+## Linker flags (libraries to link against, search path, static linkage)
+LDFLAGS = -lm
+
+## Parser and lexical scanner generator (recommended combination is bison + flex)
+YACC = bison -d -t
+LEX = flex -8
+
+## How to combine object files into a library archive (*.a) and build a table of contents
+## (ranlib is optional, simply set to "echo" or so to skip
+AR = ar cq
+RANLIB = ranlib
+
+#
+# B) Optional (recommended) settings
+#
+
+## Support for command-line editing in CQP (using external GNU Readline)
+# READLINE_LIBS = -L <path_to_readline_libs> -lreadline -lhistory
+# READLINE_DEFINES = -I <path_to_readline_headers>
+
+## Support for text highlighting in CQP (Termcap or Curses library, ncurses is widely available)
+# TERMCAP_LIBS = -lncurses
+# TERMCAP_DEFINES = 
+
+## Include debugging information in binaries (depends on C compiler, only recommended for developers)
+# DEBUG_FLAGS = -g
+
+## If you have a GNU-compatible install program, you can use it instead of the included shell script
+# INSTALL = /usr/bin/install
+
+## Sometimes, extra install flags are needed for files or directories (e.g. preserve modification time on OS X)
+# INSTFLAGS_FILE = ???
+# INSTFLAGS_DIR = ???
+
+## How to update dependencies between source code files ("make depend" requires this option to be set)
+# DEPEND = gcc -MM -MG
+
+## Set this variable if "make depend" doesn't work with standard CFLAGS (e.g. Mac OS X universal binaries)
+# DEPEND_CFLAGS = -O2 -Wall
+
+## How to index source code symbols for Emacs editor ("make tags" requires this option to be set)
+# ETAGS = etags
+
+## CPU architecture and operating system used to name binary releases
+# RELEASE_ARCH = ???  # e.g. i386 or x86_64
+# RELEASE_OS = ???    # e.g. linux-2.6 or osx-10.4
+
+#
+# C) Overrideable defaults (usually not required)
+#
+
+## Additional libraries needed for socket/network support (none required on most platforms)
+# NETWORK_LIBS =
+
+## Some architectures (notably Windows) require binaries to have a special extension
+# EXEC_SUFFIX = .exe
+
+## Override some standard Unix utilities (if special versions are required, defaults are shown below)
+# CHMOD = chmod
+# CP = cp
+# ECHO = echo
+# RM = rm
+# WC = wc -l
+# TAR = tar
+

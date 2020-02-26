@@ -1,0 +1,1058 @@
+==================== BETA RELEASE 1 ====================
+
+Dear Beta Tester,
+
+thank you for your offer to be a last-minute beta tester for the
+upcoming release of the IMS Corpus Workbench. The latest -- and
+hopefully final -- beta version 2.2.b52 is now available from the
+usual FTP directory:
+
+ftp://ftp.ims.uni-stuttgart.de/pub/outgoing/cwb-beta/
+
+Download and install the appropriate CWB release for your platform
+(for most of you this will be the Linux version):
+
+  cwb-2.2.b52-i386-linux.tar.gz
+  cwb-2.2.b52-sparc-solaris.tar.gz
+
+
+Changes from the previous beta version (2.2.b49) concern mostly the
+utility programs (encode, decode, ...) with some minor modifications
+to CQP. However, if you aren't familiar with all the new features of
+CQP (as of 2.2.b49 or at least 2.2.b42), I would like to encourage you
+to download and read the CQP query language tutorial (all downloads
+are from the FTP directory given above), which is available in
+PostScript and PDF formats:
+
+  CQP-Tutorial.2up.ps
+  CQP-Tutorial.2up.pdf
+
+(the PDF version works well for screen reading in Acrobat Reader). The
+tutorial assumes that you have installed the CWB demo corpus
+(DICKENS), and a small German demo corpus (GERMAN-LAW) for the section
+on feature set attributes. Both demo corpora are available as
+compressed tar archives:
+
+  DemoCorpus-0.99.tar.gz
+  DemoCorpus-German-0.9.tar.gz
+
+(unpack each archive and follow the instructions in the README files).
+
+Even if you have already been using recent beta versions of CQP, I
+recommend that you read the tutorial sections on XML support in the
+CQP query language (in which case it is useful to install the demo
+corpus so that you can try the query examples).
+
+
+I would like to ask you to tackle the following beta-testing tasks:
+
+- I have drastically reduced the number of utility programs (tools)
+  shipped with the CWB. If you have been using CWB version 2.2, please
+  check the tools that are no longer part of the distribution and let
+  me know if you feel any of them would still be useful to have. 
+
+- All tools now have extensive help pages specifying which CWB release
+  the tool belongs to. Run all utility programs with the -h option,
+  and read through the help pages. Any typos or passages that should
+  be elaborated? Note that the manpages are hopelessly out of date --
+  I'm going to rewrite them using the help pages as a basis. 
+
+- Use the encoding tools (encode, makeall, ...) on your own corpus
+  data. They are much more user-friendly now and shouldn't clutter the
+  screen as much as they used to. New features and improvements in the
+  encoding process, especially with respect to XML data, are explained
+  in detail below. Try to encode your own corpora (the more XML markup
+  there is, the better) following those examples.
+
+- Run the decode and lexdecode tools and experiment with the (few) new
+  options. In particular, if you are an XSLT aficionado why not write
+  a stylesheet or two for the XML output of "encode -X"? This is what
+  a future XML print mode of CQP might look like. 
+
+- There are two new tools for work with s-attributes in the
+  distribution: s-encode and s-decode. These tools are custom
+  implementations for the TLIPP parser and will not be documented very
+  well. Have a look at the help pages, see if you can figure out what
+  they do, and tell me if you think you can put them to good use.
+
+- Finally, there is one new tool called scan-corpus that I wrote for 
+  a terminology extraction system because both CQP and Perl took ages 
+  to compute frequency distributions for large corpora. I hope that
+  this tool will prove useful for anyone interested in lexicography or
+  terminology. Please have a look at the description and examples
+  provided at the end of this document.
+
+
+I seriously expect to release version 3.0 to the unsuspecting :o)
+public in about two weeks' time. Any bug reports, comments,
+suggestions, etc. before that deadline will be highly appreciated.
+After the release, they are still always welcome, of course.
+
+Thanks in advance for your help!
+
+Stuttgart, 2 Nov 2001,
+Stefan Evert.
+
+
+
+======================================================================
+
+Let us assume that you have an XML corpus which looks as follows 
+
+----------FILE corpus.xml----------------------------
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE corpus SYSTEM "corpus.dtd">
+<!-- some comments -->
+
+<corpus>
+<text title="Story the first" len="42">
+<s>
+  <np h="PRON">He</np>&apos;s <pp p="in" h="state">in 
+  <np h="state">a state <pp p="of" h="déjà vu">of
+  <np h="déjà vu">déjà vu</np></pp></np></pp>. <br/>
+</s>
+</text>
+</corpus>
+-----------------------------------------------------
+
+Note that characters with a special meaning in XML -- such as the
+apostrophe (') -- have to be written as pre-defined XML entities (such
+as &apos;). However, the corpus file must use the ISO-Latin-1
+encoding, since the common HTML entities for non-ascii characters
+(e.g. &auml;) are not defined in standard XML. The corpus above is a
+valid XML file, which you can check by running it through a
+(non-validating) XML parser.
+
+As you know, the corpus has to be tokenised and converted into a
+one-token-per-line format (which we now call "verticalised" text,
+using the filename extension .vrt). In the verticalised text, XML tags
+(as well as the XML declaration and comments) must appear on separate
+lines. You will also know that you have to remove empty lines, and
+strip leading / trailing blanks. However, if you used an XSLT
+stylesheet, for instance, chances are that you got it wrong for some
+of the lines, as shown in the example below. As real-life corpora tend
+to be fairly large, it is useful to store the .vrt file in compressed
+form (using gzip):
+
+----------FILE corpus.vrt.gz ------------------------
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE corpus>
+<!-- some comments -->
+
+<corpus>
+<text title="Story the first" len="42">
+<s>
+  <np h="PRON">
+He
+</np>
+&apos;s 
+<pp p="in" h="state">
+in 
+  <np h="state">
+a 
+state 
+<pp p="of" h="déjà vu">
+of
+  <np h="déjà vu">
+déjà
+ vu
+</np>
+</pp>
+</np>
+</pp>
+. 
+<br/>
+
+</s>
+</text>
+</corpus>
+-----------------------------------------------------
+
+
+Let us now assume that your registry directory is /corp/reg and that
+you want to store the corpus data in /corp/data. As an experienced CWB
+user, you would probably take the following steps to encode the corpus:
+
+- clean up the data directory
+
+  rm /corp/data/*
+
+- write a registry entry for the corpus by hand
+
+  emacs /corp/reg/corpus
+
+- encode the corpus data, using a pipe from zcat (or gzcat) to
+  decompress the verticalised text on the fly; you would declare
+  s-attributes text, np, pp with -V because they have attribute
+  values, corpus and s with -S because they haven't, and just live
+  with empty tags such as <br/> being inserted as tokens (because
+  the CWB cannot handle empty regions)
+
+  zcat corpus.vrt.gz | encode -d /corp/data \
+		         -V text -V np -V pp -S corpus -S s
+
+  (you will also know that the p-attribute word is declared implicitly
+  and that you mustn't add "-P word" to the encode command)
+
+- run makeall to create an index for the word p-attribute (I assume
+  that you've set $CORPUS_REGISTRY to /corp/reg) and hope there were
+  no errors because they tend to get lost in all the messy screen
+  output
+
+  makeall corpus
+
+- don't bother to run describe-corpus as it just prints the same messy 
+  stuff that makeall did
+
+- you've probably also made it a habit always to compress the encoded
+  corpus data (which is highly recommended for corpora of more than
+  1 million tokens), so you run huffcode and compress-rdx
+
+  huffcode -P word corpus
+  compress-rdx -P word corpus
+
+  then check the manpages because you've once again forgotten exactly
+  which files you're supposed to delete now (and you might be slightly
+  worried by the warning to keep a backup of the original files in
+  case compression went wrong)
+
+- remember not to run makeall again because it wouldn't recognise the
+  compressed index and try to re-build it; which would fail because
+  makeall doesn't recognise the compressed token stream either
+
+Having gone through all these steps, you end up with a considerably
+less than perfect corpus. Here are the worst problems:
+
+1. The XML declaration, comments, and empty tags (<br/>) are inserted
+   as literal tokens; empty lines produce "__UNDEF__" tokens.
+
+2. You didn't really want to store <corpus> as an s-attribute, but
+   this little trick at least kept the <corpus> and </corpus> tags from
+   being inserted as literal tokens. This trick can become a major
+   nuisance, though, if there are a lot of different unwanted XML tags
+   in the source data (giving you dozens of pointless s-attributes in
+   the encoded corpus).
+
+3. Some characters (specifically ',",&,<,>) are written as XML
+   entities. Thus the corpus contains tokens such as &apos;s instead
+   of the more readable 's or &quot; instead of a simple ".
+
+4. Encode did not recognise the <np> tags because they are indented in
+   the .vrt file. There are no noun phrase regions in the encoded
+   corpus, and the <np> tags were inserted as literal tokens with
+   leading whitespace. Yikes!
+
+5. The recursive PPs cannot be stored in an s-attribute. Hence encode
+   implicitly closes the first PP (by inserting a </pp> tag) when it
+   encounters the second, embedded PP. What is actually stored in the
+   s-attribute <pp> is
+
+   <pp> in a state </pp> <pp> of déjà vu </pp>
+
+   rather than the correct structure 
+
+   <pp> in a state <pp> of déjà vu </pp> </pp>
+
+   Warnings about "close tag ... without matching open tag" printed by
+   encode often indicate the presence of nested XML elements.
+
+6. The annotations of <text> and <pp> tags were stored by using -V to
+   encode them, and can be accessed from CQP queries (if you don't
+   know how, look at the explanations in the CQP tutorial). However,
+   the annotations of each tag are encoded as a single string
+   containing all attribute/value pairs. In order to find all PPs with
+   the preposition "of", you have to write a complex regular
+   expression:
+
+   CORPUS> /region[pp, a] :: a.pp = ".*p=\"of\".*";
+
+   (or worse, if there are several element attributes and you want to
+   avoid spurious matches).
+
+Well, it's all different now. All of these problems can be solved by
+using appropriate encode options -- no workarounds or Perl scripts
+required.
+
+The -B option automatically strips leading and trailing blanks from
+input lines and attribute values, and the -s option skips empty input
+lines (note that a whitespace-only line will _not_ be considered empty
+without -B). You can also make encode XML-aware with the -x option:
+XML declarations and comments are ignored, and the pre-defined
+XML-entities (&apos; &quot; &amp; &lt; &gt;) are replaced by the
+corresponding ASCII characters. Since none of these changes are likely
+to affect non-XML text, I recommend that you always call encode with
+the "-xsB" options. 
+  This solves problems 1 (except for the <br/> tags), 3, and 4.
+
+If there are XML tags in the input that you do not want to encode, you
+could use a Perl script or an appropriate grep command to filter them
+from the verticalised text file. A faster and more convenient option
+is to declare them as "null" attributes using -0 flags: XML tags
+declared as null attributes are ignored altogether and will neither be
+stored as s-attribute regions nor be inserted as literal tokens. In
+our example, we declare two null attributes: "-0 corpus -0 br". 
+  This solves problems 1 and 2. 
+
+Let us now look at the problem of embedded NPs and PPs. Since
+s-attribute regions must be non-overlapping and non-recursive,
+embedded regions can only be stored by renaming them depending on the
+level of embedding. The CWB convention is to rename embedded <np>
+Elements to <np1>, <np2>, ..., embedded <pp> elements to <pp1>, <pp2>,
+..., and so on. Maximal phrases are not renamed. This renaming
+procedure is performed automatically by encode for s-attributes
+that are declared to be recursive: "-V np:2" allows two levels of
+embedding (in addition to the maximal phrases), renamed <np1> and
+<np2>. More deeply nested <np> regions will be ignored (a warning is
+issued when the encoding process is completed). It is recommended to
+declare all s-attributes to be recursive. With maximal embedding set
+to 0, no additional s-attributes are created, but the maximal phrases
+are identified and stored correctly ("-P pp:0" would have stored a
+single, correct region: <pp> in a state of déjà vu </pp>).
+  This solves problem 5.
+
+The solution to problem 6 is explained in the CQP tutorial (see the
+section about structural attributes and XML): for each of the element
+attributes in an XML tag, a new s-attribute is declared (again
+following CWB naming conventions). Again, all you have to do is to
+declare the XML attributes when running encode; it will then
+automatically parse the XML tags, create the additional s-attributes,
+and warn about undeclared XML attributes. For instance, to encode the
+<text title=".." len=".."> tags, you would call encode with "-S
+text:0+title+len" (as mentioned above, s-attributes derived from XML
+tags should always be declared recursive). This flag instructs encode
+to store <text> regions _without_ the annotation string, and create
+additional s-attributes named <text_title> and <text_len> (of course,
+the additional s-attributes have annotation even though a -S flag was
+used). If you want to retain the original annotation string from the
+<text ...> tag, you can use "-V" instead of "-S". This may or may not
+be convenient with CQP's kwic display, but makes it easier to
+re-create well-formed XML text from the encoded corpus. A final note:
+if the tags encoded as s-attributes form an XML hierarchy, you should
+always declare them in that order, beginning with the "largest"
+regions. 
+  This solves problem 6.
+
+
+Here is the revised encoding process, which introduces some further
+useful features of encode and demonstrates that the other tools are
+much better-behaved than they used to be. :o)
+
+- clean up the data directory (still necessary, and _very_ important)
+
+  rm /corp/data/*
+
+- encode the corpus data, using the new XML handling facilities
+  explained above; it is no longer necessary to read the input from a
+  pipe, as encode can read gzip-compressed files; if you prefer to
+  declare all p-attributes explicitly, use "-p -" as the first
+  attribute declaration: this keeps encode from automatically
+  declaring the word attribute (NB: it is still necessary that every
+  corpus has a word attribute, otherwise CQP and most of the tools
+  will not work properly!)
+
+  encode -d /corp/data -R /corp/reg/corpus -f corpus.vrt.gz -xsB \
+     -p - -P word  -0 corpus -0 br \
+     -S text:0+title+len -S s -S pp:1+p+h -S np:1+h
+    
+  the -R option instructs encode to write an appropriate registry
+  entry for the corpus to the file /corp/reg/corpus; it is important
+  that you specify an absolute path for the corpus data directory with
+  the -d option; you may want to fill in some additional information
+  (such as the language of the corpus), and you will have to edit the
+  registry entry if you add further attributes at a later time;
+  however, the automatically created registry file contains all
+  information necessary to complete the encoding process and use CQP
+ 
+  note that the "-p - -P word" flags are redundant and were inserted
+  as an example; the main advantage of the "-p -" flag is that it
+  allows you to add s-attributes in a later stage without re-encoding
+  the word attribute (e.g. decode a corpus without NP annotations, 
+  run it through a noun chunker, and re-encode the resulting token
+  stream interspersed with <np> and </np> tags:
+
+  decode -C CORPUS -P word | MyChunker | encode -d ... -p - -S np
+
+- run makeall to create an index for the word p-attribute (again
+  assuming that you've set $CORPUS_REGISTRY to /corp/reg); enjoy the
+  legible screen output and use the -V option to validate the index
+  file after creating it; note that corpus names are now written in 
+  uppercase, just as in CQP -- but the registry entry still has to 
+  be lowercase
+
+  makeall -V CORPUS
+
+  if you run makeall on a large corpus (specifically, when the .corpus
+  file of one or more p-attributes doesn't fit comfortably into your
+  computer's RAM), use the -M option to limit memory usage
+  (some recommended values are -M 40 for a single-user machine with
+  128 MB RAM, -M 128 for a machine with 256 MB RAM, etc.); in that
+  case, the validation pass can take fairly long and you may want to
+  omit the -V option
+
+- run describe-corpus to see a useful summary of the newly encoded
+  corpus (or obtain detailed statistics with the -s option)
+
+  describe-corpus CORPUS
+  describe-corpus -s CORPUS
+
+- always compress the corpus data; the more data the system can fit
+  into its RAM, the faster CQP will run
+
+  huffcode -P word CORPUS
+  compress-rdx -P word CORPUS
+
+  then remove the files that the tools tell you to delete (watch out
+  for lines starting with "!!"); note that the compressed data is
+  validated by default (use the -T option to skip the validation pass)
+
+- run makeall once again to see how it recognises compressed
+  attributes
+
+  makeall CORPUS
+
+======================================================================
+
+Examples of how to use the scan-corpus tool.
+
+The scan-corpus tool extends the frequency information available from
+positional attributes to n-grams and mapping tables. The CWB v2.2
+offered n-gram and maptable attributes. Those are no longer supported
+in version 3.0 because they were put to little practical use, and
+because I believe that such co-occurrence data should be stored in a
+database. Instead, scan-corpus provides a highly efficient way of
+creating n-gram and maptable distributions from a CWB-encoded corpus. 
+
+Here are some examples to get you started:
+
+- For applications in lexicography, it is usually desirable to count
+  occurrences of (lemma,part-of-speech) pairs, so that go (verb) and
+  go (noun) can be treated differently. The following command writes
+  such as (lemma,pos) frequency table for all 'regular' words (-C) in
+  the DICKENS corpus to the compressed text file <lemma-pos.tbl.gz>.
+  Note that the table will contain separate counts for each
+  part-of-speech tag, e.g. NN and NNS. The scan-corpus tool does not
+  support classification of attribute values into more general
+  categories (e.g. noun, verb, ...). This and other specialised tasks
+  including sorting of the results are typically performed by a Perl
+  script applied to the output of scan-corpus.
+
+  scan-corpus -C -o lemma-pos.tbl.gz DICKENS lemma pos
+
+- Obtaining a tri-gram language model based on the part-of-speech tags
+  in the BNC corpus is as simple as this:
+
+  scan-corpus -o trigram.tbl.gz BNC pos+0 pos+1 pos+2
+
+- Regular expressions can be used to restrict the frequency
+  distribution to certain types of words. Assuming that we have a
+  p-attribute <domain> which contains, for every token, the domain of
+  the text the token belongs to, we can obtain domain frequency lists
+  for all lemmas ending in -ing (-C is often useful with lemma and
+  word form attributes):
+
+  scan-corpus -C -o domain.tbl.gz CORPUS lemma=/.+ing/ domain
+
+  If we had just been interested in the corpus frequencies of lemma
+  ending in -ing without their domain distribution, we could have used
+  lexdecode, of course:
+
+  lexdecode -P lemma -p "[a-z]+ing" -cd -f DICKENS
+
+- Consider the task of extracting all adjective+noun pairs from a
+  corpus. Normally, you would use a CQP query and subsequent grouping: 
+
+    DICKENS> A = [pos="JJ.*"] [pos="NN.*"];
+    DICKENS> group A matchend lemma by match lemma;
+
+  For large corpora, this can be extremely tedious (and you may well
+  run out of memory in the process). The scan-corpus tool is much more
+  efficient for this task, and we can use regular expression
+  constraints (namely, pos+0=/JJ.*/ and pos+1=/NN.*/) to simulate the
+  CQP query. However, we do not want to include the particular pos
+  tags in the frequency distribution (since this would distinguish
+  between singular and plural nouns, for instance). Putting a question
+  mark (?) before one of the so-called key specifiers instructs
+  scan-corpus to treat that key as a constraint only:
+
+  scan-corpus -C -o adj-n.tbl.gz DICKENS \
+	      lemma+0 "?pos+0=/JJ.*/" lemma+1 "?pos+1=/NN.*/"
+
+  Note that it is necessary to quote the constraint keys on some
+  platforms (but not on recent versions of Linux) to keep the shell
+  from trying to expand the ? and * wildcards.
+
+======================================================================
+
+
+
+==================== BETA RELEASE 2 ====================
+
+Dear Beta Testers,
+
+thanks for your excellent work. I had hoped that v2.2.b52 would be the
+final beta version, immediately preceding the official release of v3.0.
+Unfortunately -- or, perhaps, fortunately in the long run -- you
+discovered many more bugs and/or problems than I had expected, forcing
+me to put together another "final" beta version. "Release Candidate 2"
+as the professionals might call it. 
+
+If you have a little spare time, please download the new beta and run
+it through the same tests as the previous one. I was able to take up
+most of your suggestions, so you should have fewer problems with it.
+I'd like to make the official release as early in the new year as
+possible.
+
+If anyone is using word list variables, could you please play around
+with the only new feature of this beta version: being able to join
+word lists in order to build some sort of "type hierarchy". E.g. for
+POS tags from the Penn Treebank:
+
+  define $common_noun = "NN NNS";
+  define $proper_noun = "NP NPS";
+
+  define $noun = $common_noun;
+  define $noun += $proper_noun;
+
+Get the idea? BTW, "-=" works as well. 
+
+As usual, you can download the beta version from our FTP directory:
+
+ftp://ftp.ims.uni-stuttgart.de/pub/outgoing/cwb-beta/
+
+"Release Candidate 2" is officially v2.2.b56, so download one of
+
+  cwb-2.2.b56-i386-linux.tar.gz
+  cwb-2.2.b56-sparc-solaris.tar.gz
+
+and install it in the usual way. If you're using the Linux version and
+feel slightly adventurous, why not download the brand-new RPM
+distribution? This will install in /usr/local/bin, /usr/local/lib, ...
+(If you want to install the CWB someplace else you will have to
+download the tar archive and install it manually.)
+
+To install the RPM, download
+
+   cwb-2.2.b56-1.i386.rpm
+
+then login as root and type
+
+   rpm -Uhv cwb-2.2.b56-1.i386.rpm
+
+That's it! RPMs make updating and deinstallation a breeze. You can
+check the installed version with
+
+   rpm -qi cwb
+
+and list all files that have been installed with
+
+   rpm -ql cwb
+
+To install a newer version over the old one, just do
+
+   rpm -Uhv <new version>.rpm
+
+again, and in order to de-install ... no, you wouldn't want to do
+that, now would you? :o)
+
+IMPORTANT NOTICE. The names of the CWB tools have been changed to
+include the prefix "cwb-". So "encode" is now "cwb-encode",
+"makeall" is "cwb-makeall" etc. However, "cqp" and "cqpcl" are still
+the same. When you upgrade to v3.0, you will have to delete the old
+versions of the tools and the corrsponding manpages in order to
+prevent people (or, worse, automatic scripts) from accidentally using
+one of the old programs. 
+
+This modification was suggested by our sysadmin, who complained about
+the generic and sometimes misleading names of the tools. His major
+worries are that it is not obvious that programs called "atoi" or
+"makeall" or "decode" belong to the CWB, and that such names might
+collide with tools from other packages. We think he has a good point
+there, so we have renamed (nearly) everything. CQP ist still "cqp"
+because that's what end-users expect, and because it seems unlikely
+that someone should come up with an equally cryptic name for a
+different program.
+
+The new beta release already uses the new naming conventions, so you
+may have to modify some of your scripts to use the new tools instead
+of the old ones. 
+
+Thanks again, and Merry Christmas!
+Stefan.
+
+-- 
+``I could probably subsist for a decade or more on the food energy
+  that I have thriftily wrapped around various parts of my body.''
+                                                -- Jeffrey Steingarten
+______________________________________________________________________
+C.E.R.T. Marbach                         (CQP Emergency Response Team)
+http://www.ims.uni-stuttgart.de/~evert                  schtepf@gmx.de
+
+
+==================== BETA RELEASE 3 ====================
+
+Dear Beta Testers,
+
+it was almost exactly a year ago that I wrote: "The latest -- and
+hopefully final -- beta version 2.2.b52 is now available ...".  Of
+course, it turned out not to be the last beta version, or "Release
+Candidate", as these semi-penultimate betas seem to be called in
+industry.
+
+Now, again, I hope that we're soon ready for an official release.
+Release Candidates 2 and 3 have undergone relatively thorough testing,
+and there's just one bug report left that I can't explain yet.
+However, enthusiasm once again was stronger than reason and spurred me
+on to add some more features.  Therefore, I had to prepare Release
+Candidate 4 (= beta version 2.2.b72) for at least a quick round of
+beta testing.
+
+As usual, you can download the new beta version from
+
+ftp://ftp.ims.uni-stuttgart.de/pub/outgoing/cwb-beta/index.html
+
+using a web browser.  This page also gives short installation
+instructions and links to some documentation and the demo corpora.
+For Linux users, I recommend the RPM archive.  If you install
+manually, it is sufficient to update the CQP binary as I haven't
+made any major changes to the other programs. 
+
+Below, you will find a description of some new (or previously
+undocumented) features that I would like you to have a look at.
+
+Stefan Evert,
+25 Oct 2002. 
+
+
+======================================================================
+
+I   Anchor labels
+
+Anchor labels are a minor feature that has been available for some
+time, but as far as I can remember I haven't told anyone about it.
+Within a CQP query, the anchor points can be used in label references.
+"match" refers to the beginning of the region that is currently being
+matched, "target" to the current target (once it's been set), and
+"matchend" (which can only be used in the global constraint) to the
+end of the matching region.
+
+Therefore, it should never be necessary to add a label to a pattern at
+one of the anchor points, which saves some space and gives a slight
+improvement in performance.  For instance, to find an NP with a
+certain head lemma, you used to type
+
+  <np> a:[] []* </np> :: a.np_h = "time";
+
+Now, this shortens to
+
+  <np> []* </np> :: match.np_h = "time";
+
+Apart from being able to replace the clumsy 
+
+  ... @a:[...] ... :: a.document = "...";
+
+(that was necessary to set both target and a label on the same
+pattern) with the more concise
+
+  ... @[...] ... :: target.document = "...";
+
+the "match" and "matchend" labels can be particularly useful, since it
+is quite difficult to label the first or last token in a query
+containing disjunctions and/or optional elements. Just think of 
+
+  [pos = "DET"]? [pos = "ADJ"]* [pos = "NN"]; 
+
+or filtering the matches of a complex query by length:
+
+  ... complex query ... :: distabs(match, matchend) >= 10;
+
+
+======================================================================
+
+II   Sorting
+
+This issue was brought up by an e-mail from a user, who wanted to do
+reverse sorting of query results (i.e. sort by the backward spelling
+of words).  I had never used the sort command before (because I had
+never quite worked out its exact syntax and because my first attempts
+with the sort dialog in Xkwic hadn't produced the intended results).
+Looking at the source code, I was surprised to discover that reverse
+sorting had already been implemented but CQP's sort command didn't
+provide an option to activate it (so that it was only accessible from
+Xkwic).
+
+I used this opportunity to change the syntax of the sort command,
+clean up and improve its implementation, and work out the differences
+between internal and external sorting.
+
+Sorting of query results can either be done internally (using CQP's
+built-in code) or externally, using the system's sort command.  By
+default, internal sorting is used.  You can enable external sorting
+with
+
+  set ExternalSort on;
+
+External sorting relies on a POSIX-compliant sort program, which is
+available in the current releases of the Linux and Solaris operating
+systems.  If you have trouble with external sorting, you can try and
+change the sort command call with the ExternalSortCommand option:
+
+  set ExternalSortCmd;
+
+e.g. by substituting "gsort" for "sort" to use the GNU sort program.
+Internal and external sorting should produce exactly the same results,
+as long as you are using the "C" locale (see below). 
+
+The advantages and disadvantages of internal and external sorting are:
+Internal:
+  + well-defined behaviour
+  + no dependence on external programs
+  + does not need temporary disk space
+  - relatively slow for large concordances:
+    usually ok up to 10,000 matches, acceptable up to 100,000 matches;
+    may be slower when sorting on long or very similar keys
+  + can be interrupted with Ctrl-C
+  - language-specific sort order not supported (but options to ignore
+    case and/or diacritics)
+External:
+  + usually very fast, even for large concordances and long or similar
+    sort keys
+  - requires external POSIX-compliant sort program
+  - may require a considerable amount of temporary disk space
+    (in the /tmp directory)
+  - can't be interrupted with Ctrl-C when it does take long
+  - well-defined behaviour only guaranteed when local is set to "C"
+    (environment variable LC_COLLATE or LC_ALL)
+  + can be used for language-specific sorting by setting LC_COLLATE
+    to an appropriate value; you will have to read your system
+    documentation to find out which locale to use, and have to change
+    the locale (and probably restart CQP) when you switch to a
+    different language; when the locale is set, you should never use
+    the %c and %d flags in the sort command.
+
+The sort command should always be applied to a named query result (if
+the named query is omitted, it will operate on Last), which will
+automatically be displayed after sorting.  The following examples
+operate on the named query A (a useful example is a list of around
+10,000 noun phrases, e.g. ``A=/region[np]; reduce A to 10000;'')
+
+The simplest form of the sort command
+
+  sort A;
+
+actually un-sorts the concordance, i.e. it restores the default
+ordering by corpus position.  For any other sort operation, you have
+to specify an attribute on which to sort:
+
+  sort A by word;
+
+will sort the (entire) matches of the named query by their word
+values.  You can also sort by other positional attributes such as
+lemma and pos (note that sorting by pos is considerably slower), which
+only makes sense if you also display the respective attribute. 
+
+The sort command accepts %c and %d flags after the attibute name for
+case- and/or diacritic-insensitive sorting.  The most common sort
+order for a concordance can be obtained with
+
+  sort A by word %cd;
+
+Note how ties are broken first by case/diacritics and then by corpus
+position. Add the keywords "descending" (or "desc") to sort in
+descending order, and "reverse" to sort on backward spelling of the
+matches. 
+
+  sort A by word %cd descending reverse;
+
+Finally, you can control which part of the concordance lines is used
+as a sort key.  To sort on a single token, e.g. the target, type
+
+  sort A by word on target;
+
+You can use any anchor point (match, matchend, target, keyword), and
+add an optional offset in square brackets.  The following examples
+sorts the concordance by the token _preceding_ the match:
+
+  sort A by word on match[-1];
+
+In order to sort on an arbitrary range, the start and end points of
+the range have to be specified as anchors with optional offsets.
+Thus, the default sort key is equivalent to
+
+  sort A by word on match .. matchend; 
+
+and sorting on matches including two tokens of context on each side is
+done with the following command:
+
+  sort A by word on match[-2] .. matchend[2];
+
+Syntax summary of the sort command:
+
+  sort <named query> by <attribute> [ %c | %d | %cd ]
+       [ on <anchor+offset> [ .. <anchor+offset> ] ]
+       [ asc(ending) | desc(ending) ]
+       [ backward ] ;
+
+
+======================================================================
+
+III  Extended XML tags (with values)
+
+If you have worked your way through the CQP query language tutorial,
+you know that you can access the attribute values of XML regions
+through label references (assuming that the corpus was encoded
+properly, following the naming conventions for XML attributes).  For
+instance, to find NPs with the head noun "time" (from chunk
+annotations of the form <np h="time">...</np> in the source text), you
+would run the query
+
+  <np> []* </np> :: match.np_h = "time";
+
+or the much faster, but fairly awkward
+
+  <np> [_.np_h = "time"] []* </np>;
+
+From now on, it is possible to specify such simple constraints
+directly in the start tag, using the conventional name for the XML
+attribute instead of the (unannotated) <np> tag:
+
+  <np_h = "time"> []* </np_h>;
+
+Note that the end tag must be adjusted to maintain the balance (which
+is required for correct matching of XML regions!).  When used in query
+initial position, this form of the query is much more efficient than
+either of the old forms and may save a lot of memory.
+
+The "=" sign may be omitted to give the shorter and perhaps more
+intutive
+
+  <np_h "time"> []* </np_h>;
+
+The extended XML tags support the full regular expression syntax of
+ordinary patterns, including %c, %d, and %l flags as well as the !=,
+(not) matches, and (not) contains operators.  On the German demo
+corpus,
+
+  <np_agr matches "Gen:.:Pl:.*"> []* </np_agr>;
+    
+identifies all noun phrases which are unambiguously genitive plural.
+However, word lists, compiled regular expressions (using the RE()
+operator), and complex Boolean expressions are not supported.  Such
+constraints still have to be evaluated in ordinary patterns, with
+label references to access the XML attributes.
+
+You can use more than one XML tag in a row to specify constraints on
+multiple XML attributes, but remember to add the corresponding end
+tags for balance.  In query initial position, it pays off to put the
+most restrictive condition first:
+
+  <np_h = "gesetz" %c><np_agr matches "Gen:.:Pl:.*"> []* </np_agr></np_h>;
+
+
+======================================================================
+
+The last two sections describe "undocumented" and experimental
+features.  I am not sure whether these work correctly, and they may be
+changed or removed in future releases.  Use at your own risk.  But
+don't be discouraged from playing with those features.  I'm
+particularly interested to hear whether you find them useful (and
+whether certain additions would make them even more useful).
+
+
+IV   Zero-width assertions
+
+The elements from which CQP queries are built can be divided into two
+classes.  On the one hand there are patterns, Boolean expressions
+enclosed in square brackets [...], with each pattern corresponding to
+a single token in the match.  On the other hand, tags (which include
+XML tags and anchors in subqueries) match the empty space between
+two tokens; hence they are also known as zero-width constraints.
+
+Sometimes, it would come in handy to be able to test complex Boolean
+expressions in such zero-width constraints.  This is comparable to the
+global constraint, only that these expressions would be evaluated
+at a specific position within the query rather than at the end.
+
+The solution are zero-width assertions, which behave exactly like
+ordinary patterns, except that they do not "consume" a token.
+Normally, you should only use label references in such zero-width
+assertions (as you have to in the global constraint).  However,
+unqualified attribute references are also accepted and refer to the
+token that an ordinary pattern would match.  For this reason,
+zero-width assertions can also be thought of as lookahead
+constraints. (They are limited to a single token of lookahead,
+though.) 
+
+In the query syntax, zero-width assertions look just like ordinary
+patterns, but they are delimited by [: ... :] instead of just the
+square brackets.  [::] is the zero-width matchall. [::]* is completely
+stupid and entirely your own fault.
+
+I will just describe three applications of zero-width assertions that
+I have found useful (and that provided the rationale for implementing
+them).  The first application are the "localised" global constraints
+mentioned above.  We sometimes use the global constraint to check
+agreement within e.g. noun phrase patterns.  In a German corpus:
+
+  a:[pos="ART"] (b:[pos="ADJA"] [pos="ADJA"]*)? c:[pos="NN"] 
+    :: ambiguity(/unify[agr, a,b,c]) > 0;
+
+This works quite well unless you want to package this query into a
+simple noun phrase macro (and then combine several instances of the
+macro in a larger query).  The macro would have to insert both the
+noun phrase pattern in the correct place and the agreement check in
+the global constraint -- which is impossible.  (It would also have to
+pick different label names for each instance, but that can be
+accomplished with the $$ argument, as you may already know.)  Using a
+zero-width assertion, the noun phrase query becomes 
+
+  a:[pos="ART"] (b:[pos="ADJA"] [pos="ADJA"]*)? c:[pos="NN"] 
+    [: ambiguity(/unify[agr, a,b,c]) > 0 :];
+
+which can easily be wrapped in a macro. 
+
+The second application of zero-width assertions is related to the
+example above: simulating lexical scope for labels.  If you wrapped
+the query above in a macro and used multiple instances of it in a
+single query, e.g.
+
+  /np[] [pos = "VVFIN"] /np[];
+
+the optional b label might still refer to the first NP when agreement
+is checked for the second NP (this happens when the first NP contains
+one or more adjectives, but the second doesn't).  The traditional
+solution is to use different label names for each instance of the
+/np[] macro (which can be computed from the magical $$ argument).
+This would ensure correct results at the cost of introducing
+additional labels (which slow down query evaluation).  However, this
+approach fails when macros are repeated (with *, +, or {..}):
+
+  (/np[]){3};
+
+will use (and hence confuse) the same labels for all three NPs.  For a
+real solution, the scope of the labels must be limited to the body of
+the macro; i.e. they must be reset to the undefined state when the
+whole NP has been matched.  This is easily achieved with a zero-width
+assertion, extending the NP macro's body to
+
+  a:[pos="ART"] (b:[pos="ADJA"] [pos="ADJA"]*)? c:[pos="NN"] 
+    [: ambiguity(/unify[agr, a,b,c]) > 0 :] [: /undef[a,b,c] :];
+
+The third application of zero-width assertions is to add a label or the
+target marker to the start tag of an XML region or to the first token
+of a disjunction:
+
+  ... @[::] <np> []* </np> ... ;
+
+  ... a:[::] ( ... | ... | ... ) ... ;
+
+Of course, you shouldn't use a zero-width assertion in query-initial
+position (e.g. when a query starts with a disjunction), but in that
+situation you can use the "match" anchor and label instead.  
+
+A similiar construction allows you to mark the first token _after_ the
+end of an XML region or disjunction:
+
+  ... <np> []* </np> @[::] ...;
+
+Note that
+
+  ... <np> []* @[::] </np> ...;
+
+will also refer to the first token _after_ the NP (think of the [::]
+as a lookahead constraint to understand why this happens). 
+
+
+======================================================================
+
+V    Built-in string operations
+
+Since about a year, the CWB can handle hierarchical XML annotations
+such as these
+
+  <s> <np> ... (1) ... <pp> .. <np> ... (2) ... </np> </pp> </np> 
+      .... <np> ... (3) ... </np> </s>
+
+reasonably well by renaming embedded regions and splitting XML
+attributes into separate tags. The renaming is carried out
+automatically by cwb-encode, but the user has to know about the naming
+conventions and explicitly request e.g. embedded NPs in a query. 
+
+However, it is almost impossible to reconstruct the full hierarchical
+structure in a query, since only the level of embedding within the
+same type of region is recorded.  There is no information e.g. about
+whether a given NP is embedded in a PP. 
+
+Some time ago, a user suggested to use XPath-like strings (henceforth
+called "paths") to identify the exact position of each region in the
+XML tree.  For instance, the positions marked (1), (2), and (3) above
+could be represented by the paths:
+
+  (1) -> "/s/np<1>"
+  (2) -> "/s/np<1>/pp<1>/np<1>"
+  (3) -> "/s/np<2>"
+
+(2) stands for "an <np> embedded in a <pp> embedded in the first <np>
+in <s>", and (3) stands for "the second <np> embedded in <s>".  These
+paths could either be annotated on the corresponding regions, or as a
+p-attribute on each token to identify its exact position in the syntax
+tree. 
+
+For the examples below, we assume a p-attribute caled "path" and
+labels l1, l2, and l3 set to the tokens at positions (1), (2), and
+(3), respectively.  We can "parse" the token paths with regular
+expression, so
+
+  l1.path = ".*/pp<[0-9]*>/np<[0-9]*>"
+
+would select a token from an NP embedded in a PP (which may be
+further embedded in other regions).  While it is thus possible to
+identify specific positions in the syntax tree, we cannot compare the
+relative positions of two regions or tokens.  For instance, we might
+want to verify that (2) is emebdded in the region of (1); or,
+equivalently, that the path of (1) is a prefix of the path of (2). 
+
+In order to answer such questions, string manipulation functions
+have to be applied to the paths.  I have therefore implemented three
+new built-in functions, which seemed immediately useful to me. 
+
+The function is_prefix(a,b) returns true iff a is a prefix of b,
+so that
+
+  is_prefix(l1.path, l2.path)
+
+verifies that (2) is embedded in the region of (1).  The longest
+common prefix - corresponding to the nearest common ancestor - of two
+paths can be computed with prefix(a,b):
+
+  prefix(l1.path, l2.path)
+
+returns "/s/np<1>", and 
+
+  prefix(l1.path, l3.path)
+
+returns "/s/np", which probably leads to a first serious problem.
+Here, a special function that compares entire "/"-delimited segments
+may be needed.  Finally, minus(a,b) removes the longest common prefix
+of the two paths from a, returning the part of the path were a and b
+differ:
+
+  minus(l1.path, l2.path)
+
+is the empty string (because is_prefix(l1.path, l2.path)), 
+
+  minus(l2.path, l1.path)
+
+is "/pp<1>/np<1>", and
+
+  minus(l1.path, l3.path)
+
+is the problematic "<1>". 
+
+If you are interested in this approach to hierarchical structure,
+you'll just have to play around with the available string manipulation
+functions and see how far you can get.  Suggestions for improved and
+additional functions are welcome.  Perhaps we can turn paths into
+something useful after all. 
+
+
+======================================================================

@@ -1,0 +1,175 @@
+
+DIE MATCHING_STRATEGY VON CQP:
+
+Ab Version cqp-2.2.b21 koennen bei CQP verschiedene Matching Strategies
+eingestellt werden, ab cqp-2.2.b50 sind dies folgende:
+
+	set MatchingStrategy ( traditional | shortest | standard | longest );
+
+Default ist 'default' -- damit ist cqp-2.2.b21 nicht mehr voll kompatibel
+zu aelteren Versionen. Zur Erlaeuterung der verschiedenen Strategien 
+stuetzen wir uns auf folgendes Satzbeispiel
+
+
+	DET ADJ  NN  PP DET  NN   PP DET  NN
+(1)	the old book on the shelf in the room
+
+
+und wenden darauf die Query (DefaultNonbrackAtt == 'pos')
+
+
+(2)	"DET"? "ADJ"* "NN" ("PP" "DET"? "ADJ"* "NN")*
+
+
+an, die ''einfache'' NPs gefolgt von optionalen PPs finden soll. Im folgenden
+werden die Ergebnisse, die (2) unter den verschiedenen Strategien liefert,
+beschrieben.
+
+
+
+	>> 'traditional' <<
+
+CQP ist traditionell auf 'shortest match' ausgerichtet, da die Query-Auswertung
+fuer Anfragen wie 
+
+	[pos = "NN"] []* [pos = "VV"] []* [pos = "PUN"];
+	^^^^^^^^^^^^
+
+konzipiert wurde. Programmtechnisch wurde dies so implementiert, dass zunaechst
+alle moeglichen Startpositionen berechnet werden (das entsprechende Pattern der
+Query ist unterstrichen), also alle [pos="NN"] im Korpus. Von jeder dieser
+moeglichen Startpositionen ausgehend wird die Query als regulaerer Ausdruck
+ausgewertet. Sobald CQP dabei einen Treffer findet, faehrt das Programm mit der
+naechsten Startposition fort. Dadurch werden insbesondere optionale Elemente 
+am rechten Rand einer Query _nie_ ausgewertet: die Queries (3a) und (3b) sind
+aequivalent.
+
+(3a)	"DET" "ADJ" "NN" ("PP" "DET" "ADJ" "NN")?;
+(3b)	"DET" "ADJ" "NN";
+
+Ebenso (4a) und (4b):
+
+(4a)	"NN"+;
+(4b)	"NN";
+
+Stehen nun am linken Rand einer Query optionale Elemente, so koennen mehrere 
+Pattern in der Query Startpositionen entsprechen. In (5) sind die drei
+unterstrichenen Pattern moegliche Startpositionen:
+
+(5)	"DET"? "ADJ"* "NN" "VV" "PUN";
+	^^^^^  ^^^^^  ^^^^
+
+CQP sucht nun ausgehend von jeder dieser Startpositionen das jeweils kuerzeste
+Match -- und findet damit fuer das Muster DET ADJ NN ... im Korpus 3 verschiedene
+Matches. NB Der ''linke Rand'' einer Query entspricht nicht immer dem visuellen
+linken Rand -- durch Disjunktionen koennen optionale bzw. alternative Elemente
+versteckt sein:
+
+	("PP" "DET" | "PPDET"? ) "ADJ"+ "NN";
+	 ^^^^         ^^^^^^^    ^^^^^
+
+Wir geben nun die Matches an, die Query (2) fuer das Beispiel (1) im 
+'traditional'-Mode liefert. Die optionale PP am rechten Rand der Query wird
+nie ausgewertet, es werden lediglich die 3 im Satz enthaltenen NP-Chunks 
+gefunden. Aufgrund der optionalen Pattern am linken Rand werden fuer jede
+NP mehrer Matches zurueckgegeben:
+
+	the old book
+	old book
+	book
+
+	the shelf
+	shelf
+	
+	the room
+	room
+
+	
+
+	>> 'standard' <<
+
+Die 'traditional'-Strategie liefert oft unerwuenschte Ergebnisse und verfaelscht
+statistische Analysen von Anfragen wie (2). Daher wurde jetzt als neue Default-
+Strategie 'standard match' implementiert. Man koennte auch von 'earliest match'
+sprechen, da hier die Auswertung der Query stets mit dem ersten Pattern beginnt.
+Nur wenn dort kein Match gefunden wird, werden weitere Startpositionen herangezogen.
+(Implementierung ist umstaendlicher: Auswertung der Query wie bei 'traditional', 
+dann werden Mehrfach-Matches aus dem Ergebnis entfernt). Eine anschauliche Umschreibung
+der 'standard'-Strategie ist:
+
+	''CQP liefert jeweils die kuerzeste Textstrecke, die eine Query
+	  matcht. Dabei werden optionale Elemente am linken Rand miteinbezogen,
+	  am rechten Rand der Query ausgeschlossen.''
+
+Query (2) liefert bei dieser Strategie fuer (1) die folgenden Ergebnisse:
+
+	the old book
+	the shelf
+	the room
+
+
+
+	>> 'shortest' <<
+
+Der Vollständigkeit halber (und weil es für manche Anfragen,
+insbesondere mit rekursiven XML-Strukturen, ganz praktisch ist) wurde
+auch eine echte 'shortest match'-Strategie implementiert. Query (2)
+liefert hier einfach:
+
+	book
+	shelf
+	room
+
+Was niemanden interessieren wird. Interessant sind dagegen Anfragen
+der Art:
+
+        (<np>|<np1>|<np2>) []+ (</np>|</np1>|</np2>);
+
+die je nach Matching Strategy jeweils die größte ('longest'), die
+kleinste ('shortest'), alle ('traditional'), oder alle echt
+('default') ineinander enthaltenen NPs liefert.
+
+
+
+	>> 'longest' <<
+
+Insbesondere fuer statistische Untersuchungen ist es oft wuenschenswert, _maximale_
+Chunks zu erhalten (d.h. bei einer Query wie (2) werden auf einen NP-Chunk folgende
+PPs als Adjunkte der NP analysiert). Hierfuer wurde die 'longest match'-Strategie
+eingefuehrt, die im Beispiel (1) lediglich eine maximale NP findet:
+
+	the old book on the shelf in the room
+
+Die 'longest'-Strategie sollte mit Bedacht eingesetzt werden. Naive Formulierungen
+mit Matchall-Patterns:
+
+	... []* ... 
+
+koennen schnell extrem lange Rechenzeiten nach sich ziehen. 
+
+
+Linguistisch gesehen wuerde man sich als Resultat von Query (2) alle denkbaren 
+NPs in Satzbeispiel (1) wuenschen, wobei die PPs jeweils entweder als Adjunkt
+einer NP oder als separates Element betrachtet werden:
+
+	the old book
+	the old book on the shelf
+	the old book on the shelf in the room
+	the shelf
+	the shelf in the room
+	the room
+
+Dies ist mit CQP _nicht_ realisierbar, da CQP auf einem ''flachen'' Grammatikmodell
+basiert und insbesondere keine ''Attachment''-Konzept kennt.
+
+
+
+Werden Subcorpora mit 'join' zusammengefuegt, so koennen dadurch erneut ineinander 
+verschachtelte Matches entstehen. Um diesen Effekt fuer Frequenzzaehlungen zu vermeiden, 
+muss explizit
+
+	reduce <Subcorpus> to longest matches;
+
+ausgefuehrt werden.
+
+

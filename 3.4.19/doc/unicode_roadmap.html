@@ -1,0 +1,416 @@
+<h1>Goals</h1>
+
+<ul>
+<li>Full support for <strong><span class="caps">UTF</span>-8</strong> and all <strong><span class="caps">ISO</span>-8859-X</strong> character sets / encodings<ul>
+<li><span class="caps">ISO</span>-8859-1 required for backward compatibility</li>
+<li>8-bit character sets are more compact and allow faster regexp matching<ul>
+<li><span style="color:red" cite="http://">AH</span> Suggestion: make <span class="caps">ISO</span>-8859-X (except for <span class="caps">ISO</span>-8859-1) a secondary goal (most people with non-Latin1 data now have <span class="caps">UTF</span>-8 and it is the Unicode support for which there is currently most demand)</li>
+<li><span style="color:red" cite="http://">SE</span> If we have full <span class="caps">UTF</span>-8 and native <span class="caps">ISO</span>-8859-1 support (without internal conversion to <span class="caps">UTF</span>-8), adding the other <span class="caps">ISO</span>-8859-X charsets should be trivial: only appropriate mapping tables have to be provided (possibly waiting for user contributions and marking the other ones as "not yet implemented")</li>
+</ul></li>
+</ul></li>
+</ul>
+
+<ul>
+<li>Relevant functionality:<ul>
+<li><strong>regular expressions</strong> (including <span class="caps">POSIX </span>character classes and regexp optimiser)</li>
+<li><strong>case/accent-folding</strong> with <code>%c</code> and <code>%d</code> flags (regexp matching as well as <code>sort</code>, <code>count</code> and <code>tabulate</code> commands)</li>
+<li>appropriate <strong>sorting</strong> of query results (ideally using language- and country-specific locales, but any sensible sort order for accented and lowercase/uppercase characters would be ok)</li>
+</ul></li>
+</ul>
+
+<ul>
+<li>Proper input and output handling<ul>
+<li>re-implement character context in kwic output (<code>cat</code> command), where the current implementation counts bytes instead of characters (and may thus break <span class="caps">MBC</span>s in addition to failing to align query matches)</li>
+<li>strings in <span class="caps">CQP </span>queries accept hard-coded latex-style escapes for Latin1 accented characters, which should be deactivated (by default) and replaced by a more general mechanism for entering non-ASCII characters (<code>\xNN</code>, <code>\uNNNN</code>, etc.)</li>
+<li>interactive pager (<code>cat</code>, <code>count</code>, etc.) should automatically be configured for <span class="caps">UTF</span>-8 or <span class="caps">ISO</span>-8859-X character set</li>
+<li>in <span class="caps">UTF</span>-8 mode, all input strings (both interactive input in <span class="caps">CQP </span>and arguments of low-level CL functions) must be validated</li>
+<li>corpus indexing (<code>cwb-encode</code>) also has to make sure that <span class="caps">UTF</span>-8 strings are validated, normalised and sorted properly</li>
+</ul></li>
+</ul>
+
+<ul>
+<li>If possible, keep <strong>source code compilation</strong> and <strong>binary distribution</strong> simple<ul>
+<li>avoid dependencies on large &amp; complex frameworks such as <span class="caps">ICU </span>or Glib (unless they are easy to install and can be included in binary distributions)</li>
+<li>static linking of external libraries, so stand-alone binaries can be distributed</li>
+<li>currently, it is possible to do Universal builds (<code>ppc</code>, <code>i386</code> and <code>x86_64</code> in a single binary) on Mac OS X, which is really nice; this feature would be broken by including non-universal libraries</li>
+</ul></li>
+</ul>
+
+<ul>
+<li>Interactive users might want automatic recoding of input/output data<ul>
+<li>set input and output character sets independently of encoding used by corpus</li>
+<li>otherwise, users would have to reconfigure their terminal window when they activate a new corpus with different encoding in a <span class="caps">CQP </span>session</li>
+<li>this feature is probably difficult to implement (probably using <code>libiconv</code>, but there seem to be lots of compatibility and robustness issues there; <span class="caps">ICU </span>and friends should also offer character set recoding, though)</li>
+<li>probably easier to provide this functionality <em>only</em> in <span class="caps">HLL API</span>s (such as the <code>CWB::CQP</code> module)</li>
+<li><span style="color:red" cite="http://">SE</span> this feature should have a low priority</li>
+</ul></li>
+</ul>
+
+<ul>
+<li>Should the <span class="caps">CQP </span>command syntax allow identifiers with Unicode characters?<ul>
+<li><span class="caps">CQP </span>grammar: attribute names, named query results, etc.</li>
+<li>registry file grammar: attribute names, "long names" of corpora, comments, etc.</li>
+<li><strong>current recommendation</strong> is to allow only simple <span class="caps">ASCII </span>identifiers (most portable, compatible with all supported character sets)</li>
+<li>note that corpus IDs, attribute names and named query results are also used as (parts of) filenames, which may break if they contain non-ASCII characters<ul>
+<li><span style="color:red" cite="http://">AH</span> likewise, in high-level <span class="caps">GUI</span>s (CQPweb, <span class="caps">BNC</span>web) <span class="caps">CQP </span>identifiers can end up within mySQL table names, which likewise may break if they contain non-ASCII characters</li>
+</ul></li>
+</ul></li>
+</ul>
+
+<h1>Glossary</h1>
+
+<ul>
+<li><span class="caps">MBC </span>= multi-byte character (in <span class="caps">UTF</span>-8 encoding)</li>
+<li><span class="caps">HLL </span>= high-level language (Perl, Python, <span class="caps">PHP, </span>etc]</li>
+<li>"character set" and "encoding" are used interchangeably (although this is not formally correct); they always refer to one of the following: <span class="caps">UTF</span>-8, <span class="caps">ISO</span>-8859-X or <span class="caps">ASCII</span></li>
+</ul>
+
+<h1>Implementation steps</h1>
+
+<ol>
+<li>Enforce declaration of encoding with <code>charset</code> corpus property in registry files<ul>
+<li>already implemented; default for missing declaration could be <code>latin1</code> (backward compatibility) or <code>ascii</code> (encourages upgrades)<ul>
+<li><span style="color:red" cite="http://">AH</span> I would prefer the latter as nowadays a non-savvy user&#39;s computer is as likely to produce <span class="caps">UTF8 </span>as Latin1</li>
+<li><span style="color:red" cite="http://">SE</span> Agree, but there should be a transition period until most <span class="caps">CWB </span>users have realise the new default, with big warning if there is no declaration; at a later stage, <code>cwb-encode</code> should refuse to work at all without a charset declaration.</li>
+</ul>
+</li>
+<li><span style="color:red" cite="http://">AH</span> I have added a command-line option for charset declaration to <code>cwb-encode</code>.</li>
+</ul>
+</li>
+<li>Upgrade <strong>regular expression functions</strong> in <code>cl/regopt.c</code> to multi-charset implementation<ul>
+<li>all regexp functionality in the <span class="caps">CWB </span>should already have been encapsulated in <code>CL_Regex</code> objects (check!)<ul>
+<li><span style="color:red" cite="http://">AH</span> There was code in <code>cdaccess.c</code> that duplicated this; it&#39;s now in the <code>CL_Regex</code>. There may be regex and/or other matching code in <span class="caps">CQP. </span></li>
+</ul>
+</li>
+<li>regexp optimiser (<code>cl_regopt_analyse()</code>, <code>cl_regex_match()</code>) should work out of the box for all <span class="caps">ASCII </span>extensions (in particular, <span class="caps">ISO</span>-8859-X and <span class="caps">UTF</span>-8), even if it isn&#39;t aware of <span class="caps">MBC</span>s<ul>
+<li><span style="color:red" cite="http://">AH</span> Some adjustments had to be made because of assumtions made re: metacahracters which aren&#39;t true for <span class="caps">PCRE.</span> These are now done.</li>
+</ul>
+</li>
+<li><code>cl_new_regex()</code> has to make use of charset declaration, which is already part of the <span class="caps">API</span><ul>
+<li><span style="color:red" cite="http://">AH</span> Done. All calls to <code>cl_new_regex</code> have been checked for cases where <code>latin1</code> is hard-coded as its second argument. This has now been removed.</li>
+</ul>
+</li>
+<li>alternative <span class="caps">API</span>: regexp tied to corpus handle, can only be used to match strings from this corpus</li>
+<li><code>cl_regex_match()</code> should validate input strings for correct encoding if possible (esp. important with <span class="caps">UTF</span>-8, to avoid undefined behaviour in library functions)<ul>
+<li><span style="color:red" cite="http://">AH</span> <span class="caps">PCRE </span>can validate <span class="caps">UTF8 </span>strings it has been passed; I have switched this off, on the assumption that strings will be validated at a higher level i.e. upon input to the application. This is an assumption we may need to revisit later. </li>
+<li><span style="color:red" cite="http://">AH</span> All strings are now validated either (a) when they are cwb-encode&#39;d or (b) when the query enters <span class="caps">CQP.</span></li>
+<li><span style="color:red" cite="http://">AH</span> suggests a new <span class="caps">API </span>function <code>int cl_string_validate_encoding(const char*, corpusCharset)</code> to do this<ul>
+<li><span style="color:red" cite="http://">AH</span> done</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>All low-level CL functions must validate <span class="caps">MBC</span>s in <span class="caps">UTF</span>-8 input strings to ensure well-defined behaviour<ul>
+<li><span style="color:red" cite="http://">AH</span> ideally, this would be better done immediately on the string being taken into <span class="caps">CWB, </span>rather than repeatedly by different functions. So we should be able to assume that strings in indexed corpora are valid <span class="caps">UTF8 </span>(or whatever).<ul>
+<li><span style="color:red" cite="http://">SE</span> Of course, that&#39;s the task of <code>cwb-encode</code>. What I meant here is that the CL functions must validate strings passed as arguments for wellformedness</li>
+<li><span style="color:red" cite="http://">AH</span> Now done</li>
+</ul>
+</li>
+<li>virtually all functions are linked to a corpus handle, from which they obtain their expected character set</li>
+</ul>
+</li>
+<li>Extend code in <code>cl/special_chars.c</code> to support multiple character sets<ul>
+<li>in particular, <code>%c</code> and <code>%d</code> mappings must be implemented for all supported character sets</li>
+<li>for <span class="caps">ISO</span>-8859-X, <strong>mapping tables</strong> have to be declared in analogy to <code>latin1_nocase_tab</code> and <code>latin1_nodiac_tab</code><ul>
+<li><span style="color:red" cite="http://">SE</span> the corresponding normalisation functions have to be re-implemented so they can use arbitrary mapping tables</li>
+<li><span style="color:red" cite="http://">AH</span> Data tables now exist for all the <span class="caps">ISO</span>-8859-X encodings - but they currnelty all duplicate the <span class="caps">ASCII </span>table, so knowledgeable people need to fill in the relevant mappings in the top half of each! Use of arbitrary mapping tables now implemented.</li>
+</ul>
+</li>
+<li>for <span class="caps">UTF</span>-8, <strong>case-folding</strong> is handled by some external library (preferably with <code>towlower</code>, although Unicode defines a different folding algorithm, e.g. for German <em>Stra&Atilde;&#159;e</em> vs. <em><span class="caps">STRASSE</span></em>)<ul>
+<li><span style="color:red" cite="http://">SE</span> Point for discussion: Should case-insensitive matching of <span class="caps">UTF</span>-8 data use the correct algorithm (which compares case-folded strings) or just convert to lowercase (for consistency with current Latin1 behaviour)? In particular, <code>%c</code> might end up working differently for the same corpus in <span class="caps">ISO</span>-8859-1 and <span class="caps">UTF</span>-8 encoding!</li>
+<li><span style="color:red" cite="http://">AH</span> I have currently implemented the full case folding algorith, but we could revisit this.</li>
+</ul>
+</li>
+<li><strong>accent-folding</strong> in <span class="caps">UTF</span>-8 is tricky, and no support library seems to offer pre-defined functions for this operation; possible strategies: (1) decompose, strip combining characters, compose; (2) construct explicit mapping from Unicode name database<ul>
+<li><span style="color:red" cite="http://">AH</span> Done, using strategy (1)</li>
+</ul>
+</li>
+<li>case-folding and esp. accent-folding in <span class="caps">UTF</span>-8 will be rather slow; future <span class="caps">CWB </span>versions may want to store normalised versions of lexicon files on disk</li>
+</ul>
+</li>
+<li>Revise <strong>escape codes</strong> for non-ASCII characters (<code>cl_string_latex2iso()</code>)<ul>
+<li>existing latex escapes should be deactivated by default, but can be switched on for Latin1-encoded corpora with compatibility option<ul>
+<li><span style="color:red" cite="http://">AH</span> This is now done, although nothing has been added to <span class="caps">CQP </span>to create a command for turning it back on!</li>
+</ul>
+</li>
+<li>note that latex escapes also make it impossible to quote an arbitrary input string (containing <code>&#39;</code> and <code>&quot;</code>) safely</li>
+<li>new escape mechanism for non-ASCII characters: numeric codes (<code>\xNN</code>, <code>\uNNNN</code>) and possibly named characters in <span class="caps">UTF</span>-8 mode (<code>\N{LATIN SMALL LETTER A WITH GRAVE}</code>)<ul>
+<li><span style="color:red" cite="http://">AH</span> we should standardise to the escape codes used by libraries: for instance <span class="caps">PCRE </span>and <span class="caps">ICU </span>both use <code>\xNN</code> and <code>\x{NNNN}</code> . The named-characters way of doing it would be very slow due to the need to search the whole unicode database, but it could be sped up by using the first word of the name to skip to an appropriate starting point in the <span class="caps">DB.</span></li>
+<li><span style="color:red" cite="http://">SE</span> Most Unicode regexp matchers allow named characters, <span class="caps">AFAIK.</span> Speed is usually not an issue, as this would typically be done for just a few characters in query entered by a user (but not allowed as input format for <code>cwb-encode</code>!); otherwise we could build hash tables for faster lookup.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Unicode string normalisation<ul>
+<li>a crucial problem of Unicode is that many characters do not have a unique representation; e.g. latin letter + combining accent vs. pre-composed accented letter (see <a href="http://unicode.org/faq/normalization.html">Unicode normalization <span class="caps">FAQ</span></a>)</li>
+<li>in order to ensure correct matching, all <span class="caps">UTF</span>-8 input strings have to be <strong>normalised</strong></li>
+<li>applies in particular to CL low-level functions and the <code>cwb-encode</code> / <code>cwb-s-encode</code> tools</li>
+<li>recommended: canonical pre-composed form (*NFC*), which gives a more compact string representation (and seems to be used by most existing software)<ul>
+<li><span style="color:red" cite="http://">AH</span> concur for Latin, Greek etc. alphabets, but for Arabic the opposite is probably true - most software does not use the "presentation forms" which are precomposed</li>
+<li><span style="color:red" cite="http://">SE</span> but I&#39;d still recommend a consistent internal format, to reduce the probability of bugs creeping in.  Would internal storage of Unicode strings in <span class="caps">NFC </span>be problematic for Arabic corpora?</li>
+<li><span style="color:red" cite="http://">AH</span> This is now implemented in cl_string_canonical, but it still needs to be ascertained that all strings entering the <span class="caps">CWB </span>are normalised with this function where necessary. The Arabic problem is... erm... probably not a problem; I suspect <span class="caps">NFC </span>does not affect presentation forms. We will have to see what happens...<ul>
+<li><span style="color:red" cite="http://">AH</span> All strings entering <span class="caps">CWB </span>should now be normalised at point of entry.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>problem: many simple Unicode / regexp libraries don&#39;t offer normalisation functions<ul>
+<li><span style="color:red" cite="http://">AH</span> and if we write our own we have the difficulty of keeping it up to date with new versions of unicode</li>
+<li><span style="color:red" cite="http://">SE</span> you just want to force us to use that dreadful <span class="caps">ICU </span>monster! ;-)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><span class="caps">CQP </span>commands <code>sort</code>, <code>count</code> and <code>tabulate</code> should work out of the box, since they rely on CL string folding<ul>
+<li>just need to make sure that the commands activate the appropriate character set</li>
+<li>ideally, sorting should use a locale-specific collation algorithm (which differs by language and country)<ul>
+<li>again I think relying on locales could be dodgy for many languages...  <ul>
+<li><span style="color:red" cite="http://">SE</span> define "dodgy"</li>
+<li><span style="color:red" cite="http://">AH</span> "dodgy" == "prone to variable behaviour across different OS that we will find it difficult to fully account for"; see <a href="http://library.gnome.org/devel/glib/2.22/glib-running.html#setlocale">for instance</a>  </li>
+</ul>
+</li>
+</ul>
+</li>
+<li><span style="color:red" cite="http://">AH</span> It turned out that <code>sort</code> and <code>count</code> both bypassed the CL public <span class="caps">API </span>and used string-folding mapping-tables directly - a big, big no-no with <span class="caps">UTF</span>-8 - as well as doing byte-by-byte string reversal (even worse). A new "qsort collate" function has been added to the CL <span class="caps">API </span>to support <code>sort</code> and <code>count</code> and the <code>cqp/ranges.c</code> adjusted to suit. One potential problem is that collation in <span class="caps">UTF8 </span>uses the Glib function g_utf8_collate, which is locale-dependent. <span class="caps">SO, </span>if the locale specifies (say) case-and-accent insensitivity, we might end up with case/accent insensitive sort <strong>even if</strong> %c and %d are off. </li>
+</ul>
+</li>
+<li>If <span class="caps">CQP </span>defines built-in functions for string processing (<code>cqp/builtins.c</code>), they must also be adapted to multiple character sets</li>
+<li>Proper handling of fixed-character context in <strong>kwic output</strong> (<code>cat</code>) will require a major rewrite<ul>
+<li>affects all kwic-formatting code in <code>cqp/output.c</code>, <code>cqp/print-modes.c</code>, <code>ascii-print.c</code>, <code>html-print.c</code>, <code>latex-print.c</code>, <code>sgml-print.c</code>, etc.</li>
+<li>this code is inefficient and seriously broken anyway (buffer overflow + segfault for large context sizes), so it should be re-implemented from scratch</li>
+<li>recommendation: drop <span class="caps">HTML,</span> Latex and <span class="caps">SGML </span>modes; just offer <span class="caps">ASCII </span>for interactive use and <span class="caps">XML </span>as a general-purpose format (which can easily be transformed to other formats using <span class="caps">XSLT,</span> Perl, etc.)<ul>
+<li><span style="color:red" cite="http://">AH</span> There is a problem here with multilingual support. For Arabic, devanagari etc. there is no such thing as fixed width afaik. Command line display is thus liable to be broken anyway.</li>
+<li><span style="color:red" cite="http://">SE</span> <code>kwic</code> is a fabrication of lexicographers and corpus linguists anyway; I&#39;d be happy to drop support entirely and rely on <span class="caps">GUI</span>s like <span class="caps">CQP</span>web for <code>kwic</code> display.  But then at least half of our users would kill us, or - even worse - switch to the SketchEngine</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>If a "heavy" Unicode support library (e.g. <span class="caps">ICU</span>) is used, local installation has to be included in binary distribution<ul>
+<li>current binaries are statically linked with all non-standard libraries and can be installed and used stand-alone</li>
+<li>"heavy" packages (e.g. Glib) consist of multiple shared libraries, data files, and configuration information (and may depend on further libraries, e.g. Glib requires <code>libgettext</code>)</li>
+<li>for a standalone package, complete installations of these libraries have to be included in the binary distribution; wrapper scripts must set appropriate paths for dynamic libraries etc. before calling <span class="caps">CWB </span>tools; direct linking of e.g. CL library into other applications (as used by <code>CWB::CL</code>) may be very difficult</li>
+<li><span style="color:red" cite="http://">SE</span> If there are enough volunteers, we can probably work out suitable distribution formats for all major platforms (Ubuntu, Mac OS X, Windows).  Users of more arcane operating systems would just have to install from source and get hold of the necessary prerequisites.</li>
+<li><span style="color:red" cite="http://">AH</span> So far, I have tried to rewrite the makefiles so that the external libraries (PCRE, Glib) are statically linked wherever possible. So far it has worked!<ul>
+<li><span style="color:red" cite="http://">AH</span> Under Win32, hwoever, <span class="caps">PCRE </span>adn Glib <span class="caps">DLL</span>s need to be included in the binary release. This is now done.</li>
+</ul></li>
+</ul></li>
+</ol>
+
+<h1>Unicode software options (external libraries)</h1>
+
+<ul>
+<li>Regular expressions<ul>
+<li>easy solution: use standard <strong><span class="caps">POSIX </span>regexp functions</strong> with locale support<ul>
+<li>requires minimal changes to existing <span class="caps">CWB </span>code</li>
+<li>well-defined <span class="caps">POSIX </span>syntax with basic character classes, should be reasonably fast</li>
+</ul>
+</li>
+<li><strong><span class="caps">ICU </span>regular expressions</strong><ul>
+<li>performance? might be heavy-weight and slow</li>
+<li>uses Perl regular expression syntax (possibly relying on <span class="caps">PCRE </span>library internally)</li>
+<li><span style="color:red" cite="http://">AH</span> also worth noting: uses <span class="caps">UTF16 </span>internally, so there would be lots of conversion and malloc&#39;ing overhead to use it with <span class="caps">UTF8</span></li>
+<li>regexp for <span class="caps">ISO</span>-8859-X encodings would probably still have to make use of a different library</li>
+</ul>
+</li>
+<li><strong><span class="caps">PCRE</span></strong> library<ul>
+<li>very powerful regular-expression syntax</li>
+<li>supports <span class="caps">UTF</span>-8 and single-byte codes (but no character classes in <span class="caps">ISO</span>-8859-X encodings?)<ul>
+<li><span style="color:red" cite="http://">AH</span> the Perl character classes like \w, \d etc. apply to <span class="caps">ASCII </span>and to top half of <span class="caps">ISO</span>-8859-X, depending on locale (so, possibly a bad idea to rely on this!)</li>
+</ul>
+</li>
+<li>said to be relatively heavy-weight and much slower than regexp in Perl<ul>
+<li><span style="color:red" cite="http://">AH</span> I am not so sure about this, <span class="caps">PCRE </span>is less than 1/10 the size of <span class="caps">ICU </span>( <span style="color:red" cite="http://">SE</span> that&#39;s like saying "Vista is only half as bad as Windows 3.1" ;-) and seems to be as fast as <span class="caps">POSIX </span>(at least within the <span class="caps">PHP </span>engine). It is known to be slow when a pattern has to invoke the Unicode character database but I think this would apply to any library.</li>
+<li><span style="color:red" cite="http://">SE</span> At least <span class="caps">PCRE </span>isn&#39;t the slowest library around: In R 2.10.0 on Mac OS X, <span class="caps">PCRE </span>regexps are about 2.5x faster than <span class="caps">POSIX </span>regexp (now using the <a href="http://laurikari.net/tre/"><span class="caps">TRE </span>library</a>).  See discussion in next section for details.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>Oniguruma</strong> regular expression library<ul>
+<li>modern regexp library, explicitly designed for multiple character sets</li>
+<li>powerful syntax, but not Perl-compatible</li>
+</ul></li>
+</ul></li>
+</ul>
+
+<ul>
+<li>Support functions (string manipulation, case-folding)<ul>
+<li>easy solution: standard <strong><span class="caps">POSIX </span>string functions</strong> with locale support (should provide most of the necessary functionality)</li>
+<li><strong><span class="caps">ICU</span></strong> library (certainly has everything we might need)</li>
+<li><strong>Glib</strong> confirmed to include all necessary functions (but difficult to install &amp; distribute)</li>
+<li><span class="caps">SQL</span>ite uses various Unicode support functions from <strong>Tcl</strong> source code</li>
+<li>is it possible to extract Unicode functionality from <strong>Perl</strong> codebase?</li>
+</ul></li>
+</ul>
+
+<ul>
+<li>Unicode normalisation and accent-folding<ul>
+<li><strong>not available in <span class="caps">POSIX</span></strong> and most other light-weight solutions</li>
+<li><strong><span class="caps">ICU</span></strong> should provide all kinds of normalisation functions</li>
+<li>other solutions: <strong>Tcl</strong> source code(?), or a specialised <a href="http://www.flexiguided.de/publications.utf8proc.en.html">utf8proc library</a> (not released under a standard license)</li>
+</ul></li>
+</ul>
+
+<h1>Discussion of support libraries</h1>
+
+<ul>
+<li>Performance testing<ul>
+<li>Many of the unknowns below concern the performance of regexes in the different libraries. We should get figures on this by testing them. This would be simple enough to code up - but what regexes can we use as benchmarks?</li>
+<li>One suggestion from a webpage on benchmarking different regex modules in Haskell: haystack <code>Hello world foo=123 whereas bar=456 Goodbye</code>, pattern <code>.*foo=([0-9]+).*bar=([0-9]+).*</code></li>
+<li><span style="color:red" cite="http://">SE</span> Perhaps better to test realistic use cases such as the following:<ul>
+<li>haystack: word list from <span class="caps">BNC, </span>deWaC, etc.; pattern: example from <span class="caps">BNC</span>web book and <span class="caps">CQP </span>tutorial</li>
+<li>haystack: metadata from <span class="caps">BNC, URL</span>s of deWaC/ukWaC files; pattern: similar to Haskell test above</li>
+</ul></li>
+</ul></li>
+</ul>
+
+<ul>
+<li><span class="caps">POSIX </span>locales<ul>
+<li><code>+</code> no dependency on external libraries</li>
+<li><code>+</code> easy to implement, with minimal changes to existing <span class="caps">CWB </span>code</li>
+<li><code>+</code> string length, lowercasing and regular expressions confirmed to work on several platforms </li>
+<li><code>?</code> performance and reliability (across platforms) are unclear</li>
+<li><code>-</code> only plain <span class="caps">POSIX </span>regexp syntax without powerful Perl-style extensions</li>
+<li><code>-</code> need to activate appropriate locale (including language + country setting) for each string operation</li>
+<li><code>-</code> locale names are not standardised, which may lead to compatibility problems (idea: precise locale to be declared in registry file, otherwise <span class="caps">CWB </span>will try to guess a widespread locale name for chosen character set + language)</li>
+<li><code>-</code> may be difficult to port to Windows (but Cygwin works)</li>
+</ul></li>
+</ul>
+
+<ul>
+<li><span class="caps">ICU</span><ul>
+<li><code>+</code> everything we need for Unicode support available in a single package<ul>
+<li><span style="color:red" cite="http://">AH</span> and we might need its functions for normalisation etc. even if we go elsewhere for regexp matching</li>
+</ul>
+</li>
+<li><code>+</code> <span class="caps">ICU </span>regexps support  Perl extensions as well as basic <span class="caps">POSIX</span>-style</li>
+<li><code>?</code> performance is unclear</li>
+<li><code>-</code> as bloated as a hippo after a bean-eating contest</li>
+<li><code>-</code> other functions / libraries are still needed for <span class="caps">ISO</span>-8859-X encodings</li>
+<li><code>-</code> as far as Stefan knows, <span class="caps">ICU </span>is a complex installation with multiple shared libraries and data files, so it cannot be statically linked in an easily distributable stand-alone binary package<ul>
+<li><span style="color:red" cite="http://">AH</span> I think it can: if the library is compiled with <code>--enable-static</code> then you get the <code>.a</code> files ( <a href="http://icu-project.org/repos/icu/icu/trunk/readme.html#HowToPackage">apparently</a> ), albeit with <a href="http://bugs.icu-project.org/trac/ticket/6332">funny names</a> </li>
+<li><span style="color:red" cite="http://">SE</span> It might also be possible to work out individual solutions for the major platforms, provided there are enough experienced volunteers.  For instance, Mac OS X comes with an <span class="caps">ICU </span>core library and shared data, but is missing header files.  These can be obtained from <a href="http://www.opensource.apple.com/">www.opensource.apple.com</a>, possibly enabling a developer to compile the <span class="caps">CWB </span>against the system <span class="caps">ICU </span>library, so the binary distribution would run on any Mac.</li>
+</ul></li>
+</ul></li>
+</ul>
+
+<ul>
+<li>Glib<ul>
+<li><code>+</code> seems to offer all necessary Unicode functionality, except for regular expressions<ul>
+<li><span style="color:red" cite="http://">AH</span> Actually it does - it incorporates <span class="caps">PCRE</span>!  (uses an internal copy of the pcre code) It allows regex matching in <span class="caps">PCRE</span>-UTF8 style or <span class="caps">ASCII</span>/Latin1 char=byte style. The former is the default.</li>
+</ul>
+</li>
+<li><code>+</code> also includes many other useful support functions that abstract away from platform dependencies<ul>
+<li>although moving over to GType and GObject would be a bigger job than any of this unicode stuff!</li>
+</ul>
+</li>
+<li><code>-</code> rather difficult to install (depends on other shared libs like <code>libgettext</code> and local installation paths in <code>pkg-config</code>)<ul>
+<li><span style="color:red" cite="http://">AH</span> and <code>libpcre</code> and <code>libselinux</code> and ... </li>
+</ul>
+</li>
+<li><code>-</code> cannot be statically linked into binaries for distribution<ul>
+<li><span style="color:red" cite="http://">AH</span> I think it can (it&#39;s described as "not recommended" but that&#39;s prob for higher level elements of <span class="caps">GTK</span>).  I have seen two ways mentioned on the net:<ul>
+<li>way one - if it is built with <code>./configure --enable-static</code>  </li>
+<li>way two - if the <code>libglib-VERSION.a</code> file is specified on the <span class="caps">GCC </span>command line in the makefile as a literal object file, and <span class="caps">NOT </span>using <code>gcc</code>&#39;s <code>-l</code> flag<ul>
+<li>(and I&#39;ve seen some things that suggest using <code>-lglib</code> would work if <code>-static</code> is also specified in the options for <code>gcc</code>)</li>
+</ul>
+</li>
+<li>(although perhaps I am misunderstanding it and <span class="caps">BOTH </span>are required <code>--enable-static</code> to create the right sort of <code>.a</code> file which must then be linked)</li>
+<li>note, in debian and ubuntu, <code>libglib-VERSION.a</code> is part of the <code>libglib-VERSION-dev</code> package, not the <code>libglib-VERSION</code> package (which only contains the <code>.so</code> files); <span style="color:red" cite="http://">SE</span> this makes sense, as the <code>.a</code> file cannot be a runtime dependency</li>
+<li>See these links: <a href="http://mail.gnome.org/archives/gtk-list/2005-February/msg00031.html">1</a> <a href="http://mail.gnome.org/archives/gtk-list/1998-November/msg00672.html">2</a> <a href="http://mail.gnome.org/archives/mc/2003-December/msg00007.html">3</a> <a href="http://mail.gnome.org/archives/gtk-list/1999-December/msg00219.html">4</a> <a href="http://mail.gnome.org/archives/gtkmm-list/2002-July/msg00171.html">5</a> <ul>
+<li>and an example: <a href="http://directfb.org/docs/GTK_Embedded/">here</a> <a href="http://directfb.org/docs/GTK_Embedded/static-linking.html">here</a> and <a href="http://directfb.org/docs/GTK_Embedded/static-linking2.html">here</a> </li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+
+<ul>
+<li><a href="http://www.pcre.org/"><span class="caps">PCRE</span></a> <ul>
+<li><code>+</code> well-known and very powerful regular expresson dialect</li>
+<li><code>+</code> presumably well-tested, since it is used by many software packages</li>
+<li><code>?</code> as far as Stefan knows, <span class="caps">PCRE </span>has support at least for <span class="caps">UTF</span>-8 and byte-coded strings, but no further knowledge about <span class="caps">ISO</span>-8859-X character sets (so it wouldn&#39;t recognise accented characters there)<ul>
+<li><span style="color:red" cite="http://">AH</span> It has support for at least locales in Latin1; not sure about other <span class="caps">ISO</span>-8859-X</li>
+</ul>
+</li>
+<li><code>-</code> <span class="caps">PCRE </span>is rumored to be rather slow (esp. compared to the fast Perl implementation)<ul>
+<li><span style="color:red" cite="http://">AH</span> my first bash at benchmarking suggests it is faster than <span class="caps">POSIX </span>and <span class="caps">ICU</span></li>
+<li><span style="color:red" cite="http://">SE</span> my quick test tells a somewhat different story: In R 2.10.0 on Mac OS X, <span class="caps">PCRE </span>regexps are about 2.5x faster than <span class="caps">POSIX </span>regexp (now using the <a href="http://laurikari.net/tre/"><span class="caps">TRE </span>library</a>). This was tested on a <span class="caps">BNC </span>word form list with the regexp <code>^([0-9A-Za-z]+-)*[a-z]+ments?$</code> (PCRE: 0.28s; <span class="caps">POSIX</span>: 0.76s). However, <code>cwb-lexdecode</code> does the same job in 0.11s, even though it has some overhead from startup, file access, etc.!<ul>
+<li><span style="color:red" cite="http://">SE</span> regexp matching speed isn&#39;t the worst bottleneck in <span class="caps">CQP, </span>so any library that&#39;s reasonably fast may be good enough; we just don&#39;t want a 10x slowdown compared to current versions of the <span class="caps">CWB</span></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>-</code> lacks other functions we would need, e.g. <code>tolower</code> and <code>toupper</code> functions for case folding</li>
+</ul></li>
+</ul>
+
+<ul>
+<li><a href="http://www.geocities.jp/kosako3/oniguruma/">Oniguruma</a><ul>
+<li><code>+</code> modern, elegant regular expression library (also used by various software packages)</li>
+<li><code>+</code> explicitly designed to support multiple character sets natively</li>
+<li><code>+</code> documentation written in Japanese ;-)</li>
+<li><code>?</code> performance is unclear, some comparative tests would be needed</li>
+<li><code>-</code> powerful regexp extensions, but syntax is not Perl-compatible</li>
+</ul></li>
+</ul>
+
+<ul>
+<li>Specialised solutions<ul>
+<li><a href="http://www.flexiguided.de/publications.utf8proc.en.html">utf8proc</a> is a small software library for Unicode normalisation (providing missing functionality in <span class="caps">POSIX </span>locale approach); <span class="caps">MIT </span>license, not backed by a large developer community</li>
+<li>Tcl Unicode functions (as used by <span class="caps">SQL</span>ite) for various string operations; unclear whether normalisation functions are included</li>
+<li>Is it possible to extract Perl&#39;s Unicode functionality?<ul>
+<li><span style="color:red" cite="http://">AH</span> I would be worried about this because of the need to keep up with unicode updates.</li>
+<li><span style="color:red" cite="http://">SE</span> This applies to all specialised solutions suggested here, and basically leaves us with a choice between <span class="caps">ICU </span>and Glib.</li>
+</ul></li>
+</ul></li>
+</ul>
+
+<h1>Regex library benchmarking exercise</h1>
+
+<ul>
+<li>How the exercise was done<ul>
+<li>The following libraries were tested: <strong><span class="caps">POSIX</span></strong> as a baseline, <strong><span class="caps">ICU</span></strong> (with and without pre-mapping to <span class="caps">UTF16</span>), <strong>Glib</strong>, <strong><span class="caps">PCRE</span></strong> (the latter two in both <span class="caps">UTF8 </span>and Latin1 mode). <ul>
+<li><strong>Oniguruma</strong> was not tested as getting it to link into the benchmark program presented supreme difficulties; as it is nowhere near the level of de-facto standardisation that <span class="caps">PCRE,</span> Glib and <span class="caps">ICU </span>possess - and as it is apparently not being actively maintained - this is probably no loss.  </li>
+</ul>
+</li>
+<li>The benchmarks were a list of 165 regexes from Hoffmann et al. "Corpus Linguistics with <span class="caps">BNC</span>web"</li>
+<li>The "haystack" was the complete lexicon of the <code>word</code> attribute of the <span class="caps">CWB</span>-encoded British National Corpus.  </li>
+<li>The time for each regular expression was calculated as follows:<ul>
+<li>The time to compile the regular expression ten times plus</li>
+<li>The time to check the regular expression ten times against each string in the haystack.</li>
+</ul></li>
+</ul></li>
+</ul>
+
+<ul>
+<li>Results<ul>
+<li>For full results <a href="../doc/unicode-regexlib-benchmarking-results.html">see here</a></li>
+<li>Highlights as follows:<ul>
+<li><strong><span class="caps">PCRE</span></strong> is the fastest of the unicode-aware libraries<ul>
+<li>Its overall time for all checks is lowest, at only 50% more than <span class="caps">POSIX.</span></li>
+<li>Its backwards-compatible non-UTF8 mode offers a speed boost over <span class="caps">UTF8 </span>mode which will be handy for non-Unicode corpora </li>
+<li><span class="caps">PCRE </span>is also fastest on the majority of individual regexes (faster than <span class="caps">POSIX </span>in most cases). So there is no problem in <strong>also</strong> using <span class="caps">PCRE </span>when working with <span class="caps">ASCII</span>/Latin-1 corpora.</li>
+</ul>
+</li>
+<li><strong><span class="caps">ICU</span></strong> is slow, slow, slow.</li>
+<li>Although <strong>Glib</strong> uses <span class="caps">PCRE, </span>it seems to suffer an apparently pretty consistent speed penalty in the process of wrapping <span class="caps">PCRE </span>- and unlike <span class="caps">PCRE </span>it doesn&#39;t benefit when you revert to 8-bit mode.</li>
+</ul>
+</li>
+<li>Notably, there are certain regexes that while apparently trivial in <span class="caps">POSIX, </span>suffer major speed penalties in the other libraries (and absolutely kill <span class="caps">ICU</span>). They are:<ul>
+<li><code>141: &quot;.{3,}(ness(es)?|it(y|ies)|(tion|ment)s?)&quot;</code></li>
+<li><code>145: &quot;.*(a|e|i|o|u){4,}.*&quot;</code></li>
+<li><code>151: &quot;([^t]*(t[^t]*){3}|[^r]*(r[^r]*){3})&quot;</code></li>
+</ul>
+</li>
+<li>The common factor seems to be a string of "almost anything" at the start of the regex. Since <span class="caps">CQP</span>&#39;s regex matching is always anchored at the beginning and end of the regex, i.e. always a full p-attribute not part of a p-attribute, this may not present problems for us  (? - I think) </li>
+</ul></li>
+</ul>
+
+<ul>
+<li>Conclusion<ul>
+<li>Use <strong><span class="caps">PCRE</span></strong> for regex matching; speed combined with its implementation of a very well-known regex dialect (Perl) make it the best choice.</li>
+<li>Use <strong>Glib</strong> for support functions; it offers all the functionality of <span class="caps">ICU </span>that is relevant to <span class="caps">CWB </span>but is easier to program against (simpler <span class="caps">API, </span>no need to keep switching between <span class="caps">UTF8 </span>and <span class="caps">UTF16</span>).</li>
+</ul></li>
+</ul>

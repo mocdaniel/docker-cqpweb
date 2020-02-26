@@ -1,0 +1,703 @@
+h1. CWB V3 code architecture
+
+This document is a rough guideline to the architecture of the CWB source code.
+
+* It assumes basic familiarity with the corpus model, data formats and query processing strategies.
+* Its main purpose is to show which tasks each source file is responsible for, in which header files declarations can be found, and how the source files depend on each other. 
+
+
+h2. The CL library
+
+CL stands for "Corpus Library". This library contains the most basic functions for CWB and CQP. Things in the CL only depend on other things in the CL.
+
+Note that the "dependencies" given below are based on which modules #include each others' headers. Some, e.g. attributes.c and cdaccess.c, are mutually ependent in this sense.
+
+h4. cl/cl.h
+
+* declares all exported functions, constants and type definitions
+* other source files (and headers) in CL that implement the exported functions #include @cl.h@
+* various utility functions (added after v2.2): memory management, string functions, regular expressions with optimisation, hashes and lists (for lexical data)
+* for the core CL functions, which give access to corpus data, there are currently two sets of declarations in this file
+** full declarations for the "old-style" functions (CWB v2.2)
+** macro definitions that map "new-style" functions (as used in CWB v3.0) to the old-style names
+* old-style syntax is deprecated as of v3.0 and will no longer be supported in future releases (which may introduce yet another syntax change, depending on where open-source development of CWB leads)
+* after the public release of 3.0, the source code should be rewritten to use new-style syntax only (also implementations in the @XXX.c@ files should declare functions in new-style syntax)
+* old-style function names have no set format; new-style function names are all prefixed as cl_
+
+h4. cl/attributes.h ; cl/attributes.c
+
+* defines the Component structure.
+* also defines the Attribute object, which is a union of one of each of the different attribute structures: any, pos, struc, align, dyn.
+* the functions for the Attribute and Component are declared and defined here; but also a large number of exported functions are defined here. 
+* the functions defined here and declared elsewhere are
+** aid_name(), argid_name(), attr_drop_attribute(), cl_make_set(), cl_set_intersection(), cl_set_size(), find_attribute(), find_cid_id(), find_cid_name()
+** of these, attr_drop_attribute(), cl_make_set(), cl_set_size(), cl_set_intersection, find_attribute() are declared in @cl.h@
+* There is some inconsistency here; find_component() is declared here, but none of the other find_ functions are.
+* _depends on_: globals; endian; corpus; macros; fileutils; cdaccess; makecomps; list
+
+h4. cl/binsert.h ; cl/binsert.c
+
+* a single function: binsert_g() (declared here)
+* _depends on_: globals; macros
+
+h4. cl/bitfields.h ; cl/bitfields.c
+
+* declares the Bitfield structure and 12 functions for dealing with it
+* these functions are @@not@@ in @cl.h@ 
+* _depends on_: only globals
+
+h4. cl/bitio.h ; cl/bitio.c
+
+* These files include (respectively) the structures BFile and BStream for bit file / bit stream handles; and the functions for dealing with them
+* for each of BF- and BS- there is a function to -open(), -close(), -flush(), -write(), -read(), -position()
+* there is also BFwriteWord() and BFreadWord() (where "Word" == unsigned int)
+* and finally, BSseek().
+* _depends on_: globals; endian
+
+h4. cl/cdaccess.h ; cl/cdaccess.c
+
+* The functions here are the "attribute access functions" part of the CL API
+* This is, so to speak, the business end of the CL -- the bit that actually finds things in the (various bits of the) corpus
+* all functions are exported (i.e. in @cl.h@)
+* _depends on_: globals; endian; macros; attributes; special-chars; bitio; compression; regopt
+
+h4. cl/class-mapping.h ; cl/class-mapping.c
+
+* defines the SingleMapping and Mapping pointers (and their structures)
+* and provides all the functions for dealing with them
+* _depends on_: globals; macros; cdaccess
+
+h4. cl/compression.h ; cl/compression.c
+
+* contains four functions: compute_ba(), read_golomb_code_bs(), read_golomb_code_bf(), write_golomb_code()
+* declared locally, not in @cl.h@
+* presumably having something to do with compression (??)
+* _depends on_: globals; bitio
+
+h4. cl/corpus.h ; cl/corpus.c
+
+* defines the Corpus and IDList data structures
+* the functions for dealing with Corpus are also here (definitions in @cl.h@)
+* plus two IDList functions: FreeIDList() and memberIDList()
+* _depends on_: globals; attributes; macros; registry.tab; plus also storage.h is #included. 
+
+h4. cl/dl_stub.c
+
+* dummy functions for dynamic linker functions that some incarnations of Unix lack
+* note no corresponding .h file
+* _depends on_: nichts, rien, nowt, nada
+
+h4. cl/endian.h ; cl/endian.c
+
+* Both files (but especially @endian.h@) contains various useful comments on how CWB handles byte-order
+* These files also make available a byte-order-switching function, cl_bswap32()
+* _depends on_: only globals
+
+h4. cl/fileutils.h ; cl/fileutils.c
+
+* does exactly what it says on the tin: utilities for dealing with the filesystem.
+* these functions are all defined here, not in @cl.h@
+* three functions for getting the size of a file, via stat(), from different identifiers:
+** file_length(): string filename
+** fd_file_length(): FILE * pointer
+** fd_file_length(): int file number
+** fprobe() function seems to be a replica of fd_file_length() (??) 
+* is_directory(), is_file(), is_link() functions
+* _depends on_: only globals
+
+h4. cl/globals.h ; cl/globals.c
+
+* It is expected that all the source files in CL will include @globasl.h@
+* The header file has the "include" statements for the C library header files
+* These two files each contain some global configuration values as global variables
+* Three functions are also defined here: cl_set_debug_level(), cl_set_optimize(), cl_set_memory_limit() -- their declarations are in @cl.h@, not @globals.h@, as per usual for exported functions in CL.
+* _depends on_: cl.h (note that cl.h is included in globals.h, so every source file dependent on globals is also dependent on cl.h)
+
+h4. cl/lexhash.h ; cl/lexhash.c
+
+* contains code for the cl_lexhash_ object, as declared (structure and functions) in @cl.h@
+* _depends on_: globals, macros
+
+h4. cl/list.h ; cl/list.c
+
+* structure definitions and functions for the cl_int_list and cl_string_list objects (defined in @cl.h@)
+* the function prototypes are all in @cl.h@; but here is where you will find:
+** all functions beginning in cl_int_list_
+** all functions beginning in cl_string_list_
+** cl_new_[int/string]_list(), cl_delete_[int/string]_list(), and cl_free_string_list
+* _depends on_: globals, macros
+
+h4. cl/macros.h ; cl/macros.c
+
+* lots of miscellaneous stuff is to be found here
+* as you might expect, some macros are #defined here:
+* the cl_-prefix memory allocation functions (-malloc, -calloc, -realloc, -strdup) are defined here
+* the cl_-prefix built-in random-number-generator functions (most notably, -randomize, -random, -runif) are defined here
+* four functions for progress bars are defined and declared here
+* functions for "indented lists" (i.e. lined-up columns on terminal output) are defined and declared here
+** the abbreviation is always "ilist".
+* _depends on_: only globals
+
+h4. cl/makecomps.h ; cl/makecomps.c
+
+* stands for "make Components"
+* functions to do with sorting and with creating memory for various Components.
+** creat_sort_lexicon
+** creat_freqs
+** creat_rev_corpus_idx
+** creat_rev_corpus
+* scompare() is for use with qsort (it compares two void *s) 
+* also, this module declares two MemBlobs as global variables - SortIndex and SortLexicon
+* _depends on_: globals; endian; macros; storage; fileutils; corpus; attributes; cdaccess
+
+h4. cl/registry.l ; cl/registry.y
+
+* These are the source file for @registry.tab.c@, @registry.tab.h@, and @lex.creg.c@, which in turn contain the code a parser for registry entries
+* The .c and .h files are generated by GNU bison and flex from the .l and .y files. 
+* See also the Makefile
+
+h4. cl/registry.tab.h
+
+* This file is the output of Bison running on registry.y ; see Makefile
+
+h4. cl/regopt.h ; cl/regopt.c
+
+* contains the functions for regular expression optimisation
+* all declarations are in @cl.h@, but the actual CL_Regex structure is defined here.
+* functions have the form cl_regex_* or cl_regopt_*
+* _depends on_: globals; attributes; macros
+
+h4. cl/special-chars.h ; cl/special-chars.c
+
+* contains global variables for handling features of 8-bit character sets - "mapping table" arrays, where the index is the thing to be mapped and the value is the output of the mapping
+** latin1_identity_tab -- map everything to itself (initialised in cl_string_maptable() )
+** latin1_nodiac_tab -- gets rid of diacritics
+** latin1_nocase_tab -- maps uppercase characters to lowercase
+** latin1_nocase_nodiac_tab -- does both, for %cd in CQP (initialised in cl_string_maptable() )
+** cp1251_nocase_tab -- maps ascii / cyrillic all to lowercase
+* we also have three exported functions: cl_string_canonical(); cl_string_latex2iso(); cl_string_maptable(). 
+* _depends on_: only globals
+
+h4. cl/storage.h ; cl/storage.c
+
+* declares macro constants for SIZE_BIT, SIZE_INT, SIZE_LONG etc etc.
+* declares and defines the MemBlob structure, and functions for dealing with it
+** note the prototypes are @not@ in @cl.h@ 
+* _depends on_: globals; endian; macros
+
+h4. cl/Makefile
+
+* a Makefile calling gmake, flex, and bison for the above 
+
+
+
+h2. CQi - Corpus Query interface
+
+This is the "cqpserver" program and some modules that it depends on. 
+
+h4. CQi/CQi.h
+
+This file #defines all the CQI_* constants; there are no function prototypes or data structures here. 
+
+This part of CWB depends (a) on the CL library and (b) on CQP.
+
+h4. CQi/cqpserver.c
+
+* contains the @main()@ function for @cqpserver@ and a whole load of other functions used by that program but with no prototypes declared
+* _depends on_: the CL API and @cl/macros.c@
+* _depends on_: functions drawn from CQP: options, corpmanag, groups
+
+h4. CQi/auth.h ; CQi/auth.c
+
+* as you might guess, authorisation functions for controlling / working out whether people are allowed to access the server or not
+* _depends on_: @cl/macros.c@
+
+h4. CQi/server.h ; CQi/server.c
+
+* a library of all the cqi_* functions
+* _depends on_: the CL API and @cl/macros.c@
+* _depends on_: functions drawn from CQP: options, corpmanag, parse_actions, hash
+
+
+
+
+
+h2. CQP (query processor and interactive environment)
+
+Dependencies in this directory on the CL are not noted unless especially relevant. Basically everything here depends on the CL one way or another. Also, interdependencies between different cqp modules are not noted.
+
+h4. cqp/ascii-print.c ; cqp/ascii-print.h
+
+* this is one of a set of parallel "printing" modules
+** others are: @html-print, latex-print, sgml-print@ -- q.v.
+* most of the functions in this module are prefixed @ascii_print_@ and print various things to a file pointer.
+* for instance, @ascii_print_corpus_header()@
+* there is a @PrintDescriptionRecord@ called @ASCIIPrintDescriptionRecord@ declared as global here.
+* Two other functions deal with colour / typeface on the terminal: 
+** @get_colour_escape() get_typeface_escape()@
+* _depends on_: the @PrintDescriptionRecord@ definition comes from @print-modes@
+
+h4. cqp/attlist.c ; cqp/attlist.h
+
+* Creates two data types: @AttributeInfo@ and @AttributeList@
+** AttributeInfo is a linked-list holder structure for the Attribute type.
+** AttributeList is a holder for the head pointer of such a linked-list.
+* As well as allocation and deallocation functions, there are also:
+** AddNameToAL()
+** RemoveNameFromAL()
+** NrOfElementsAL()
+** MemberAL()
+** FindInAL()
+** RecomputeAL()
+** VerifyList()
+** ... in all of these, AL is short for "attribute list" of course.
+* _depends on_: @cl/attributes@ obviously
+
+h4. cqp/builtins.c ; cqp/builtins.h
+
+* this has to do with the "built-in function", as described in the data structure @BuiltinF@
+* a global array of these structures called @builtin_function@ is defined in @builtins.c@
+* The functions for dealing with these are:
+** @find_predefined()@ 
+** @is_predefined_function()@ 
+** @call_predefined_function()@
+* The function names declared in that global array are:
+** @f distance dist distabs int lbound rbound unify ambiguity add sub mul prefix is_prefix minus ignore@
+* Each of these is actrually implemented as a case statement within @call_predefined_function()@
+
+h4. cqp/concordance.c ; cqp/concordance.h
+
+* Code for presentation of a concordance; the most notable function is @compose_kwic_line()@
+
+h4. cqp/context_descriptor.c ; cqp/context_descriptor.h
+
+* The header contains a structure (@ContextDescriptor@) for describing context for searches
+* and assorted functions for dealing with. The most improtant one is @verify_context_descriptor()@.
+
+h4. cqp/corpmanag.c ; cqp/corpmanag.h
+
+* Defines the CorpusList object (for a linked list of available corpora) and two global pointers to this: @current_corpus@ and @corpuslist@ 
+* There are also a bundle of functions for dealing with this object. There are extensive comments for (some) of these in the header file.
+
+h4. cqp/cqp.c ; cqp/cqp.h
+
+* There are two bundles of stuff here. The first is signal handling for the interrupt (CTRL+C).
+* The second (and more major) bundle is the following three functions:
+** @initialize_cqp()@ -- sets up settings, reads the ini file, reads macro file, checks available corpora, 
+** @cqp_parse_file()@ -- this contains the main loop for the CQP command prompt and/or lines of file input
+*** it adds its file handle argument to the @cqp_files@ array, allowing a "stack" of handles to be remembered
+*** and it assigns that file handle to @yyin@ - a pointer to the file handle that @yyparse@ uses as file input.
+** @cqp_parse_string()@ -- loops on the string stored in @cqp_input_string@ and calls @yyparse()@
+*** note that the @YY_INPUT()@ macro, used by the parser, loads a character from the string (if there is one) and otherwise from the file handle.
+* these functions call yyparse() which interprets the input commands and carries them out.
+* note that cqp.h has the following:
+** @typedef char Boolean; /* typedef enum bool { False, True } Boolean; */@
+** True and False are #defined as 1 and 0 here as well.
+* _depends on_: most obviously on the parser!
+
+h4. cqp/cqpcl.c
+
+* Extremely lightweight @main()@ function for cqpcl which calls @initialize_cqp()@ and @cqp_parse_string()@
+* compare @llquery.c@ 
+
+h4. cqp/dummy_auth.c
+
+* dummy version sof the CQi user-authorisation functions which just print an error message
+* _depends on_: output, also @CQi/auth.h@
+
+h4. cqp/eval.c ; cqp/eval.h
+
+* defines the (very complex, nested) @Constraint@ object and @Constrainttree@ as a pointer type to @Constraint@
+* also defines @ActualParamList@ - structure for a linked list of @Constrainttree@s
+* and various other unions and enumerations involved in evaluation trees 
+* _most notably: @Evaltree@, @EvalEnvironment@ and its pointer type, @EEP@
+** a global array of @EvalEnvironment@ called @Environment@ is created 
+* most of the functions in this module are not in the header. The ones that are fall into 3 groups:
+** Ones relating to environments: @next_environment() free_environment() show_environment() free_environments()@
+** Ones relating to running CQP queries: @cqp_run_query()@ and two variants, @cqp_run_mu_query() cqp_run_tab_query()@
+*** These look pretty central but I've not worked out how yet....
+** One on its own: @eval_bool()@
+
+h4. cqp/groups.c ; cqp/groups.h
+
+* defines the @Group@ structure and gives 4 functions for use with it
+** most important one: @compute_grouping()@ which sets up the Group object
+** also: @Group_id2str()@ -- which wraps @cl_id2str()
+** also: @free_group() print_group()@
+* there are other functions in the source file that are not prototyped in the header.
+
+h4. cqp/hash.c ; cqp/hash.h
+
+* four functions:
+** @is_prime()@ -- returns whether or not this its argument is a prime number
+** @find_prime()@ -- returns the smallest prime number that is greater than its argument 
+** @hash_string()@ -- rolls a string into an int -- its 32bit hash value
+** @hash_macro()@ -- rolls a macro name & its number of arguments into an int
+
+h4. cqp/html-print.c ; cqp/html-print.h
+
+* this is one of a set of parallel "printing" modules
+* the prefix for the functions here is @html_print_@
+* Also we have two other functions here:
+** @html_convert_string()@, which copies  astring with replacement for &lt; &gt; &amp; &quot;
+** @html_puts()@, which streams text to a file pointer with replacement for &lt; &gt; &amp; &quot; 
+
+
+h4. cqp/latex-print.c ; cqp/latex-print.h
+
+* this is one of a set of parallel "printing" modules
+* the prefix for the functions is @latex_print_@
+* As well as these functions, there is @latex_convert_string()@ which escapes Latex control characters in a string
+
+
+h4. cqp/llquery.c
+
+* This file contains the @main()@ function for @cqp@.
+* there are two "versions" of this file, one "normal" version and one which is compiled if @USE_READLINE@ is defined. If this is the case, additional functions are defined.
+** @cc_compl_list_init() cc_compl_list_add() cc_compl_list_sort()  cc_compl_list_sort_uniq() cqp_custom_completion() ensure_semicolon() readline_main()@
+** the most interesting is @readline_main()@, which is called by @main()@ if @USE_READLINE@ is defined.
+** in the normal version, @main()@ just passes either the batch file argument or stdin to @cqp_parse_file()
+** in the @USE_READLINE@ version, @readline_main()@ takes the file handle argument and deals with it in the same way 
+* note - there is no @.h@ file here 
+* _depends on_: the @cqp_parse_file()@ function is in @cqp.c@
+
+h4. cqp/macro.c ; cqp/macro.h
+
+* this is "macro" in the sense of "CQP macro", not "C macro" (as in @cl/macro.h@)
+* these are functionas for definig, loading, etc. CQP macros.
+* the ones defined in macro.h are fairly heavily commented
+* macro.c contains many functions additional to those declared in macro.h 
+
+
+h4. cqp/matchlist.c ; cqp/matchlist.h
+
+* Deals with matchlists and set ops on them
+* Two data structures: @MLSetOp@ and @Matchlist@
+* and five functions:
+** @init_matchlist() show_matchlist() show_matchlist_firstelements() free_matchlist() Setop()
+** @Setop@ is the only one of these that is weighty. It performs an "operation" on two match lists.@
+
+h4. cqp/options.c ; cqp/options.h
+
+* As you might expect, this contains the code that creates option settings
+* The options are of two types:
+** global integers declared in the header file
+** options contained within a @CQPOption@ structure
+** for the latter type, a global array of @CQPOption@ called @cqpoptions@ is created (and initialised at declaration)
+* Functions made available here (for accessing said global array):
+** @find_option set_string_option_value set_integer_option_value set_context_option_value int_option_values print_option_value parse_options@
+* There are other functions as well. The most notable is @syntax()@ which is the "print help and exit" function and which is called by @parse_options()@
+
+h4. cqp/output.c ; cqp/output.h
+
+* Contains things related to the "tabulate" command (data structure, global list, and functions)
+* Also contains functions for opening/closing streams and files (inc. temp files)
+* Also contains the @cqpmessage()@ function which is used all over the shop and which prints a message to STDERR.
+* And, finally, four other functions for printing things: most notably, @print_output()@ 
+
+h4. cqp/parser.l ; cqp/parser.y
+
+* source files processed by flex and bison to produce three source files:
+** @lex.yy.c parser.tab.c parser.tab.h@
+* what these files represent is a parser for the CQP query language
+* the function @yyparse()@ is key, it parses query strings (see @cqp/cqp.c@)
+** it takes its input from the global variable @cqp_input_string@
+* in particular, note that the parser _executes_ commands as well as just parsing them.
+** in @parser.tab.c@ there is a huge switch statement which contains code for every possible action - depending on which instruction the parser found on the input line.
+** the case statements in this switch derive from the RULES defned in @parser.y@ 
+*** and typically involve the functions in @parse_actions@
+
+h4. cqp/parse_actions.c ; cqp/parse_actions.h
+
+* This module contains the functions that are used within the rule definitions in @parser.y@ 
+* The following "groups" of functions are declared in @parse_actions.h@:
+** PARSER ACTIONS
+** Regular Expressions
+** BOOLEAN OPS
+** Variable Settings
+** PARSER UTILS
+** CQP Child mode:  Size & Dump 
+
+
+h4. cqp/print-modes.c ; cqp/print-modes.h
+
+* Defines two objects: @PrintDescriptionRecord, PrintOptions@; and one enum: @PrintMode@ which contains a setting for what the output mode is.
+* There are three functions made available via the header:
+** @ComputePrintStructures() ParsePrintOptions() CopyPrintOptions()@
+
+h4. cqp/print_align.c ; cqp/print_align.h
+
+* Just one function, @printAlignedStrings()@
+* which does pretty much what it says on the tin - pritns strings aligned between two corpora.
+
+h4. cqp/ranges.c ; cqp/ranges.h
+
+* This module contains the functions for sorting query results (e.g., @RangeSort()@, @SortSubcorpus()@ ...)
+** and the @SortClause@ pointer-to-structure that goes along with sorting
+* It also contains:
+** functions for deleting / copying concordance lines (called "intervals")
+
+h4. cqp/regex2dfa.c ; cqp/regex2dfa.h
+
+* "DFA" here = "deterministic finite-state automaton"
+* defines the DFA datatype and functions for dealing with
+* Lots and lots of functions but only four are in the header:
+** @init_dfa()@ and @free_dfa()@
+** @regex2dfa()@ -- the key one
+** @show_complete_dfa()@, whihc is a printout function for the data structure.
+
+h4. cqp/sgml-print.c ; cqp/sgml-print.h
+
+* this is one of a set of parallel "printing" modules
+* the prefix for the functions here is @sgml_print_@
+* There is a difference between this and @html-print@: there are @sgml_convert_string()@ and @sgml_puts()@ functions with replacement for &lt; &gt; &amp; &quot; (same as @html_print_@) but these functions are not declared in the header file
+
+
+h4. cqp/symtab.c ; cqp/symtab.h
+
+* "global symbol table" -- explained in a long comment at the start of the header file
+* has #definitions, data structures, and functions in two sections: 
+** The SYMBOL LOOKUP part: SymbolTable and LabelEntry 
+** The DATA ARRAY part: RefTab 
+** (... where SymbolTable, LabelEntry, and RefTab are pointer-types to the structures dealt with)
+
+h4. cqp/table.c ; cqp/table.h
+
+* @table.h@ contains structure and function declarations for the "table" that contains a query result / subcorpus (i.e. a list of ~Match and MatchEnd coordinates with optional extra columns. Each column is represent as an @(int *)@.
+* @table.c@ does not actually contain any definitions or declarations - where are the functions?
+* There are _lots_ of comments in @table.h@ so the way it all works is mostly documented there.
+
+h4. cqp/targets.c ; cqp/targets.h
+
+* Contains code for four functions:
+** @string_to_strategy()@
+** @set_target()@
+** @evaluate_target()@
+** @evaluate_subset()@
+
+h4. cqp/tree.c ; cqp/tree.h
+
+* "evaluation tree" -- this module contains functions for doing "things" with Evaltree and Constrainttree objects (see @eval@)
+* many of the functions are for printing / deleting trees.
+* _depends on_: the @eval@ module
+
+h4. cqp/treemacros.h
+
+* No .c file, only a .h file
+* defines preprocessor macros @NEW_TNODE()@, @NEW_EVALNODE()@, @NEW_EVALLEAF()@, @NEW_BNODE()@, @DELETE_NODE()@,  and @DELETE()@ (the last two being synonyms for @cl_free()@)  
+* _depends on_: only the corpus library - no other part of CQP.
+
+h4. cqp/variables.c ; cqp/variables.h
+
+* This file contains code for handling "variables" which are elements in the evaluation of a search (I think)
+* The VariableBuffer structure (and the Variable type which is a pointer to it) are declared here
+* A global array of @Variable@s called @VariableSpace@ is declared (as well as @nr_variables@ which contains the size of that array)
+* ... and there are various functions for dealing with this array (allocating, reallocated, getting a variable from, etc.)
+
+
+
+h4. cqp/Makefile
+
+* a Makefile for all of this! There are many useful comments in this file, some of which are summarised here.
+* Three binaries are built: cqp, cqpcl, and cqpserver.
+* All three depend on the same source files, but
+** cqpcl and cqp add different files for their @main()@ function: @cqpcl@  and @llquery.c@ respectively
+** cqpserver adds @server@ and @auth@ from CQi (whereas cqp uses the dummy versions of these)
+*** the @main()@ function for cqpserver is actually part of CQi, even though its build is here.
+
+
+
+
+
+h2. Command-line utilities
+
+Most of these files contain the code for a single program, each of which is one of the non-interactive components of CWB. These files do not usually have headers - the functions in them are for that program alone.
+
+These utilities are used most importantly for corpus setup but also for a range of administration tasks.
+
+As a general rule, the utilities depend on the CL library. Most of them #include @cl/cl.h@ but some #include other headers from the CL library.
+
+h4. utils/barlib.c ; utils/barlib.h
+
+* this is the _Beamed Array (BAR) Library_ . A BAR is storage for a sparse matrix used in beam search methods.
+* these files define a BAR data structure (BARdesc) and functions for handling them:
+** BAR_new() -- create a new BAR
+** BAR_reinit() -- change size of BAR (erases contents of BAR)
+** BAR_delete() -- destroy the BAR
+** BAR_read() and BAR_write() -- read from / write to particular locations in the BAR
+* _depends on_: nothing 
+
+h4. utils/feature_maps.c ; utils/feature_maps.h
+
+* here is defined the FMS data type ("feature map handle": it is a pointer-to-structure)
+* this is a module used in alignment between corpora (i.e. a "feature mapping" between a source and target corpus)
+* functions are documented in comments in @feature_maps.h@
+* _depends on_: the CL library and BARlib
+
+h4. utils/cwb-align-encode.c
+
+* code for @cwb-align-encode@, which
+** "Adds an alignment attribute to an existing CWB corpus"
+* _depends on_: the CL via @cl/cl.h@, but @storage@ and @attributes@ are directly #included as well.
+
+h4. utils/cwb-align-show.c
+
+* code for @cwb-align-show@, which
+** "Displays alignment results in terminal."
+* _depends on_: the CL library
+
+h4. utils/cwb-align.c
+
+* code for @cwb-align@, which
+** "Aligns two CWB-encoded corpora."
+* _depends on_: the CL library and @feature-maps@
+
+
+h4. utils/cwb-atoi.c
+
+* code for @cwb-atoi@, which
+** "Reads one integer per line from ASCII file <file> or from standard input and writes values to standard output as 32bit integers in network format (the format used by CWB binary data files)"
+* _depends on_: the @endian@ module in the CL (#included directly, not via @cl/cl.h@) 
+
+h4. utils/cwb-compress-rdx.c
+
+* code for @cwb-compress-rdx@, which
+** "Compresses the index of a positional attribute."
+* contains a @main()@ function, plus two "business end" functions: @compress_reversed_index()@ and @decompress_check_reversed_index()@
+* _depends_on_: the CL via @cl/cl.h@, but lots of CL modules are directly #included as well, including @compression@.
+
+h4. utils/cwb-decode-nqrfile.c
+
+* code for @cwb-decode-nqrfile@, which
+** "Decodes binary file format for named query results"
+* The usage description, -h option, and man page are currently incomplete.
+* no dependencies.
+
+h4. utils/cwb-decode.c
+
+* code for @cwb-decode@, which
+** "Decodes CWB corpus as plain text (or in various other text formats)."
+* _depends_on_: the CL via @cl/cl.h@, but @globals corpus@ and @attributes@ are directly #included as well.
+
+h4. utils/cwb-describe-corpus.c
+
+* code for @cwb-describe-corpus@, a simple but handy program for displaying info 
+* _depends_on_: large chunks of CL but not via @cl/cl.h@. The following modules are #included:
+** @globals corpus attributes macros@
+
+h4. utils/cwb-encode.c
+
+* code for @cwb-encode@, which
+** "Reads verticalised text from stdin (or an input file; -f option) and converts it to the CWB binary format."
+* This is a pretty complex utility - it has a BIG main() function, plus lots of internal functions 
+* _depends_on_: large chunks of CL but not via @cl/cl.h@. The following modules are #included:
+** @globals lexhash storage macros endian@
+
+h4. utils/cwb-huffcode.c
+
+* code for @cwb-huffcode@, which
+** "Compresses the token sequence of a positional attribute."
+* _depends_on_: the CL via @cl/cl.h@, but some CL modules are directly #included as well, including @bitio@.
+
+h4. utils/cwb-itoa.c
+
+* code for @cwb-itoa@, which
+** "Reads 32bit integers in network format from CWB binary data file <file> or from standard input and prints the values as ASCII numbers on standard output (one number per line)."
+* a comment in the main() function says it only works with 32 bit integers -- correct?
+* _depends on_: the @endian@ module in the CL (#included directly, not via @cl/cl.h@) 
+
+h4. utils/cwb-lexdecode.c
+
+* code for @cwb-lexdecode@, which 
+** "Prints the lexicon (or part of it) of a positional attribute on stdout..."
+* _depends_on_: the CL via @cl/cl.h@, but @globals corpus attributes macros@ are directly #included as well.
+
+h4. utils/cwb-makeall.c
+
+* code for @cwb-makeall@, which 
+** "Creates a lexicon and index for each p-attribute of an encoded CWB corpus"
+* _depends_on_: the CL via @cl/cl.h@, plus @globals corpus attribute endian fileutils@
+
+h4. utils/cwb-s-decode.c
+
+* code for @cwb-s-decode@, which 
+** "Outputs a list of the given s-attribute, with begin and end positions"
+* _depends_on_: the CL via @cl/cl.h@, plus @globals@
+
+h4. utils/cwb-s-encode.c
+
+* code for @cwb-s-encode@, which 
+** "Adds s-attributes with computed start and end points to a corpus" 
+** (provisional description!)
+* several of the functions other than @main()@ are for the SL object ("structure list"), which represents a single s-attribute
+* _depends_on_: the CL via @cl/cl.h@, but @globals endian macros storage lexhash@ are directly #included as well.
+
+h4. utils/cwb-scan-corpus.c
+
+* code for @cwb-scan-corpus@, which finds out the frequency of pairs (or triplets or ...) of things in a corpus
+* "pairs of things" might mean two different p-attributes on one token, or it might mean n-grams or....
+* as per usual there are a bundle of functions here as well as @main()@
+* _depends_on_: the CL via @cl/cl.h@, but @globals@ is directly #included as well.
+
+h4. utils/Makefile
+
+* This is, obviously, the Makefile, but it is worth noting it contains in comments an overview of what each util does.
+
+h2. Other directories within the CWB root directory 
+
+h3. config
+
+The subdirectories here contain chunks of makefile for use when compiling CWB on different operating systems.
+
+h3. doc
+
+This contains documentation of the CWB code (note: _not_ user documentation for CWB/CQP), including this file!
+
+h3. editline
+
+This contains a (slightly patched) version of the Editline library, on which earlier versions of CQP were dependent.  Now that CQP has been backported to GNU Readline in CWB 3.2.4+, the directory is no longer needed and will be deleted in a future check-in.
+
+h3. instutils
+
+This directory contains shell scripts (@sh@) for configuring / installing CWB.
+
+h3. man
+
+This contains the @*.pod@ source files for the man entries for @cqp@ and the CWB command-line utilties.
+
+h3. mingw-libgnurx-2.5.1
+
+This contains an internal copy of the source code for the @libregex@ needed to give CWB under windows (with MinGW) POSIX regular expression capability. It comes from here:
+https://sourceforge.net/project/shownotes.php?release_id=140957
+To quote the release notes, "This is a port of the GNU regex components from glibc, ported for use in native Win32 applications by Tor Lillqvist." There is a binary version, but for cross-compilation it seemed like
+a better idea to have a copy of the source internal to the CWB tree.
+
+
+h2. Global variables in CL
+
+(This is just an idea --- useful? Or overkill? -- AH)
+
+|_. Name|_. Type|_. Defined in|_. Declared @extern@ in|_. What is it?|
+|@@|@@|@@|@@||
+|@@|@@|@@|@@||
+|@@|@@|@@|@@||
+|@@|@@|@@|@@||
+|@@|@@|@@|@@||
+|@@|@@|@@|@@||
+
+
+
+
+h2. Global variables in CQP 
+
+
+(This is just an idea --- useful? Or overkill? -- AH)
+
+|_. Name|_. Type|_. Defined in|_. Declared @extern@ in|_. What is it?|
+|@@|@@|@@|@@||
+|@@|@@|@@|@@||
+|@@|@@|@@|@@||
+|@@|@@|@@|@@||
+|@@|@@|@@|@@||
+|@@|@@|@@|@@||
+

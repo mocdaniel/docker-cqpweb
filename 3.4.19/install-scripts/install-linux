@@ -1,0 +1,99 @@
+#!/bin/sh
+
+# Installation for most common Linux distributions
+# Run as root! su or sudo.
+
+who=$(whoami)
+
+if [ "$who" != "root" ]
+then
+    echo "This script must be run as root."
+    echo "Please try again: sudo install-scripts/install-linux"
+    echo "Thanks!"
+    exit 1
+fi
+
+# check for silence request as "--quiet".
+(echo "$*" | grep -Eq  "[-][-]quiet") && hide_installer_messages=1 || hide_installer_messages=0
+
+if [ -f /etc/lsb-release ]
+then
+    # For some versions of Debian/Ubuntu without lsb_release command.
+    . /etc/lsb-release
+    OS=$DISTRIB_ID
+    VER=$DISTRIB_RELEASE
+    INSTALLER='apt-get install -y'
+    if [ $hide_installer_messages -eq 1 ] ; then INSTALLER="$INSTALLER -qq" ; fi
+    PACKAGES='autoconf bison flex gcc make pkg-config libc6-dev libncurses5 libncurses5-dev libpcre3-dev libglib2.0-0 libglib2.0-dev libreadline6 libreadline6-dev'
+    # NB, we assume that these versions of Debian are old, and therefore require old package names for libreadline*. 
+elif [ -f /etc/debian_version ]
+then
+    # Debian/Ubuntu/etc.
+    OS=Debian
+    VER=$(cat /etc/debian_version)
+    INSTALLER='apt-get install -y'
+    if [ $hide_installer_messages -eq 1 ] ; then INSTALLER="$INSTALLER -qq" ; fi
+    PACKAGES='autoconf bison flex gcc make pkg-config libc6-dev libncurses5 libncurses5-dev libpcre3-dev libglib2.0-0 libglib2.0-dev libreadline7 libreadline-dev'
+elif [ -f /etc/alpine-release ]
+then
+    # Alpine Linux
+    OS=Alpine
+    VER=$(cat /etc/alpine-release)
+    INSTALLER='apk add -q'
+    PACKAGES='autoconf bison flex gcc make pkgconf libc-dev ncurses ncurses-dev pcre glib glib-dev readline readline-dev'
+elif [ -f /etc/fedora-release ]
+then
+    # Fedora
+    OS=Fedora
+    VER=$(cat /etc/fedora-release)
+    # Package manager detection requires an extra step on Fedora
+    DnfCheck=$(which dnf)
+    if [ -z "$DnfCheck" ]
+    then
+        # Newer Fedora uses DNF instead of YUM; we assume we have the latter if we can't detect the former.
+        INSTALLER='dnf -y install'
+        if [ $hide_installer_messages -eq 1 ] ; then INSTALLER='dnf -yq install' ; fi
+    else
+        INSTALLER='yum install -y'
+        if [ $hide_installer_messages -eq 1 ] ; then INSTALLER="$INSTALLER -q" ; fi
+    fi
+    PACKAGES='autoconf bison flex gcc pkgconfig glibc glibc-common glibc-devel glibc-headers make ncurses ncurses-libs ncurses-devel pcre pcre-devel glib2 glib2-devel readline readline-devel'
+elif [ -f /etc/redhat-release ]
+then
+    # Older Red Hat, CentOS, etc.
+    OS=CentOS
+    VER=$(cat /etc/redhat-release)
+    INSTALLER='yum install -y'
+    if [ $hide_installer_messages -eq 1 ] ; then INSTALLER="$INSTALLER -q" ; fi
+    PACKAGES='autoconf bison flex gcc pkgconfig glibc glibc-common glibc-devel glibc-headers make ncurses ncurses-libs ncurses-devel pcre pcre-devel glib2 glib2-devel readline readline-devel'
+else
+    # Fall back to uname, e.g. "Linux <version>"; also works for BSD, etc.
+    OS=$(uname -s)
+    VER=$(uname -r)
+    echo "You seem to be running $OS version $VER. Sorry but CWB auto-install doesn't work on that OS!"
+    echo "You should use manual installation with 'make' instead (see file INSTALL)."
+    exit 1
+fi
+
+# we replace the lengthy messages with just one "start" and one "end" message if --quiet
+if [ $hide_installer_messages -eq 1 ] ; then echo 'Checking that your computer has all the software packages that CWB needs...' ; fi
+
+CONFIG_FLAGS=$(./install-scripts/config-basic) 
+
+
+# Install OS packages
+$INSTALLER $PACKAGES
+
+if [ $hide_installer_messages -eq 1 ] ; then echo '    .... software check complete.' ; fi
+
+if [ $hide_installer_messages -eq 1 ] ; then LOUD='' ; else LOUD='FULL_MESSAGES=1' ; fi
+
+
+make clean        $CONFIG_FLAGS $LOUD \
+&& make depend    $CONFIG_FLAGS $LOUD \
+&& make cl        $CONFIG_FLAGS $LOUD \
+&& make utils     $CONFIG_FLAGS $LOUD \
+&& make cqp       $CONFIG_FLAGS $LOUD \
+&& make install   $CONFIG_FLAGS $LOUD \
+&& make realclean $CONFIG_FLAGS $LOUD 
+

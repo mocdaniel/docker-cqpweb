@@ -1,0 +1,131 @@
+<h1>Rules-of-thumb for formatting code in <span class="caps">CWB </span>/ <span class="caps">CQP</span></h1>
+
+<p><span class="caps">NB.</span> There may be numerous exceptions to these rules-of-thumb in the existing <span class="caps">CWB </span>code, since <span class="caps">CWB </span>contains multiple strata of code done by different people in different styles. The aim of these </p>
+
+<ul>
+<li>Note that everything here only applies to the main <span class="caps">CWB </span>package. The <span class="caps">CWB</span>-Perl and <span class="caps">CQP</span>web code bases may (and, in fact, do) follow different conventions.</li>
+</ul>
+
+<h2><span class="caps">ANSI</span></h2>
+
+<ul>
+<li>All C code in <span class="caps">CWB </span>should adhere to <span class="caps">ANSI</span> C standard</li>
+<li>This means, for example, no old-style prototypes (with untyped parameters) should ever be used</li>
+</ul>
+
+<h2>Encoding</h2>
+
+<ul>
+<li>Since <span class="caps">CWB </span>handles many character encodings, the code itself should be character-set-neutral</li>
+<li>Therefore, all code files must be valid 7-bit <span class="caps">ASCII</span><ul>
+<li>Corollary: use neither literal <span class="caps">UTF</span>-8 nor literal Latin-1 characters within code files</li>
+<li>Use numbers or hex escape sequences instead</li>
+</ul>
+</li>
+<li>There may be Latin-1 characters left over in pre-3.0 parts of the code, these will be weeded out and removed over time. </li>
+</ul>
+
+<h2>Brace style</h2>
+
+<ul>
+<li>For blocks after control structures:<ul>
+<li>opening braces are on the same line as the control structure that they go with</li>
+<li>closing braces are on a line of their own, aligned with the start of the control structure keyword</li>
+</ul>
+</li>
+<li>For function definitions:<ul>
+<li>opening brace on a line of its own, hard-left-aligned</li>
+<li>closing brace on a line of its own, hard-left-aligned</li>
+</ul></li>
+</ul>
+
+<h2>Indenting</h2>
+
+<ul>
+<li>Indent width: 2 spaces per level of indentation</li>
+<li>Indent lines within braces 1 level</li>
+<li>As a corollary of this, indent second half of a one-statement <code>if / for / while</code> by 1 level</li>
+<li>Spaces, not tab characters, are used for aligning comments at the <em>end</em> of code lines</li>
+<li>Where possible standardise on spaces rather than tab characters at the start of code lines as well</li>
+</ul>
+
+<h2>Function definitions</h2>
+
+<ul>
+<li>the return type of the function goes on the line before the function name and parameter list</li>
+<li>if there are relatively few parameters they should all go on the same line as the function name</li>
+<li>if there are many parameters:<ul>
+<li>put the first on the same line as the function name</li>
+<li>put each subsequent parameter on a line of its own, using spaces to indent so they all begin at the same point as the first</li>
+</ul></li>
+</ul>
+
+<h2>Function and object names</h2>
+
+<ul>
+<li>data structure, enumeration etc. typedefs have names in CamelCase with an initial cap (the actual <code>struct</code> names can be anything)</li>
+<li>functions have names in all-lowercase (except when referring to an object name that contains uppercase) with "words" separated by underscore<ul>
+<li>"families" of functions, e.g. in a single module, share a <code>prefix_</code> where possible</li>
+</ul>
+</li>
+<li>global variables should be named like functions</li>
+</ul>
+
+<h2>Global variables</h2>
+
+<ul>
+<li>Global variables should be declared in source files when they are local to the source file</li>
+<li>Global variables should be declared in header files when they are used by other source files or exported in the <span class="caps">API</span></li>
+<li><code>extern</code> statements for global variables go in the corresponding header file. They should not be added to every source file that uses the variable.</li>
+</ul>
+
+<h2>Boolean values</h2>
+
+<ul>
+<li>The <em>preferred</em> way to represent Boolean values in <span class="caps">CWB </span>code is as an <code>int</code> (_not_ unsigned)<ul>
+<li>"False" is represented as literal 0</li>
+<li>"True" is represented as literal 1</li>
+</ul>
+</li>
+<li><em>Also found</em> in the code are instances of a type <code>Boolean</code> (<code>typedef</code> of a <code>char</code>). This is <em>depracated</em>.</li>
+</ul>
+
+<h2>Commenting</h2>
+
+<ul>
+<li>Two sorts of comments are distinguished: those that constitute the documentation of functions / variables / structures, and incidental comments<ul>
+<li>Incidental comments are in normal C-style /* ... */</li>
+<li>"API documentation" commenting should be done in Javadoc-style, as outlined below.</li>
+</ul></li>
+</ul>
+
+<h2>Doxygen Javadoc-style <span class="caps">API </span>comments</h2>
+
+<ul>
+<li><span class="caps">CWB </span>uses the Doxygen system for generating <span class="caps">HTML </span>documentation of the macros, functions, structures and global variables in the C source and header files.<ul>
+<li>See http://www.doxygen.nl</li>
+</ul>
+</li>
+<li>Only <em>a subset of</em> the Doxygen comment syntax is used in <span class="caps">CWB</span>:<ul>
+<li>Use Javadoc-style syntax, <em>not</em> any of the other syntaxes supported by Doxygen</li>
+<li>For each documented item, give a <em>brief description</em> (compulsory) and a <em>detailed description</em> (optional).<ul>
+<li>The brief description is the first sentence of the documenting comment, followed by a blank line<ul>
+<li>The brief description may not contain any sentence-final punctuation, except at its end.</li>
+</ul>
+</li>
+<li>The detailed description follows, across as many lines as necessary</li>
+</ul>
+</li>
+<li>For functions, also give &#64;param and &#64;return specifications</li>
+<li>Structures and functions are always <em>preceded</em> directly by their documentation.</li>
+<li>Members of structures can be documented on the same line using the abbreviated syntax with &lt; (see file of examples)</li>
+<li>For functions, it is the definition that should be documented, not the protype.</li>
+<li>Other possible tags: &#64;see for a crossref; &#64;file to document the contents of an entire file.</li>
+</ul>
+</li>
+<li>Open-angled brackets cannot be used in documentation comments - they will be interpreted as <span class="caps">HTML </span>tag openers.<ul>
+<li>Use an lt-entity instead, or just use curly braces. </li>
+</ul>
+</li>
+<li>Examples are given in the file <code>API-documentation-examples</code>.</li>
+</ul>

@@ -1,0 +1,484 @@
+
+BUGS, PROBLEME, VORSCHLAEGE:
+
+* implementation of Huffman codes in cwb-huffcode program breaks down when the
+  lexicon has only a single entry (e.g. for a binary attribute that has only
+  the value "false" in a corpus); should be easily fixable in principle (probably
+  as a special case that assigns an arbitrary one-bit code in this case),
+  but I don't understand the code well enough to make quick changes
+
+
+* when we use "set <NamedQ> match(end) ..." to modify match regions,
+  we should probably make sure that the named query is re-sorted
+  because several operations rely on the standard monotonic ordering;
+  note that this will invalidate the sortidx like most set and subset
+  operations (unless the table implementation learns how to update the
+  sortidx efficiently)
+
+  Dazu muss noch die Funktion RangeSort()<ranges.c> implementiert werden.
+
+
+* Anker in Subqueries sind auch nicht dokumentiert
+
+=> kurze Beschreibung in CHANGES
+
+
+* Der CQP-Parser erlaubt Constraint-Ausdruecke in XML-Tags, z.B.
+
+	<s lemma = "dumm"> [];
+
+was natuerlich Unsinn ist und ueberhaupt nicht ausgewertet
+wird. Wahrscheinlich ein erster Ansatz, Werte von S-Attributen
+abzufragen. Entweder zu einer sinnvollen Syntax konvertieren oder
+wieder ganz streichen: Annotationen von s-Attributen koennen jetzt 
+ja ueber die Label-Syntax abgefragt werden.
+  -> im Moment koennte man <s [<pattern>]> zulassen, da wir sowieso
+     eine Liste aller Saetze machen muessen, auf die wir dann
+     <pattern> mit eval_bool() anwenden koennen
+  -> alternativ spezielle Regeln einfuehren, die Ausdruecke wie
+     <s "dumm"> oder <np_agr matches "Gen:.*"> erlauben (s.u.)
+
+=> vernuenftigste Loesung ist wohl <np_h "Baustelle">, d.h. in dem 
+XML-Tag ist eine Regexp erlaubt, die mit den Annotationen der Regions
+verglichen wird (evtl. mit String-Optimierung, falls das z.B. bei 
+NP-Suche auf grossen Korpora einen wesentlichen Unterschied macht);
+dabei sollten Flags unterstuetzt werden (<np_h "cafe" %cd>) und 
+eine Erweiterung auf matches/contains waere wuenschenswert (wegen
+<np_agr matches "Dat:.*">); idealerweise wuerden auch Regex-Compiles
+unterstuetzt (<np_h RE($animals) %c>), aber das kann warten und sollte
+im Source-Code dann vereinheitlicht werden
+
+Implementierung sollte nicht allzu aufwendig sein; in <eval.h> muessen
+die Programmteile zur Auswertung am Anfang bzw. innerhalb der Query
+erweitert werden (so lange es sich nur um reg. Ausdruecke handelt, ist
+das ziemlich einfach);
+
+OK um Flags und Regex-Optimierungen nutzen zu koennen, sollte ein Front-End zur
+   POSIX-Regex-Bibliothek in der CL implementiert werden (compile/exec/free), das dann
+   auch an anderen Stellen in CQP eingesetzt wird
+OK Datenstruktur fuer XML-Tags in <eval.h> um Feld fuer Regexp bzw. String erweitern
+OK Query-Grammatik ergaenzen und bei Bedarf regexp vorkompilieren 
+OK in <eval.c> die Auswertung von XML-Tag-Patterns entsprechend ergänzen
+OK idealerweise den Regex-Optimizer so ergänzen, dass er auch einfach
+  matches bzw. contains Ausdrücke optimieren kann (muss \| sowie negierte
+  Zeichenklasse [^|] -- bzw. [^\|] mit Anpassung bei contains/matches ueberlesen
+  und fuer matches zusaetzlich Grains aus (...)+ herausziehen ... was er 
+  eigentlich koennen sollte und auch tut) 
+OK eine weitere Spezialisierung des Regex-Optimizers ist notwendig, um auch
+  matches-Ausdrücke zu verarbeiten; bzw. beim Matches-Operator die Klammerung
+  um die innere Regex weglassen, wenn diese kein '|' enthält -- das sollte die
+  wichtigen Fälle erschlagen (-> diese Lösung implementiert)
+- Alternative: doch noch einen (beinahe) vollständigen Regex-Parser implementieren
+- evtl. Erweiterung auf RE($var), dazu sollte man in der Query-Grammatik die 
+  Behandlung von RE(..) in eine eigene Regel packen, die aus der kompilierten 
+  Regex einen String erzeugt und diesen an die "normale" Regel zurückliefert
+
+=> implementiert, muß dokumentiert werden
+
+
+* Lookahead-constraint-pattern (zero-width pattern):
+  [: <cond> :] evaluates <cond> on current token like [ <cond> ], 
+  but doesn't advance cpos pointer; used to check conditions, 
+  implement scoped variables; lookahead matchall [::] can be used
+  to set targets and/or variables on start/end of macro, disjunction,
+  optional element, etc:
+  ... a:[::] (/region(np) | /region(pp))* b:[::] ... ;
+
+* OK add lookahead_constraint flag to Pattern-type AVS;
+  OK set that flag in the grammar;
+  OK change eval.c so that cpos isn't advanced (check that reference to
+     current corppos is still correct);
+  OK either disable lookahead in query-initial position or make sure
+     the automaton simulation works as expected (should anyway, because
+     we can have zero-width tags and anchors in qip)
+
+* OK add builtin-function ignore() to delete labels without full eval:
+     /undef[a] can be implemented as ignore(~a)
+
+=> write short documentation in CHANGES
+
+* might want to allow labels/targets on tags (and perhaps anchors),
+  so we can easily label the first and last token of a s-attribute
+  region ( start:<np> ... end:</np> ) -- note that labels on end tags
+  have to do the Right Thing, i.e. refer to the effective cpos
+
+* allow "set A target target[-1]", "set A match match[+1]", ...
+  if possible, we might also allow this in label evaluation
+  (  a[-1].lemma = b.lemma ) for the following scenario:
+  /region[np] a:[::] /region[np] b:[::] :: a[-1].lemma = b[-1].lemma;
+  (to access the last token in a region or complex subquery)
+- dazu in eval.h den Constraint(tree)-Typ anpassen; ueberall wo ein
+  Label definiert ist muss auch ein Offset eingefuegt werden, und diesen
+  ggf. in den entsprechenden Subroutinen von <parse_actions.c> setzen
+  (Achtung: bei Query-Optimierung kann pa_ref in idlist konvertiert werden,
+   dabei muessen die Label-Einstellungen uebernommen werden!)
+  Dann bei Label-Auswertung den Offset beruecksichtigen, kann aber dazu
+  fuehren, dass man Corpus-Positionen ausserhalb des gueltigen Bereichs 
+  erhaelt, sodass dies jedesmal geprueft werden muss :o(
+
+
+* Zugriff auf Start und Ende des aktuellen Matches innerhalb von Queries
+  mit speziellen "match" und "matchend"-Labeln ("matchend" erst in global 
+  constraint definiert). Diese werden beim Parsen der Query in die Symtab
+  eingetragen und muessen bei der Auswertung jeweils korrekt gesetzt werden.
+  Damit ist automatisch auch das Label "target" verfügbar, sobald ein Target
+  mit '@' gesetzt wurde. Cool? Cool!
+OK EvalEnvironment in <eval.h> erweitern um LabelEntries fuer match und matchend.
+OK Diese in <parser.y> bei der Regel SearchPattern: am Anfang (match) bzw.
+  vor der GlobalConstraint (matchend) definieren. 
+  Problem: koennen nur als Labelreferenz (match.pos) verwendet werden, nicht
+  als einfache Labels, da sie dabei als Schluesselwort geparset werden;
+  daher wird anstelle einer ID in RelLHS: auch ein FIELD akzeptiert und
+  in den entsprechenden String umgewandelt
+OK in <eval.c> muessen bei der Simulation des Automaten die beiden Label gesetzt
+  werden; und zwar bei "activate initial state" match-Label setzen auf
+  Start-cpos (i.e. matchlist->start[i]); und bei "check for winner" muss 
+  matchend-Label gesetzt werden (korrekterweise danach wieder loeschen, d.h. 
+  auf -1 setzen, falls die Simulation weiterlaeuft)
+
+=> das muss auch noch dokumentiert werden!
+
+
+* CQP demo version implementiert:
+  - CL akzeptiert nur internen registry-eintrag (<cl/democorpus.h>)
+  - dieses Corpus automatisch in CQP per default_corpus aktivieren (-D switch deaktivieren!)
+  - CQP ignoriert die Registry und laedt nur das Demo-Korpus
+  + Home-Verzeichnis des Demo-Corpus ggf. aus Umg.Var. CQP_DEMO_KWICDIR lesen
+    -> besser nicht, stattdessen:
+  - Demo muss in Stammverzeichnis des Demo-Korpus aufgerufen werden und 
+    verwendet mitgeliefertes less-358 mit lokalem Pfad
+
+=> IN CHANGES DOKUMENTIEREN
+
+
+* Subquery-Anchors sind jetzt ja sauber als Tags implementiert, muessen
+aber noch in CHANGES dokumentiert werden. Dafuer alte Anchor-Syntax raus.
+
+=> IN CHANGES DOKUMENTIEREN!!
+
+
+* StrictRegions sind implementiert und muessen noch in CHANGES dokumentiert werden.
+  -> kann man die Entscheidung, wann die Constraints aktiviert werden, noch
+     verbessern? 
+     in ``<s> [] | [] </s>'' aktiv, in ``[] </s> | <s> []'' nicht, 
+     aber in beiden Faellen sinnlos; kann der Parser entscheiden, ob 
+     tatsaechlich eine Umgebung gemeint ist?
+     wahrscheinlich nicht ... 
+  -> Doku: 'CQP tries to guess whether <s>-Tags are intended to constrain
+     the following material to a single region'
+Vernuenftiger ist wahrscheinlich, dass End-Tags nur akzeptiert werden, wenn
+vorher ein passender Start-Tag gematcht wurde (in <eval.c> beim End-Tag abtesten; 
+das entspr. Label muss ohnehin bekannt sein, da es auf -1 zurueckgesetzt wird)
+
+=> IMPLEMENTIERT, DRINGEND DOKUMENTIEREN!!
+
+
+
+* FreeSubqueries - Option :o)
+Neee, das geht viel besser mit 'anchored queries'. Typ:
+  NPs = [lemma = "Clinton"] expand to np;
+  A = (NPs) <match> .... ;
+ohne implizites "within <NPs>"!
+--- REICHT NICHT MEHR FÜR CWB-3.0, aber vielleicht in 3.1
+
+
+* BUILTIN-FUNKTIONEN
+
+Evtl. wäre es wünschenswert, die Handhabung von builtin-Funktionen zu
+verallgemeinern und in der CL mit dynamischen Attributen zu
+kombinieren (builtin-Funktionen wären dann quasi vordefinierte
+dynamische Attribute).  -- Aufruf optimieren?? -- Typecasting und
+Typprüfung von Argumenten verallgemeinern (*uff*) -- 
+
+Der momentane Bestand:
+
+Typecasting: built-in functions, die ein STRING-Argument erwarten,
+akzeptieren neben STRING auch PAREF. (in <cqp/eval.c> werden in
+Constrainttrees pa_ref und sa_ref unterschieden; letztere wird --
+abhängig davon ob über einen Label referenziert wird oder nicht -- vor
+Aufruf der builtin-Funktion in INT oder STRING umgewandelt)
+
+Auflistung der momentan definierten builtin-Funktionen mit ihren
+Datentypen: angegeben sind die _wünschenswerten_
+Datentypen. Tatsächlich wird ein L (Label) als PA übergeben (ohne
+zugehöriges Attribut), ein SA als I (Integer-Code). Ein PA darf auch
+eine Label-Refernz auf ein p-Attribut sein (jedoch kein reiner L), SA
+darf nicht über einen L referenziert werden (sonst wird es vor der
+Übergabe in S umgewandelt). Intern werden noch einige andere
+"schmutzige" Konvertierungen zwischen Argumenttypen durchgeführt, wozu
+unter anderem der Constrainttree für den Funktionsaufruf mit übergeben
+werden muß. Oli-Code halt. :o(
+
+[Argumente: I=INT S=STRING L=Label PA=p-Attribut SA=s-Attribut]
+ - I = f(PA)          Frequenz des Tokens (bezgl. des jeweiligen p-Atts)
+ - I = dist(L, L)     Abstand von 2 Token
+     = distance(L,L)
+ - I = distabs(L, L)  Betrag des Abstands: |dist(L,L)|
+ - I = int(S)	      String (d.h. Zahl in ASCII-Format) in Integer umwandeln
+ - I = lbound(SA)     True, wenn am linken Rand einer Region dieses Attributs
+ - I = rbound(SA)     (analog für rechten Rand)
+                      -> funktionieren beide _nicht_ mit SA_REF
+ - S = unify(S, S)    Schnitt zweier Feature Set-Attribute
+ - I = ambiguity(S)   Kardinalität eines Feature Set (d.h. Anzahl der Elemente)
+ - I = add(I, I)      Arithm. Operator '+' (für Integer)
+ - I = sub(I, I)        ~        ~     '-'
+ - I = div(I, I)        ~        ~     '*' 
+ - I = ignore(L)      ignoriert das Argument und liefert True (fuer /undef[]-Makro)
+
+Unzulässige Argumenttypen werden (zumindest meistens) sauber
+abgefangen. Es wird eine Fehlermeldung ausgegeben und die Auswertung
+der laufenden Query abgebrochen (in <cqp/eval.c>), um hunderte oder
+tausende von Fehlermeldungen zu vermeiden.
+
+Die Implementierungen der unify() und ambiguity() Funktionen wurden in
+die CL übertragen und in <cl/cl.h> exportiert.
+
+=> wenn s-Attribute neu mit Lexikon implementiert werden, muß der
+Aufruf der builtin-Funktionen und die Handhabung von DynCallResults
+überarbeitet werden 
+
+
+* Speicherverwaltung von matchlists in <cqp/eval.c> nicht sauber
+implementiert, wird aber ohnehin irgendwann durch Tables ersetzt.
+
+
+* Aufbau von CQP, insbesondere der Ablauf
+  - Initialisierung
+  - Parsen (Query / Interactive Command)
+  - Ausführung
+  - Nachbearbeitung (nach Query)
+  - Freigeben von Ressourcen
+  sollte mal richtig dokumentiert werden.
+
+=> nur, wenn CQP mal sauber reimplementiert werden sollte ...
+
+
+* MU-Queries: MU (meet "man" "woman" s) liefert jeweils nur ein
+  Resultat, wenn "man" mehrmals in einem Satz vorkommt.
+  Wie's aussieht ist die Auswertung völlig unzuverlässig und muß
+  komplett überarbeitet werden. Genau.
+
+=> im Zusammenhang mit Tables und mehreren Targets reimplementieren
+
+
+* falls mmap() fehlschlägt könnte das an Speichermangel (bzw. nicht
+  mehr vorhandenem Adreßraum) liegen -> entsprechende Fehlermeldung
+  ausgeben. An mutmaßlicher Stelle Fehlermeldung eingefügt.
+
+=> wird irgendwann sowieso durch die MMU behoben
+
+
+* ProgressBar und Timing implementieren für:
+  -  MU und TAB Queries   [timing]
+  OK set ... keyword ...
+  OK group ... 
+  -  sort ...             [timing]
+  OK subset ...
+[ProgressBar nicht MU, TAB, und sort; weil dort nicht vorhergesagt
+werden kann, wie lange die Operation noch läuft]
+
+* Query-Abbruch auch bei anderen Prozessen ermöglichen (auf eigene
+  Gefahr):
+  - MU und TAB queries  (SPÄTER)
+  OK set target 
+  OK subset
+  OK group
+  OK sort  (SCHWIERIG, weil qsort; evtl. Vergleich immer == 0? ja!)
+
+
+* Ausgabe der Kontext-Größe im ASCII-Header jetzt korrekt, aber
+  unschön implementiert. Fehlt in anderen PrintModes völlig.
+
+=> bei Reimplementierung der Ausgabe-Funktionen überarbeiten.
+
+
+* Optimierung fuer initial query position / initial matchlist.
+  (a) falls Bestimmung über Index möglich und nicht zu groß, diese
+      durchführen; dann Automaten von Liste der Anfangspositionen aus 
+      simulieren und ggf. erste Transition überspringen
+  (b) sonst: Automatensimulation für jede Korpusposition durchführen 
+      und dabei Liste der Matches (table :o) inkrementell aufbauen;
+      dabei muß aber jeweils die erste Transition getestet werden!
+  => am besten für später aufheben, wenn die Evaluierung von Queries
+     neu implementiert und verbessert wird.
+
+
+* inverted matchlists sind zwar weitgehend implementiert, werden aber
+  wahrscheinlich gar nicht verwendet; bei Tables eh nicht allgemein
+  moeglich (wg. anderen fields), daher wird das wieder entfernt;
+  wäre bei mehrfachen Negationen wie [!(lemma != "Hustenreiz")]
+  hilfreich, aber wer schreibt schon so blöde Queries?
+  (evtl. Normalisierung von Negationen??)
+  Vorläufig wird angenommen, daß matchlists nie invertiert sind (ggf. mit
+  assert() kontrollieren)!
+  Ebenso wird das matches_whole_corpus-Flag noch nicht für
+  Optimierungen eingesetzt ... in tables nicht implementieren.
+
+
+* qrealloc(Ptr, 0) wird gelegentlich aufgerufen (entspricht free()),
+  was eigentlich nicht passieren sollte (im aufrufenden Programmteil
+  muß klar sein, daß in solchen Fällen der Speicherbereich bereits
+  freigegeben ist) -- passiert z.B. bei RReduce-Operationen in
+  <ranges.c> und sollte bei den tables besser gelöst werden
+
+
+* CQP: seltsame Probleme bei inital matchlist -- erste Bedingung
+  lemma=".*"/pos=".*" scheint manchmal ausgewertet zu werden, manchmal
+  jedoch nicht.  
+
+  Grund: in bool_and()<parse_actions.c> wird ein constant node auf
+  einer der Seiten automatisch wegoptimiert; wahrscheinlich auch bei
+  bool_or() usw.  Kann man die Auswertung von CQP Queries so ändern,
+  daß beliebige Ausdrücke in der query-initial position zulässig sind?
+
+  -> jetzt die einfache Lösung: wenn matchfirstpattern()<eval.c> keine
+  Auswertung vornehmen kann, wird einfach der entsrechende BoolTree
+  auf alle Korpuspositionen angewendet (zunächst über Liste aller Cpos
+  und streichen; nach Implementierung der Tables in inkrementelle
+  Version umwandeln)
+
+
+* Target wird moeglicherweise manchmal falsch gesetzt, da es VOR Auswertung 
+der jeweiligen Uebergangsbedingung gesetzt wird. Sollte dort geschehen, wo ohnehin
+die RefTabs kopiert werden (das machen wir im Zuge der allgemeinen Targets).
+Sollte eigentlich nur dann Probleme geben koennen, wenn SGML-Tags in Alternativen
+vorkommen, oder wenn das Target mehrfach gesetzt wird, was ohnehin 
+''nicht ganz korrekt'' ist.
+--- GILT DAS UEBERHAUPT NOCH ODER IST ES SCHON KORRIGIERT?
+
+
+
+
+* die Parameter position_list, nr_positions, returned_positions in compose_kwic_line()<concordance.c>
+[und intern in remember_this_position()] werden bisher nicht verwendet und koennen wahrscheinlich
+entfernt werden, was die Formatiererei schon deutlich uebersichtlicher gestaltet.
+Unklar, was Oli damit wollte -- offenbar sollten dadurch die Positionen, an denen diverse Anker
+(oder beliebige Korpuspositionen) in der kwic-Zeile erscheinen, zurueckgeliefert werden (fuer nachtraegliche
+Formatierungen?). Scheint ein ziemlich bescheuertes Konzept zu sein -- besser multiple Targets und 
+XML-Ausgabe.
+
+
+* auch nicht verwendet: ConcLineLayout (horizontal vs. vertical) -- produziert momentan nur Obermuell.
+sowie die "mappings" bei kwic-Ausgabe (kann man wahrscheinlich wegwerfen, oder doch fuer schoene
+Ausgabe komplexer POS-Tags?) ... mappings waeren beim "group"-Befehl wohl sinnvoller
+
+
+* handle_sigpipe bei CQP ?? (wird von open_stream() installiert um zu
+  erkennen, ob die Ausgabepipe abgestürzt ist, so daß die Ausgabe
+  abgebrochen werden kann; geht offenbar nicht, wenn CQP selbst als
+  Server-Prozeß im Hintergrund gestartet wurde)
+
+=> irgendwann mit CQP.pm austesten, und ggf. "versteckte" Option 
+"set ctrl_c no;" implementieren
+
+
+* CQP-StrictRegions: nicht verwendete Label in RDAT vor Ausfuehren der
+  Query loeschen, um nicht so viel Ballast mitzuschleppen [ist ein
+  Problem, weil wir dann diese Label in den entsprechenden Eintraegen
+  der Patternlist auch loeschen muessen!]
+
+
+* Optimierung regex -> idlist findet nur bei Attributen mit kleinem Lexikon statt.
+Ob wir das aendern wollen, so dass alle Regexs, die nur wenige Woerter matchen,
+optimiert werden? (Problem: kann bei Attributen mit grossem Wertebereich ewig dauern ....) 
+=> wenn Regex-Optimierung defaultmaessig aktiv ist, koennte man das noch einmal 
+ueberdenken -- allerdings nur bei Attributen mit kleinem Lexikon und bei gut optimierbaren
+regulaeren Ausdruecken (ist andererseits weniger relevat, da wir ohnehin viel Overhead
+haben und die regulären Ausdrücke jetzt auch an Query-internen Positionen optimiert werden.
+
+
+* was ganz nett waere: optional zusaetzliche Attribute nur im Match anzeigen,
+aber nicht im Kontext.
+
+
+* Andererseits koennen wir jetzt die Regexp ".*" zu einer Konstante wegoptimieren,
+da sie nicht mehr fuer Subquery-Anker benoetigt wird. ".+" muss aber nach wie vor
+gematcht werden, da wir (zumindest fuer S-Attribute) "" als Attributwert zulassen wollen.
+=> nochmal anschauen
+
+
+* Anderen Grouping-Algorithmus (oder war das "Groupie-Algorithmus"? ;o) einbauen,
+wie er spaeter fuer "fdist" verwendet werden soll.
+- Ziel: Optimierung fuer grosse Datenmengen (10,000 - 1,000,000 matches) und
+  2 bis 6 Schluesselfelder
+- Vorlaeufiger Ansatz: Tabelle der Lexicon-IDs der Schluesselfelder fuer alle
+  Matches aufbauen (-> im anvisierten Datenrahmen max. 24 MByte gross);
+  diese Tabelle mit Hilfe eines Permutationsindex sortieren (quicksort?),
+  dann auf der sortierten Tabelle gruppieren und jeweils nach summierten
+  Frequenzen sortieren.
+- Vorteil: besonders bei stark verschachtelten Groupings (mit fdist) laesst sich
+  durch ein Multi-Pass-Verfahren (2 Durchlaeufe pro Schatelungsebene) der Speicherbedarf
+  exakt berechnen, so dass nicht eine grosse Anzahl von Hashes oder variablen Listen
+  alloziert werden muss!
+- Die Sortierroutine laesst sich auch fuer das Sortieren on Query-Resultaten verwenden,
+  wobei die Schluessel-Tabelle temporaer genutzt wird und der Permutationsindex als
+  sortidx in den Subkorpus eingetragen wird.
+- Alternativen: langsameren Algorithmus, der auf String-Ebene vergleicht und 
+  bel. Attribute und evtl. sogar Ausdruecke erlaubt (werden on-the-fly generiert,
+  mit Optimierung, wenn Lexikon vorhanden, d.h. fuer p-Attribute);
+  oder Algorithmus, der bel. Ausdruecke zunaechst auswertet und ein temporaeres 
+  Lexikon fuer jedes Schluesselfeld erzeugt (Variante von LexHash), dann eine Tabelle
+  von IDs sortiert (wie urspruenglich vorgesehen)
+==> altes Grouping beibehalten und an multiple Targets anpassen, da es unter
+bestimmten Umstaenden schneller sein kann.
+
+=> im Zusammenhang mit Tables implementieren und ggf. Varianten ausprobieren
+
+
+* Query-Auswertung auf Subkorpora so verbessern, dass auch bei ueberlappenden Regions
+noch moeglichst viele Treffer gefunden werden. (Eine korrekte Implementierung
+von longest match und shortest match duerfte in diesem Zusammenhang schwierig sein, 
+aber das kann man ja bei Version 3.0 einbauen ...)
+--> oops, jetzt kommt schon v3.0, und da wird dieses Problem grossraeumig umgangen
+--- LANGFRISTIGES PROBLEM
+
+
+* 'physs' enthaelt SUBCORPMAGIC direkt im Sourcecode -- muss auch angepasst
+werden, wenn ein neues Subkorpusformat eingefuehrt wird.
+
+=> Doku: physs verarbeitet nur Subcorpora der CWB-3.0 (Format wird
+sich in Version 3.1 mit den Tables erheblich ändern)
+=> sollte man irgendwie standardisieren, mit neuem Subkorpusformat
+
+
+* Ach ja, die Ausgabemodes HTML und LaTex sollte man mal so ueberarbeiten,
+dass sie Sonderzeichen zeichensatzunabhaengig darstellen: also in Latex ueber
+Akzentescapes (soweit moeglich), in HTML als Entities (dito).
+Und das ganze fuer moeglichst viele CHARSETs (also vorl. latin1, ... , latin9).
+
+=> vielleicht ganz durch XML-Mode ersetzen? (ja!)
+=> Überarbeitung der Ausgabefunktionen mit Callbacks für Version 3.1
+
+
+* NB Wie waer's mit "expand to s non-uniq" ? *g*
+bzw. einfach "expand to s !" (OptKeep), da es eh ein undocumented feature wird.
+(ich glaube, lieber nicht ...)
+--- NOCHMAL ÜBERLEGEN
+
+
+* Strings werden im CQP-Parser mit strdup() alloziert, aber wie's
+aussieht nicht mehr freigegeben. Sofern diese Strings nicht in interne
+Strukturen eingefuegt werden, sollte man sie eigentlich in den 
+Parse-Actions freigeben. 
+--- MUß MAN NOCHMAL GENAU DURCHSCHAUEN -- VIELLEICHT BEI 4.0
+
+
+* In manchen PrintModes (speziell SGML) fuehrt die Ausgabe von
+alignierten Corpora zu Segmentation Faults! Grund ist nicht klar. Da
+diese Modes aber ohnehin keine vernuenftige Alignment-Ausgabe
+implementiert haben, sollte man am besten darauf verzichten. Eine
+aufwendige Fehlersuche lohnt sich in diesem Fall nicht.
+
+==> wenn wir langfristig auf CQi/CQPserver setzen, sind die 
+PrintModes nicht mehr relevant
+
+==> wenn wir aber gleichzeitig auf CQP als lokales Interface (und speziell
+fuer CGI-Skripte) setzen, ist es doch wieder relevant. Wahrscheinlich
+handelt es sich "mal wieder" um irgendwelche hartkodierten Stringroessen, die
+von grossen Alignment-Blocks ueberschritten werden. Abhilfe:
+(a) extended alignment verwenden, sofern moeglich -- OK!
+(b) ohnehin komplett umschreiben fuer Zeichensatzkonvertierung
+    und dann gleich sauber implementieren
+
+=> vorläufig in FAQ eintragen (mögliche Fehlerquelle, sollte aber nicht mehr passieren!) 
+=> in Version 3.1 neu impl. 

@@ -1,0 +1,49 @@
+
+AC_REVISION ($Id: configure.in,v 1.5 1999/07/16 16:15:52 rjc Exp $)
+
+AC_INIT(src/editline.c)
+AC_CONFIG_HEADER(editline_config.h)
+
+dnl ---------------------------
+dnl These are assumptions, perhaps let people turn them on and off
+dnl at a later date.
+dnl ---------------------------
+
+AC_DEFINE(ANSI_ARROWS, 1)
+AC_DEFINE(HIDE, 1)
+AC_DEFINE(SYSTEM_IS_UNIX,1)
+
+dnl ---------------------------
+dnl Standard programs.
+dnl ---------------------------
+
+AC_PROG_CC
+AC_PROG_RANLIB
+AC_PROG_INSTALL
+
+dnl ---------------------------
+dnl Are we up for ansi include files?
+dnl ---------------------------
+
+AC_HEADER_STDC
+
+dnl ---------------------------
+dnl walloc.h is probbaly only available inside EST compilations, 
+dnl but what the heck.
+dnl ---------------------------
+
+AC_CHECK_HEADERS(walloc.h)
+
+dnl ---------------------------
+dnl Check for various different versions of OS services.
+dnl ---------------------------
+
+AC_CHECK_LIB(termcap, tgetent)
+AC_CHECK_LIB(ncurses, tgetent)
+AC_CHECK_FUNC(tcgetattr,AC_DEFINE(HAVE_TCGETATTR,1))
+AC_CHECK_HEADERS(termio.h)
+
+AC_HEADER_DIRENT
+AC_FUNC_CLOSEDIR_VOID
+
+AC_OUTPUT(Makefile, echo timestamp > stamp-h)

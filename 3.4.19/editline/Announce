@@ -1,0 +1,26 @@
+
+	        Editline Command Line Editing Library
+		          CSTR Distribution
+
+		     Version 1.2-cstr, July 1999
+
+Editline is a small library providing command line editing and comand
+history for programs. Editline provides an identical calling interface
+to a small subset of the Free Software Foundation 'readline'
+library. It is intended to be useful in situations when readline is
+too big or when the FSF licencing conditions make that library
+unusable. 
+
+Editline was posted to comp.sources.misc by Rich Salz in August
+1992. This release is the result of work at CSTR to extend editline so
+as to be able to use it in place of readline in the festival
+speech synthesis system.
+
+Major differnces from the comp.sources.misc version include:
+
+	Long lines handled better.
+	Incremental history search.
+	Calls to read and write history file.
+	Some Windows support.
+	Termios, termio or sgttyb used as appropriate.
+

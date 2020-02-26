@@ -1,0 +1,196 @@
+#!/usr/bin/perl
+## -*-cperl-*-
+## Author:  Stefan Evert
+## Purpose: front-end to CWB::Indexer (improved substitute for cwb-makeall)
+##
+$| = 1;
+use strict;
+use warnings;
+
+use CWB;
+use CWB::Encoder;
+use Getopt::Long;
+
+our $Debug = 0;                     # -D, --debug
+our $Validate = 0;                  # -V, --validate
+our $Memory = 0;                    # -M, --memory  [uses CWB::Indexer default]
+our $Registry = undef;              # -r, --registry
+our $Group = undef;                 # -g, --group
+our $Permissions = undef;           # -p, --permissions
+our $Help = 0;                      # -h, --help
+
+my $ok = GetOptions("D|debug" => \$Debug,
+                    "V|validate" => \$Validate,
+                    "M|memory=i" => \$Memory,
+                    "r|registry=s" => \$Registry,
+                    "g|group=s" => \$Group,
+                    "p|permissions=s" => \$Permissions,
+                    "h|help" => \$Help,
+                    );
+
+die "\nUsage:  cwb-make [options] CORPUS [<attributes>]\n\n",
+  "Options:\n",
+  "  -r <dir>  use registry directory <dir> [system default]\n",
+  "     --registry=<dir>\n",
+  "  -M <n>    use <n> MBytes of RAM for indexing [default: 75]\n",
+  "     --memory=<n>\n",
+  "  -V        validate newly created files\n",
+  "     --validate\n",
+  "  -g <name> put newly created files into group <name>\n",
+  "     --group=<name>\n",
+  "  -p <nnn>  set access permissions of created files to <nnn>\n",
+  "     --permissions=<nnn>\n",
+  "  -D        activate debugging output\n",
+  "     --debug\n",
+  "  -h        show this help page\n",
+  "     --help\n",
+  "\n"
+  if $Help or @ARGV == 0 or not $ok;
+
+our $Corpus = shift @ARGV;
+
+our $indexer;
+if ($Registry) {
+  $indexer = new CWB::Indexer "$Registry:$Corpus";
+}
+else {
+  $indexer = new CWB::Indexer $Corpus;
+}
+
+$indexer->group($Group)
+  if defined $Group;
+$indexer->perm($Permissions)
+  if defined $Permissions;
+$indexer->debug($Debug);
+$indexer->memory($Memory)
+  if $Memory > 0;
+$indexer->validate($Validate);
+
+if (@ARGV) {
+  $indexer->make(@ARGV);
+}
+else {
+  $indexer->makeall;
+}
+
+__END__
+
+=head1 NAME
+
+cwb-make - Automated indexing and compression for CWB corpora
+
+=head1 SYNOPSIS
+
+  cwb-make [options] CORPUS [<attributes>]
+
+Options:
+
+  -r <dir>   use registry directory <dir> [system default]
+  -M <n>     use <n> MBytes of RAM for indexing [default: 75]
+  -V         validate newly created files
+  -g <name>  put newly created files into group <name>
+  -p <nnn>   set access permissions of created files to <nnn>
+  -D         activate debugging output
+  -h         show help page
+
+Long forms of command-line options are listed below.
+
+
+=head1 DESCRIPTION
+
+The B<cwb-make> utility automates index building and compression for a CWB corpus,
+calling B<cwb-makeall>, B<cwb-huffcode> and B<cwb-compress-rdx> as needed.
+Main advantages over the manual procedure are:
+
+=over 4
+
+=item *
+
+Old index files are updated automatically (unlike B<cwb-makeall>, which does
+not check the age of index files), and it is safe to call B<cwb-make> on an
+indexed and compressed corpus (again, unlike B<cwb-makeall>).
+
+=item *
+
+Data files that are no longer needed after compression are immediately deleted.
+
+=item *
+
+The build process is optimised to reduce the amount of temporary disk space and
+memory needed.  This is particularly important when indexing large corpora on
+32-bit platforms, where B<cwb-makeall> might easily run out of address space when
+called directly.
+
+=back
+
+The basic usage pattern is
+
+S< > B<cwb-make> [I<options>] CORPUS [I<attribute> ...]
+
+where CORPUS is the CWB name (ID) of the corpus to be indexed (after encoding
+with B<cwb-encode>) and should be written in upper case.  If positional attributes
+are added at a later time, they can be indexed separately by specifying the
+attribute names after the corpus ID.  Note that it is always safe simply to call
+B<cwb-make>: existing indexed and compressed attributes will be ignored.
+Further command-line options are detailed below.
+
+B<cwb-make> is a minimal front-end to the B<CWB::Indexer> functionality provided
+by the B<CWB::Encoder> module, which can also be used directly from a Perl script.
+See L<CWB::Encoder/"CWB::Indexer METHODS"> manpage for further information.
+
+
+=head1 COMMAND-LINE OPTIONS
+
+=over 4
+
+=item B<--registry>=I<dir>, B<-r> I<dir>
+
+Use registry directory I<dir> instead of standard registry (CWB default or 
+specified by C<CORPUS_REGISTRY> environment variable).
+
+=item B<--memory>=I<n>, B<-M> I<n>
+
+Use approx. I<n> megabytes (MiB) of RAM for indexing.  The default of 75 MiB
+is safe even for computers with a small amount of memory or many concurrent users.
+If more RAM is available, indexing can be speeded up considerably by setting 
+higher memory limit.  For instance, C<-M 500> or C<-M 1000> is a good choice on
+a machine with 2 GiB of RAM and a low work load.
+
+=item B<--validate>, B<-V>
+
+Validate newly created data files (index files and compressed corpus data).
+This is normally not required, as the CWB indexing and compression algorithms
+have been tested thoroughly by a large user community.
+
+=item B<--group>=I<name>, B<-g> I<name>
+
+=item B<--permissions>=I<ddd>, B<-p> I<ddd>
+
+Set group membership (I<name>) and access permissions (octal code I<ddd>) of
+new data files.  If these options are not specified, the system defaults
+for newly created files are used.
+
+=item B<--debug>, B<-D>
+
+Activate debugging output.  Note that this is the only form of progress
+information provided by B<cwb-make>, so you may want to specify C<-D>
+simply in order to get some feedback during the indexing process.
+
+=item B<--help>, B<-h>
+
+Display help page with short usage summary (similar to SYNOPSIS above).
+
+=back
+
+
+=head1 COPYRIGHT
+
+Copyright (C) 2002-2010 Stefan Evert [http::/purl.org/stefan.evert]
+
+This software is provided AS IS and the author makes no warranty as to
+its use and performance. You may use the software, redistribute and
+modify it under the same terms as Perl itself.
+
+
+=cut
+

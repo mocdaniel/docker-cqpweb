@@ -1,0 +1,31 @@
+##   -*-Makefile-*-
+## 
+##  IMS Open Corpus Workbench (CWB)
+##  Copyright (C) 1993-2006 by IMS, University of Stuttgart
+##  Copyright (C) 2007-     by the respective contributers (see file AUTHORS)
+## 
+##  This program is free software; you can redistribute it and/or modify it
+##  under the terms of the GNU General Public License as published by the
+##  Free Software Foundation; either version 2, or (at your option) any later
+##  version.
+## 
+##  This program is distributed in the hope that it will be useful, but
+##  WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+##  Public License for more details (in the file "COPYING", or available via
+##  WWW at http://www.gnu.org/copyleft/gpl.html).
+
+##
+##  PLATFORM CONFIGURATION FILE: Linux 2.x on i386 architecture (32-bit CPU)
+##  (used for cross-compilation of 32-bit binaries on 64-bit Linux)
+##
+
+## Inherits from generic Linux configuration
+include $(TOP)/config/platform/linux
+
+## force gcc to produce 32-bit code
+CFLAGS += -m32
+
+## CPU architecture and operating system used to name binary releases
+RELEASE_ARCH = i386
+

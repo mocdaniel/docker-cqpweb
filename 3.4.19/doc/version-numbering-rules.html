@@ -1,0 +1,71 @@
+<h1>How to assign version numbers in <span class="caps">CWB, CWB</span>-Perl, and <span class="caps">CQP</span>web</h1>
+
+
+<h2>Plan for versions: the road ahead</h2>
+
+<ul>
+<li>Version numbering has hitherto been a bit haphazard</li>
+<li><span class="caps">CWB </span>&lt; v3.0 basically represents work done at <span class="caps">IMS</span> Stuttgart<ul>
+<li>(plus some betas for subsequent work)</li>
+</ul>
+</li>
+<li><span class="caps">CWB</span>-Perl version numbering basically indicates what version of the core <span class="caps">CWB </span>it is intended to be compatible with</li>
+<li><span class="caps">CQP</span>web originally had entirely separate version numbering (with only major and minor distinguished) <ul>
+<li>... but then switched (in July 2011) to the same system as the <span class="caps">CWB</span>-Perl</li>
+</ul></li>
+</ul>
+
+<p>Clearly all this is confusing. So, we have put in place the following policies for subsequent version numbers.</p>
+
+<h2>Version numbers for the core <span class="caps">CWB</span></h2>
+
+<ul>
+<li>All version numbers will be of the form x.y.z</li>
+<li>Major public releases of the core <span class="caps">CWB </span>will be 3.0.z, 4.0.z, etc.<ul>
+<li>In these releases, the z indicates the maintenance/bugfix release version</li>
+</ul>
+</li>
+<li>Major releases are allowed to break backwards compatibility, both of library <span class="caps">API</span>s and of user interface.</li>
+<li>There may be intermediate stable public versions, which will not break compatibility (or will do so in a trivial way)<ul>
+<li>These will have the numbers 3.5.z, 4.5.z, etc.</li>
+</ul>
+</li>
+<li>Any other minor release number represents an unstable beta.<ul>
+<li>Users who want to take advantage of the latest improvements are encouraged to use these intermediate releases.</li>
+<li>Minor release numbers x.4.z and x.9.z are reserved for betas working up to a new release (stable or backwards-incompatible).</li>
+<li>Other minor release numbers will not be used by the core <span class="caps">CWB.</span> They are reserved for the user-interface components.</li>
+</ul></li>
+</ul>
+
+<h2>Version numbers for <span class="caps">CWB</span>-Perl and <span class="caps">CQP</span>web</h2>
+
+<ul>
+<li>All version numbers will follow the same general format as the core <span class="caps">CWB.</span></li>
+<li>All versions of <span class="caps">CWB</span>-Perl and <span class="caps">CQP</span>web will have the same major number as the version of the core that they are compatible with.<ul>
+<li>Minor numbers x.0 to x.3 denote compatibility with the stable version x.0 of the core</li>
+<li>Minor numbers x.5 to x.8 denote compatibility with the stable version x.5 of the core</li>
+<li>Minor numbers x.4 or x.9, if used, denote compatibiltiy with the upcoming stable version x.5 or (x+1).0 of the core</li>
+</ul>
+</li>
+<li>An increment in the minor number (say, from 3.5 to 3.6) indicates some major change in the user interface<ul>
+<li>Such a change may possibly break backward-compatibility in the front end, without changing how compatibility with the core works</li>
+</ul>
+</li>
+<li>An increment in the maintenance/bugfix number represents a smaller change that does not majorly affect the user interface. </li>
+</ul>
+
+<h2>Additional caveats for <span class="caps">CQP</span>web</h2>
+
+<ul>
+<li>Increments in <span class="caps">CQP</span>web&#39;s capabilities will normally be indicated by an increment in the bugfix (z) number<ul>
+<li>Upgrading from x.y.z to x.y.(z+1) will require updating the code files, and may require manual changes to the database</li>
+<li>Upgrading from x.y.z to x.y.(z+1):<ul>
+<li>will not require reinstalling the <span class="caps">CQP</span>web system</li>
+<li>will not require reindexing any corpora (although old corpora may not be able to access new features)</li>
+<li>will not change the format of any configuration files</li>
+<li>will not require user accounts to be re-created</li>
+</ul>
+</li>
+<li>Upgrading from x.y.z to x.(y+1).0 may require one or more of the above changes, however. </li>
+</ul></li>
+</ul>

@@ -1,0 +1,396 @@
+Version 3.4 (in progress)
+-----------
+
+New features:
+
+ - cwb-scan-corpus now accepts negated regular expression constraints (e.g. 'lemma+0!=/anti.*/c').
+   The -C option is consistently ignored for constraint keys ('?...'), and documented to be.
+   It is also now compatible with multiple ISO-8859 character sets and with UTF-8.
+
+ - cwb-lexdecode now has a "no-blanks" option (-b) to turn off the padding of numeric columns with
+   spaces to the minimum width of seven.
+
+ - cwb-encode can now apply cleanup (-C) to UTF-8 data.
+
+ - cwb-encode now accepts XML "empty" tags <likeThis/> , but treats them as opening tags.
+
+ - cwb-align is now safe for use with UTF-8 corpora.
+
+ - There is now a precise limit on the size of a CWB corpus: CL_MAX_CORPUS_SIZE = 2^32 - 1 tokens;
+   cwb-encode will discard additional input data with a warning once the limit has been reached
+
+ - CQP can now cope with concordance left/right context of indefinite size.
+
+ - Implementation of n-gram hashes has been moved from cwb-scan-corpus to the CL library, so it
+   can be used by other applications.  In the process, the implementation has been revised for 
+   slightly improved efficiency and memory footprint.
+   
+ - cwb-scan-corpus is now faster and uses less memory, especially if used without fine-tuning
+   the number of hash buckets (-b option).  For example, scanning a 200 M word corpus for word
+   bigrams (with -C filtering) requires 30% less memory and is four times faster than before.
+
+ - CQP's "group" command has been reimplemented using a hash-based algorithm, making it much
+   more efficient for large frequency counts.  For example, a grouping over approx. 400,000
+   distinct values is now 150x faster than before.  This change also resolves poor performance
+   of CQPweb when executing queries with hits in a very large number of texts (100,000 or more),
+   which is quite common e.g. for Web corpora.
+ 
+ - The "group" command supports properly grouped frequency counts, as the name has always
+   implied.  Use e.g. "group A match lemma by target lemma;" to sort pairs by co-occurrence
+   frequency, and "group A match lemma group by target lemma;" to group items by target.
+   
+ - KWIC displays with character contexts now work correctly for UTF-8 encoded corpora.
+ 
+ - Full support for PCRE regular expressions, including case (%c) and accent (%d) folding.
+   Case-folding now uses PCRE's caseless mode rather than case-folding input strings.
+   If PCRE is compiled with JIT capability, this is much faster than the previous approach
+   (and than using the regexp optimizer, which still needs case-folding). The optimizer
+   now parses regexps more defensively and recognizes a larger subset of PCRE syntax, which
+   should cover most wildcard-like searches carried out by users.
+
+ - [2017-03-02: v3.4.11] CWB-wide support for reading and writing compressed files with suffix ".gz" or ".bz2",
+   provided by automagic cl_open_stream() and cl_close_stream() functions. (De)compression still relies on
+   external gzip or bzip2 utility, which must be in standard search path.  The CL automagic also supports shell
+   pipes ("| cmd" for both read and write pipes), recognizes "-" for stdin/stdout, expands "~" to the user's
+   home directory.
+
+ - cwb-scan-corpus can now optionally sort its output in canonical lexicographic ordering, making
+   it easier to merge multiple frequency counts (from different corpora)
+   
+ - [2017-03-16: v3.4.11] New built-in function normalize(string, "%cd") in CQP queries, which applies
+   case- and/or diacritic-folding. The recommended use case is a case-folded (etc.) comparison of two
+   attribute values. Note that any condition involving built-in functions cannot make use of index lookup.
+   
+ - [2017-07-01: v3.4.12] An embedded modifier such as "(?longest)" can be used at the start of a CQP query 
+   to change the matching strategy temporarily. This is particularly useful for Web interfaces like CQPweb
+   which do not allow users explicit control over the MatchingStrategy option. 
+
+ - [2018-01-13: v3.4.13] New built-in functions lbound_of(attr, pos) and rbound_of(attr, pos) that return the
+   start/end corpus position of an s-attribute region containing pos (usually _  or a label reference).
+   The second argument is necessitated by technical restrictions on built-in functions.
+ 
+ - [2018-04-25: v3.4.14] CWB no longer breaks on input files with Windows-style (CRLF) line endings. In
+   particular, cwb-encode, cwb-s-encode, CQP word lists, macro definition files and CQP scripts handle
+   CRLF files correctly and delete the extra CR characters.
+   
+ - [2018-06-26: v3.4.15] New "subcorpus" output mode for cwb-decode, which can be used to materialize a
+   physical subcorpus based on a CQP query dump. The CWB/Perl package includes a convenient command-line
+   tool "cwb-make-subcorpus" for this purpose.
+
+ - [2019-05-07: v3.4.16] Experimental feature allowing multiple target markers @0 .. @9. Only two of these
+   markers are "active" at the same time, as determined by the AnchorNumberTarget and AnchorNumberKeyword
+   options; they set the target (equivalent to @) and keyword anchors, respectively.
+   This allows front-end wrappers to emulate up to 10 target positions by re-running a query with different
+   settings of AnchorNumberTarget and AnchorNumberKeyword; see "Undocumented CQP" in the CQP tutorial for details.
+
+Bug fixes:
+
+ - [2011-11-03: v3.4.1] CQP no longer crashes with a segmentation fault when trying to display very long kwic lines
+   with "cat" (bug #1549254); instead, lines are silently truncated. The standard buffer size has also been increased
+   to 64k bytes, which is sufficient to display the longest BNC sentences in BNCweb (with many attributes shown).
+
+ - [2012-01-14: v3.4.2] Huffmann compression now works even for very large corpora of around 2 billion words
+   (bug #2929062). The Huffmann algorithm in cwb-huffcode has been modified to ensure no code words with more
+   than 31 bits are generated (which would occasionally happen for hapax legomena in a 2 billion word corpus).
+   Even though the actual Huffman codes are now different, the index file format is not affected and should be
+   fully compatible between older and newer CWB versions.
+
+ - [2012-02-02: v3.4.3] Made cwb-scan-corpus "regular words" mode fully UTF-8 compatible.
+
+ - [2012-05-01] Updated regexp optimiser to work correctly with the extended set of wildcards, escape sequences,
+   and special groups in PCRE regular expressions. CURRENTLY IN TESTING PHASE.
+
+ - [2012-05-20: v3.4.4] Fixed bug causing segmentation fault in cwb-scan-corpus.
+
+ - [2012-07-17: v3.4.5] Fixed bug causing segmentation fault in CQP when cat output with header is requested.
+ 
+ - [2013-05-08: v3.4.7] Fixed problems with command-line completion on Mac OS X (bugs #8 and #55); #8 was a 
+   buffer overflow for long lists of completion candidates; #55 is fixed by auto-detecting a genuine GNU Readline
+   library installed by the user in /usr/local or with a package manager such as HomeBrew.
+   
+ - [2013-05-09] Fixed bug #45: implicit expansion of named query result (e.g. with A^s) is recomputed on every
+   access, so it updates automatically if the underlying query A is changed. This produces noticeable overhead
+   only for query results containing more than 10 million matches, and usage of implict expansion is deprecated.
+   Parser now distinguishes between plain IDs and named query specifiers (e.g. BNC:Result^s), so it is no longer
+   possible to use A^s as the name of a query result.
+ 
+ - [2014-06-16: v3.4.8] Fixed bug whereby a UTF-8 character could be broken up, creating invalid sequences, by
+   CQP's system for character-based context size. (CQP is still "dumb" in that it counts strings in bytes not
+   characters in UTF-8, but this is a less critical problem, or should be.)
+
+ - [2016-03-20] Edge case in "tabulate" output, which resulted in incorrect CQPweb collocation analysis under
+   certain circumstances, has been fixed.  Precise behaviour for out of bounds values now documented in the
+   CQP Query Language Tutorial.
+
+ - [2016-07-19: v3.4.10] Fixed bug in settings for cross-compile to Windows. Removed cwb-atoi.exe and cwb-itoa.exe
+   from Windows release builds, as they trigger malware alerts both on SF.net (our distribution platform) and on
+   some (but not all) standalone antivirus software. 
+
+ - [2016-07-19: v3.4.10] Fixed CQP bug for fixed-character width concordance. First, it will no longer split
+   UTF-8 characters apart at the far left/far right of the concordance. Second, it will count the number of
+   co-text characters accurately (previously, you would often get fewer characters than you asked for with
+   UTF-8 corpora).
+ 
+ - [2016-07-19: v3.4.10] Fixed serious bugs with case-insensitive PCRE regular expressions, caused by previous
+   approach of case-folding the regexp itself (which modifies escape sequences such as \W and \pL). 
+
+ - [2016-07-19] Sort order is no longer locale-dependent for corpora with UTF-8 encoding.
+ 
+ - [2016-07-20] Fixed bug #58: cwb-huffcode used to fail on p-attributes with a single unique type, for which
+   the Huffmann algorithm would determine an optimal code length of 0 bits. Simply force code length to 1 bit
+   in this special case, which will automatically generate the code '0' for the single type.
+ 
+ - [2016-07-20] Fixed bug #49: SIGPIPE handler is now installed automatically by open_stream() and checked
+   by all CQP commands that print substantial amounts of output (cat, dump, sort, count, group, tabulate).
+
+ - Revised makefile configuration so compiler and linker flags for Glib and PCRE can be set explicitly. Most
+   users will be happy with the default settings (using pkg-config and pcre-config for auto-detection) and 
+   when compiling for Windows with MinGW the new settings are ignored. Default configuration now changed to
+   "darwin-brew", which no longer supports universal binaries on Mac OS X.
+   
+ - [2017-04-27] A little-known (and undocumented) limitation of CWB is that the lexicon of a p-attribute may
+   not exceed a total size of 2 GiB because string offsets are stored as 32-bit integers. The same holds for
+   the "lexicon" of an s-attribute with annotations, i.e. the set of all distinct annotation strings.
+   The cwb-encode and cwb-s-encode utilities now check for integer overflow and abort with an informative
+   error message in this case.
+ 
+ - [2017-07-01] Fixed bug #1: with aligned queries, the "cut" clause was applied to the source language, and
+   alignment constraints would then further reduce the number of matches. The only solution with the current
+   implementation of CQP is to run every aligned query to completion and only then reduce the total number of
+   matches to the specified cut value. 
+
+ - [2017-07-02] Fixed bug #41: potential edge-case buffer overflow with cl_string_canonical. We have never had
+   a report of this actually happening to anyone, but we will sleep sounder knowing it can't happen.
+   
+ - [2017-08-19] Fixed bug #64: CQP grammar accepts negative repetition counts in standard and TAB queries. While
+   we did not receive any bug reports from users, negative counts and other invalid ranges such as {3,2} would
+   result in unexpected behaviour, including segementation faults and memory overflow. Such issues are now
+   captured by the query parser and report a syntax error.
+
+ - [2017-11-13] "cut NQR x [y];" now disallows negative indices and behaves as documented even in edge cases.
+   It is no longer an error to specify x or y exceeding the number of hits; the indices will be clamped 
+   automatically without a warning. A warning is still printed if "cut" results in an empty query result.
+
+ - [2018-01-13: v3.4.13] bare reference to s-attribute incorrectly returned an evaluation error (which is
+   interpreted as false in most contexts) if not in a corresponding region, whereas it should have returned the code 0
+
+ - [2019-03-02: v3.4.15] contrary to the CQP Tutorial (Sec. 3.6), the "cut" command did not respect the sort order
+   of a NQR, but always selected items based on the original corpus order; fixed to match documentation
+   
+ - [2019-05-05: v3.4.16] fix handling of parsing errors in CQP queries, which was broken by r1075 (2018-09-26). 
+ 
+ - [2019-08-01: v3.4.18] activating a new corpus in CQP no longer affects the ordering of attributes in "show cd"
+   and kwic output ("cat"); they are now guaranteed always to be in the same order as in the registry file;
+   "show cd" in non-PrettyPrint mode also indicates whether an attribute is activated for display
+
+Enhancements:
+
+ - [2014-06-18] Revised implementation of cl_lexhash class. Auto-growing is now based on fill rate statistic
+   rather than empirical performance measurements, which simplifies the code quite a bit. Auto-grow parameters
+   (fill rate limit and target value after expansion) are exposed to applications and have new default settings.
+   Optimization: Hash keys are now embedded directly in entries rather than allocated as separate strings,
+   which improves speed, memory overhead and cache locality by a small amount.
+
+ - [2014-06-19] New class cl_ngram_hash (based on cl_lexhash) encapsulates part of the functionality of the
+   cwb-scan-corpus tool, making it accessible to other applications.  The new class should be slightly more
+   efficient and memory-friendly than the original code because it embeds n-grams directly in the hash entries.
+
+ - [2015-06-19: v3.4.9] cwb-scan-corpus now uses cl_ngram_hash for counting, resulting in substantial performance
+   improvement (both speed and memory footprint) in certain situations.
+
+ - [2015-06-19: v3.4.9] Hash-based reimplementation of CQP's "group" command is much faster for frequency counts
+   over large sets of distinct items (up to 150x speed-up in extreme cases) and supports grouped listing of
+   frequencies (as the name of the command has always implied).
+ 
+ - [2017-07-01: v3.4.12] MU queries are now documented in the CQP tutorial and have a consistent "filtering"
+   semantics.
+ 
+ - [2017-08-20: v3.4.12] Undocumented and unsupported TAB queries now work again. The matching algorithm has been
+   modified slightly and is explained in the CQP tutorial. However, no guarantees are made wrt. performance and
+   the precise semantics of TAB queries, except for special cases where all distances are either fixed or "*".
+
+ - [2017-11-14] Reserved words can be used as identifiers (e.g. attribute names) if they are quoted betweeen
+   backticks, e.g. size `MU`; [`sort` = "A.*"]; show +`no`;  Keep in mind that quotes aren't necessary in label
+   definitions (size: []) or qualified references (size.lemma) and will not be accepted in these contexts.
+   
+ - [2018-01-13: v3.4.13] If a built-in function is called with an undefined value (internal type ATTAT_NONE) and
+   does not explicitly handle such cases, it returns an undefined value (ATTAT_NONE). This change was necessitated by
+   today's bug fix for bare s-attribute references: built-in functions such as distabs(_, lbound_of(title, _)) 
+   may be called with ATTAT_NONE where the call would previously have been skipped due to the error raised by
+   the reference to title outside a <title> region. The new behaviour is consistent with NULL values in SQL.
+   Keep in mind that undefined values evaluate to false in a Boolean context.
+
+ - [2018-04-25: v3.4.14] New CQP command (cat "STRING" [> "file.txt"];) can be used to print arbitrary strings
+   in CQP output, which is convenient for communicating with output post-processor scripts and for prepending
+   a header row to a TAB-delimited output file. Escape sequences \n, \r and \t are interpreted, but no other
+   substitutions are made in the string to be printed.
+   
+ - [2018-09-25: v3.4.15] Extended the CQP "show" command to allow "show active"/"show current" to print the
+   name of the presently-active corpus. (In interactive mode, this info is visible in the prompt; but in child
+   mode it's nice to have a direct way to ask this.)
+   
+ - [2018-05-06: v3.4.16] Command-line completion now also works for option names after the "set" keyword at 
+   the start of a line. Option abbreviations are deliberately not supported.
+   
+ - [2019-08-01: v3.4.18] CQP option AttributeSeparator modifies separator between p-attributes in CQP kwic display.
+
+ - [2019-12-07: v3.4.19] String normalisation now uses a different Glib function which produces slightly more
+   intuitive results when uppercase strings become lowercase (especially for German).
+
+
+Version 3.2
+-----------
+
+Version 3.2 of CWB adds Unicode support (utf8). It also breaks backwards compatability in one,
+possibly important way: all "identifiers" (names of corpora, attributes, subcorpora etc.) must use ASCII characters
+only - no Latin1 accented letters, for instance. This is necessary to avoid potential conflicts between Latin1 and
+UTF8 encodings in filenames and directory paths. Any corpora you have from earlier versions which use accented 
+letters in their "identifiers" must be reindexed to work with version 3.2 or above.
+
+As a result of the work on Unicode, character set awareness is now active throughout CWB. Also, the regular 
+expression language supported in the CL and through CQP has changed from POSIX-flavour regexes to PCRE regexes
+(Perl-compatible). In UTF8 corpora, all unicode properties, etc., can be used in regular expressions using the
+usual PCRE syntax.
+
+Other changes:
+
+ - cwb-encode now validates the encoding of files as it imports them against the corpus character set. Invalid
+   bytes or byte sequences lead to an abort. The default character set is Latin1, this can be changed with
+   the -c option. For ASCII and ISO8859-* character sets, invalid bytes (such as the [\x80-\x9f] range) can
+   automatically be replaced by '?' characters if the -C option is specified.
+   
+ - the Corpus Library (CL) has been reorganised to make programming against it easier, and it now contains 
+   several more utility functions.
+
+ - command-line editing backported from included Editline library to external GNU Readline (which was originally
+   used by CQP but had to be replaced for licensing reasons before the CWB was made open-source)
+
+
+Version 3.1
+-----------
+
+Version 3.1 of CWB runs on Windows (currently, by cross-compilation on Linux using MinGW).
+This was accomplished by incorporating back into the main code base changes made to a branch of CWB by Serge 
+Heiden and colleagues on the Textometrie project. There are no other new features.
+
+
+Version 3.0
+-----------
+
+This was the first official release of the IMS Open Corpus Workbench.
+ - released April 2010, after some testing by developer community (and perhaps an overhaul of installation procedure)
+ - binary packages for various platforms (but not all) are available as well as the source.
+
+New features:
+
+ - Configuration no longer requires explicit knowledge of CPU endianness, relying instead on system macros
+   htonl() and nothl() to convert between platform-independent disk format and native byte ordering.
+   This simplifies compilation on generic Unix platforms and allows true Universal releases on Mac OS X.
+
+ - cwb-encode now supports format validation and normalisation for feature set attributes (see CQP tutorial for
+   and introduction).  Attributes declared with trailing slash "/" are considered as feature sets.  If a value
+   is not well-formed, a warning is issued (for every line containing a malformed feature set!) and the value
+   is replaced by the empty set |.  Annotations of s-attributes can also be treated as feature sets, including
+   individual element attributes; in this case, the "/" marker has to be attached to the main attribute name
+   (e.g. -V flags/:2) or the respective element attribute declaration (e.g. -S np:2+agr/+head+f/).
+   
+ - New "-F <dir>" option for cwb-encode reads all input files named *.vrt or *.vrt.gz in the specified
+   directory (very convenient if a corpus consists of many small individual files).  Only regular files will
+   be considered, and it is not possible to scan subdirectories recursively.  If no input files are found
+   in a directory, a warning message is printed on stderr, but the encoding process continues.
+
+ - For s-attributes with annotated values, cwb-s-decode can optionally suppress either the annotated
+   strings (-v) or the start and end positions of regions (-n).
+
+ - Registry path list (in CORPUS_REGISTRY variable and -r options) may contain optional registry directories
+   indicated by a leading '?' character.  If these are not mounted, CQP will not issue warning messages; if
+   they are mounted, all tools should ignore the '?' in the pathname.
+
+ - The header line of undump files (for the "undump" command in CQP) is now optional, provided that the
+   undump is a regular file (not a pipe or standard input).  CQP will automatically detect the new format
+   and read the file in two passes (first pass counts lines, second pass reads actual data).  This modification
+   simplifies data exchange with external programs such as spreadsheets, SQL databases and R.
+
+ - Evil hacks in cwb-scan-corpus allow frequency counts for s-attributes with annotations (since 2007),
+   and now also special constraints such as "?footnote" for s-attributes without annotations.
+
+ - String quoting in CQP has been revised in order to allow safe quoting of arbitrary strings.  Strings can be
+   enclosed in single or double quotes (which are equivalent), and inside the string any character can be
+   escaped with a preceding backslash (\).  Backslashes are passed through and interpreted by the regexp engine;
+   the sequences \' \" \, \` \^ trigger latex-style escapes for accented Latin1 characters.  For instance,
+   '\'em' matches an accented "e" rather than the sequence "'e" (followed by "m").  Strings can be safely quoted
+   by doubling any occurrence of the surrounding delimiter, e.g. '''em' to match "'em".  These doubling escapes
+   are removed by the lexical scanner, so they work in all string contexts and do not trigger any side effects.
+
+Bug fixes:
+
+ - [2008-01-03] Fixed a strange bug in which the query
+        ([pos = "IN|TO"] [pos = "DT.*"]? [pos = "JJ.*"]* [pos = "N.*"]+){3};
+   causes CQP to segfault on Darwin/PowerPC platforms (discovered on Mac OS X 10.4 with PowerPC G4 CPU).
+   The problem occurs for >= 3 repetitions, but not for 1 or 2 repetitions.  It turned out that 
+   AddState()<cqp/regex2dfa.c> reallocates the state table STab[], which might move it to a different
+   memory location, breaking a pointer into the array held by calling function FormState() in a local variable SP.
+   This bug was difficult to find because it only causes problems if the original memory location of STab[]
+   is overwritten immediately (perhaps by shifting STab[] to an overlapping location); otherwise, access through
+   the stale copy pointed to by SP works fine.  To fix the bug, SP is now updated in FormState()<cqp/regex2dfa.c>
+   immediately after calling AddState().
+
+ - [2008-05-05] Added code to detect infinite loops in FSA simulation when executing a standard CQP query. Such
+   loops can be caused by unlimited quantification over zero-width elements (XML tags and lookahead constraints),
+   but will be triggered only in certain circumstances. While these queries are obviously nonsensical, novice
+   users of Web interfaces often write things like ``<s> * ...'', thinking that ``*'' matches an arbitrary word.
+   Some examples should illustrate the problem:
+        <s> *         # not executed ("start state is final state")
+        <s> +         # runs normally, but returns no matches (because all matches have length zero)
+        <s> * []      # works correctly in standard mode, but triggers infinite loop in longest match mode
+        <s> * "xxx"   # gets stuck in infinite loop if "xxx" doesn't match
+        "!" (<p> <s> | [: word = "[A-Z].*" :]){3,} "The"  # infinite loops aren't always easy to detect
+   A simple solution has been implemented which tests the state/position vector after each FSA simulation step.
+   If the vector hasn't changed, the FSA must be in an infinite loop and query execution is aborted with an
+   emphatic error message (in case the new code should abort a valid query). This catches most cases, but some
+   more complex situations (as the last example above) will still get stuck: because of the way the FSA is
+   implemented in CQP, it will oscillate between different configurations of active states.  A fully reliable
+   solution would require an analysis of "empty" cycles in the FSA before query execution.
+
+ - [2008-08-29] If CQP is run as a backend and the master process is killed, CQP hangs and produces 100% CPU load,
+   apparently because it's still trying to read from its input pipe which keeps returning error conditions. As a
+   workaround, CQP now exits immediately (with an error message on stderr) if it is running in child mode (-c) and
+   and error condition is detected on the input stream.
+
+ - [2009-01-04] Fixed all compiler warnings where possible (for Universal build on Mac OS X with gcc-4.0)
+
+ - [2009-01-05] The "-d" (data directory) option for cwb-encode is now mandatory, so if you just type "cwb-encode",
+   it will no longer litter your current working directory with empty data files and wait for standard input.
+
+ - [2009-01-25] Error reporting of CL library has been made more consistent (including some obvious bugs),
+   triggered by stricter tests in new version of the Perl API (CWB::CL module).  Also introduced some new
+   error codes (e.g. for internal buffer overflow), but these are not checked and set systematically yet.
+
+ - [2009-02-26] Added safety checks to cwb-encode in order to ensure that annotation strings are not longer than
+   the internal hard-coded limit of MAX_LINE_LENGTH-1 characters.  Oversized annotation strings are now truncated
+   with a warning message.
+
+ - [2009-06-11] Fixed segmentation fault in cwb-align on 64-bit platforms (original developer had assumed that
+   a pointer always has the same sized as an unsigned int ... aaaargh!).  Kudos to Bogdan Babych (b.babych@leeds.ac.uk)
+   for a beautiful and fully reproducible bug report.
+
+ - [2010-01-09] NOT FIXED: Huffman codes may exceed maximal allowed code length of 31 bits in some extreme cases,
+   which was not checked in cwb-huffcode and could lead to buffer overflows and segmentation faults.  The program
+   now aborts with an error message, but the underlying problem has not been fixed yet.  It is NOT POSSIBLE just
+   to increase MAXCODELEN<cl/attributes.h>, as this changes the index file format and breaks compatibility with
+   previously encoded corpora.  The only good solution is to patch the Huffman code generation so that it computes
+   a suboptimal code in this cases that stays within the allowed limit, but for this somebody needs to go through
+   and understand the entire code in compute_code_lengths()<utils/cwb-huffcode.c>. 
+
+ - [2010-02-09] cwb-encode now checks that data directory and registry directory exist, and that registry filename
+   specified with -R doesn't contain uppercase letters, in order to avoid strange errors later on (patch contributed
+   by Alberto Simoes).
+
+
+Version 2.2.b99 (2007-03-11)
+----------------------------
+
+ - initial public release of the CWB source code on http://cwb.sf.net
+ - source code and build system has already been cleaned up from the IMS-internal version
+ - intended to be ready for public release (as v3.0) without major changes or additions
+

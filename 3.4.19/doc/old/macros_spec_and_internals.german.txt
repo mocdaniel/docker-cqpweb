@@ -1,0 +1,300 @@
+Tja, hier gibt's wohl noch eine Menge zu dokumentieren: aber nicht heute. :o)
+
+
+Zur Syntax:
+
+
+
+- Makro-Definition
+
+[define] macro <name>(<numargs>) '<def>';
+
+oder
+
+[define] macro <name>(<numargs>)
+	'<text>'  # Kommentar
+	'<text>'  # Kommentar
+	...
+	;
+
+<name>: Bezeichner
+<numargs>: 0 .. 10
+<def>: Makro-Definition, $0 .. $9 bezeichnen die Argumente
+
+Die Makro-Definition kann aus mehreren Strings bestehen, die 
+jeweils mit einem eingefuegten Leerzeichen aneinandergehaengt 
+werden. Dadurch lassen sich Makros aehnlich wie in MP-Skripten
+auf mehrere Zeilen verteilen und es koennen Kommentare eingefuegt 
+werden.
+
+Bsp:
+
+# macro: /np[<Kopflemma>]
+macro np(1) 
+	'[pos="ART"]?'                		# Artikel
+	'([pos="ADV|ADJD"]? [pos="ADJA"])*'  	# optionale Adektive
+	'[pos= "N." & lemma = "$0"]'    # fuer Kopf wird Lemma vorgegeben
+	;
+
+# macro: /pp[]
+macro pp(0) '[pos = "APPR"] /np[]';   # Makros koennen andere Makros aufrufen
+
+# macro: /np[]
+macro np(0) '/np[".*"]';  # nicht gerade effizient ...
+
+
+
+- Makro-Datei
+
+Makro-Definitionen koennen auch aus einer Datei geladen werden, die einem
+speziellen Format folgen muss:
+
+# Kommentar
+MACRO <name>(<numargs>) 	# Kommentar
+<text>				# Kommentar
+<text>				# Kommentar
+...
+;
+
+Eine solche Datei wird mit dem Befehl
+
+	define macro < "<filename>";
+
+eingelesen. Die obigen Beispiele wuerden als Makrodatei so aussehen
+(es ist i.a. empfehlenswert, Makrodefinitionen komplett in Klammern
+einzuschliessen, damit Ausdruecke wie /np[]* sinnvoll sind):
+
+# Makro: /np[<Kopflemma>]
+MACRO np(1)
+(
+[pos="ART"]?				# Artikel
+([pos="ADV|ADJD"]? [pos="ADJA"])*	# optionale Adjektive
+[pos = "N." & lemma = "$0"]		# Kopf mit vorgegeb. Lemma
+)
+;
+
+# Makro: /pp[]
+MACRO pp(0)
+( [pos = "APPR"] /np[] )
+;
+
+# Makro: /np[]
+MACRO np(0)
+/np[".*"]	# nicht gerade effizient ...
+;		# das Semikolon muss in einer eigenen Zeile stehen
+
+Innerhalb einer Makro-Datei koennen weitere Makro-Dateien eingelesen
+("importiert") werden. Dazu dient die Direktive
+
+IMPORT <file>
+
+Statt der Anzahl der Makro-Argumente kann auch ein "Template" stehen,
+das den Argumenten Namen zuweist. Diese Namen dienen jedoch nur zur 
+Information ("show macro ..." und command-line completion); die Argumente
+werden nach wie vor als $0, $1, ... angesprochen. Bsp:
+
+MACRO pp($0=Preposition $1=HeadLemma)
+(
+  [pos = "APPR" & lemma = "$0"] 
+  /np["$1"]
+)
+;
+
+
+- Anzeigen von Makros
+
+Mit
+
+	show macro [<prefix>];
+
+lassen sich alle definierten Makros (unsortiert) anzeigen. Ist <prefix>
+angegeben, so werden nur Makros angezeigt, deren Name mit <prefix> beginnt.
+Die Definitionen einzelner Makros lassen sich mit
+
+	show macro pp[0];
+	show macro np[1];
+
+ausgeben.
+
+
+- Makro-Aufruf
+
+/<name>[<arg0>, <arg1>, ...]
+
+Bsp: (vgl. oben)
+
+/np["Lehrer"];
+/np["Lehrer"] [pos="V.*"] /np["Schüler"] /pp[];
+
+
+
+- Debugging
+
+Tritt innerhalb eines Makros ein Syntaxfehler auf, so gibt CQP automatisch
+einen Makro-Stacktrace aus. Damit laesst sich nachvollziehen, an welcher
+Stelle (ungefaehr) der Fehler auftrat und welche Makros aufgerufen wurden.
+
+
+
+- Builtin-Makros
+
+/unify[<attribute>, <label1>, <label2>, ... ]
+:: iteratives unify() der <attribute>-Werte der angegebenen 
+:: Labelreferenzen
+
+/unify_with_this[<attribut>, <label1>, ... ]
+:: wie /unify[], jedoch wird zusaetzlich mit dem <attribute>-Wert
+:: des aktuellen Tokens unifiziert (fuer Verwendung in Pattern);
+:: z.B. ist /unify_with_this[agr, a] => unify(a.agr, agr)
+
+/anchor[<label>]
+:: Anker in Subquery; zulaessige Werte fuer <label> sind
+::   match, matchend, target, keyword
+
+/anchor[<label>, <condition>]
+:: Anker mit zusaetzlicher Nebenbedingung, z.B.
+:: /anchor[target, 'lemma="Hund"'] !;
+
+/region[<name> [, <label>]]
+:: Matcht genau eine Umgebung des s-Attributs <name>,
+:: z.B. fuer <name>=s eine <s> .. </s> Umgebung; auf die Token innerhalb
+:: der Umgebung kann nicht zugegriffen werden. Ist <label> angegeben, so
+:: wird dieses Label auf eines der Token innerhalb der Umgebung gesetzt;
+:: dadurch kann auf Parameter der Umgebung zugegriffen werden, z.B.
+:: /region[np, a] :: a.np = ".*Gen.*";  # find genitive NP chunk
+
+/in_region[<name>, <pattern> [, <label>]]
+:: Matcht eine Umgebung des s-Attributs <name>, die ein Token enthaelt,
+:: das die Bedingung <pattern> erfuellt. <pattern> muss Zeichenkette, ggf.
+:: mit den [] Klammern angegeben werden; bei Bedarf kann ein Label oder 
+:: Target-Marker vorangestellt werden. <pattern> kann auch eine Folge von
+:: Patterns oder ein anderer beliebiger Query-Ausdruck sein.
+:: in_region[np, '@a:[pos="ADV|ADJD"]'] :: a.np_agr matches "Gen:.*";  # sucht Adverb in (eindeutiger) Genitiv-NP 
+:: Die Variante mit zwei Patterns sucht diese in beliebiger Reihenfolge 
+:: innerhalb der Umgebung.
+:: /in_region[np, '"Katze"', '"Hund"'];
+
+/undef[<label>, ...]
+:: Loescht ein oder mehrere Label (mit dem '~'-Operator (s.u.)) und liefert
+:: TRUE zurueck. Werden Labels mehrfach in einem Ausdruck benoetigt und sollen
+:: dabei geloescht werden, so kann mit dem /undef[]-Makro erzwungen werden,
+:: dass die Label auch dann geloescht werden, wenn der Ausdruck nur teilweise
+:: ausgewertet wurden.
+
+/codist[[<att1>,] <string>, <att2>];
+:: Sucht alle Token, fuer die <att1>="<string>" ist und fuehrt dann ein Grouping
+:: ueber <att2> durch. Fehlt <att1>, so wird als default das word-Attribut verwendet.
+:: Dient vor allem zum schnellen auffinden von POS-Tags, moeglichen Lemmatisierungen
+:: einer Wortform oder flektierten Formen eines Lemmas (e.g. /codist["hinsichtlich", pos]).
+
+
+- Labels in Makros
+ 
+Das spezielle Pseudo-Argument "$$" nimmt bei jedem Makro-Aufruf einen 
+neuen Wert an; es kann z.B. fuer interne Labels verwendet werden, so dass
+bei Makro-Wiederholungen wie /pp[]+ Labels nicht wiederverwendet werden
+(was i.d.R. zu Fehlern bei der Auswertung fuehrt).
+
+Ein Beispiel: eine 'nichttriviale' NP enthaelt vor dem Nomen optional Artikel,
+Adjektive, ...; jedes dieser Elemente ist fuer sich optional, es soll jedoch 
+mindestens eines davon vorkommen. Dies laesst sich durch das Setzen von Labels
+erzwingen:
+
+MACRO np(0) 
+( 
+a: [pos="ART"]?
+a: [pos="ADJA"]*
+[pos="NN" & (a)]	# (a) ist TRUE, wenn das Label gesetzt wurde
+)
+;
+
+Bei der naheliegenden Query
+
+	/np[]+ ;
+
+ist nur die erste NP nichttrivial; danach werden auch einzelne Nomina gematcht,
+da das Label <a> immer noch auf Artikel bzw. Adjektiv der ersten NP zeigt! 
+Auch eine explizite Ausfuehrung wie
+
+	/np[] /np[]? /np[]? ;
+
+schafft keine Abhilfe, da immer dasselbe Label <a> verwendet wird. Verwendet man
+hingegen das Pseudo-Argument $$ als Label-Namen, so ist die erste Query zwar immer
+noch falsch, aber die zweite Version wird korrekt ausgefuehrt.
+
+MACRO np(0) 
+( 
+$$: [pos="ART"]?
+$$: [pos="ADJA"]*
+[pos="NN" & ($$)]
+)
+;
+
+Inzwischen wurde eine bessere Loesung implementiert: der Operator '~' vor einer
+Labelreferenz loescht das entsprechende Label nach Auswertung der Referenz. 
+Somit lassen sich Label mit beschraenktem Skopus simulieren. Im obigen Beispiel
+schreiben wir jetzt
+
+MACRO np(0) 
+( 
+a: [pos="ART"]?
+a: [pos="ADJA"]*
+[pos="NN" & (~a)]
+)
+;
+
+und koennen nun
+
+	/np[]+;
+
+korrekt ausfuehren. Um eventuelle Kollisionen mit Labeln in der uebergeordneten
+Query, wie:
+
+	a:[pos="APPR"] /np[] :: a.word = "auf|zu";  # Label 'a' wird in /np[] geloescht!
+
+zu vermeiden, kann wiederum das Pseudo-Argument verwendet werden:
+
+MACRO np(0) 
+( 
+$$: [pos="ART"]?
+$$: [pos="ADJA"]*
+[pos="NN" & (~$$)]
+)
+;
+
+Bei komplexeren Ausdruecken bietet sich die Verwendung des /undef[]-Makro an:
+
+MACRO np(0)
+( 
+a: [pos="ART"]?
+b: [pos="ADJA"]*
+[(<<komplexe Bed. die a und b verwendet>>) & /undef[a,b]]
+)
+;
+
+Anmerkung: ist die erste Bedingung FALSE, wo wird zwar das /undef[]-Makro
+nicht mehr ausgewertet, jedoch kann dieser Zustand des DFA ohnehin nicht zu
+einem Match fuehren (da das Pattern nicht erfuellt ist)!
+
+
+
+
+Zur Implementierung:
+
+- Zirkulaere Verwendung des lexikalischen Scanners. Eingabe in den Scanner aus
+Funktion yy_input_char() <macro.c>. Der Scanner erkennt ueber eine seiner Regeln
+Makro-Aufrufe (''/<id>[''] und ruft (falls enable_macros != 0) die Funktion
+expand_macro() <macro.c> auf. Diese Funktion verwendet wiederum den lexikalischen
+Scanner (ueber yylex()), um die Argumente des Makros einzulesen (man beachte, dass
+expand_macro() aus yylex() heraus aufgerufen wurde -> indirekte Rekursion von yylex()). 
+Nachdem das Makro gelesen ist, wird der Ersetzungstext auf dem Bufferstack fuer
+yy_input_char() abgelegt. Kann expand_macro() das Makro nicht expandieren (nicht def.
+oder Syntaxfehler), so liefert der Scanner das Token UNDEFINED_MACRO an den Parser,
+das dort einen Syntax Error erzeugt.
+
+- Nach einem Parse-Fehler wird bis zum naechsten ';' oder bis zum Zeilenende 
+synchronisiert. Dabei wird auch der Bufferstack von yy_input_char() geloescht;
+waehrend der Synchronisation werden die Makros voruebergehend deaktiviert.
+
+- aus Gruenden der Abwaertskompatibilitaet wird auch ein Makro-Aufruf mit runden Klammern
+akzeptiert, z.B. /np("Lehrer"); statt /np["Lehrer"]; 

@@ -1,0 +1,391 @@
+#!/usr/bin/perl
+## -*-cperl-*-
+## Author:  Stefan Evert
+## Purpose: simple command-line registry file editor
+##
+$| = 1;
+use warnings;
+use strict;
+
+use locale;
+
+use CWB;
+use Getopt::Long;
+
+sub Usage {
+  die <<STOP;
+
+Usage:  cwb-regedit [options] (CORPUS | <filename>) <command> [<command> ...]
+
+Options:
+  -r <dir>  use registry directory <dir> [system default]
+     --registry=<dir>
+  -h        show this help page
+     --help
+
+Commands:
+   :info
+        print basic information about the registry entry
+   (:id | :home | :name | :ifile) [<value>]
+        print or set corpus ID (:id), data directory (:home),
+        descriptive name (:name) or info file path (:ifile)
+   :prop <property> [<value>]
+        query or set corpus property
+   :list (:p | :s | :a)
+        list declared attributes of specified type
+   :add (:p | :s | :a) <name>[=<path>] ...
+        add positional, structural or alignment attributes
+   :del <names>
+        delete attributes of any type
+
+Command names are case-insensitive, and some intuitive abbreviations and variations
+are allowed (but only the forms listed above are guaranteed to work).
+
+STOP
+}
+
+our $Registry = undef;          # -r, --registry
+our $Help = 0;                  # -h, --help
+
+{
+  my $ok = GetOptions(
+                      "r|registry=s" => \$Registry,
+                      "h|help" => \$Help,
+                     );
+  Usage()
+    if $Help or @ARGV < 2 or not $ok;
+}
+
+our $Corpus = shift @ARGV;
+
+if (defined $Registry) {
+  $ENV{CORPUS_REGISTRY} = $Registry; # the CWB module uses this environment var to locate registry files
+}
+
+our $reg = new CWB::RegistryFile $Corpus;
+die "Registry file not found. Aborted.\n"
+  unless defined $reg;
+
+our $COMMAND = "";
+our @ARGS = ();
+our $CHANGES = 0;
+
+# process commands
+while (get_block()) {
+  if ($COMMAND eq ":info") {    # print basic information
+    die "Syntax error: :info command does not take arguments (@ARGS)\n"
+      unless @ARGS == 0;
+    print "FILE\t", $reg->filename, "\n";
+    print "ID\t", uc($reg->id), "\n";
+    print "NAME\t", $reg->name, "\n";
+    print "HOME\t", $reg->home, "\n";
+    print "INFO\t", $reg->info, "\n"
+      if $reg->info;
+    foreach my $p ($reg->list_properties) {
+      print "##::\t$p = ", $reg->property($p), "\n";
+    }
+  }
+  elsif ($COMMAND =~ /^:(id|home|name|ifile)$/) {
+    my $cmd = $1;
+    die "Syntax error: :$cmd command takes only 1 optional argument\n"
+      if @ARGS > 1;
+    if (@ARGS == 1) {
+      my $v = shift @ARGS;
+      $reg->id($v) if $cmd eq "id";
+      $reg->home($v) if $cmd eq "home";
+      $reg->name($v) if $cmd eq "name";
+      $reg->info($v) if $cmd eq "ifile";
+      $CHANGES++;
+    }
+    else {
+      print $reg->id if $cmd eq "id";
+      print $reg->home if $cmd eq "home";
+      print $reg->name if $cmd eq "name";
+      print $reg->info if $cmd eq "ifile";
+      print "\n";
+    }
+  }
+  elsif ($COMMAND eq ":prop") {
+    die "Syntax error: no property given for :prop command\n"
+      unless @ARGS > 0;
+    die "Syntax error: :prop command takes 1 or 2 arguments\n"
+      if @ARGS > 2;
+    my $p = shift @ARGS;
+    if (@ARGS) {
+      $reg->property($p, shift @ARGS);
+      $CHANGES++;
+    }
+    else {
+      my $value = $reg->property($p);
+      if (not defined $value) {
+        warn "Corpus property '$p' not defined in registry entry.\n";
+        $value = "";
+      }
+      print "$value\n";
+    }
+  }
+  elsif ($COMMAND eq ":add") {  # add attribute(s)
+    die "Syntax error: :add command must be followed by :p, :s or :a\n"
+      unless @ARGS == 0 and match_command() =~ /^:[psa]$/;
+    while (match_command() =~ /^:([psa])$/) {
+      get_block();
+      die "Syntax error: arguments missing for :add $COMMAND\n"
+        unless @ARGS > 0;
+      add_attributes($1, @ARGS);
+      $CHANGES++;
+    }
+  }
+  elsif ($COMMAND eq ":del") {  # delete attribute(s)
+    die "Syntax error: arguments missing for :del\n"
+      unless @ARGS > 0;
+    delete_attributes(@ARGS);
+    $CHANGES++;
+  }
+  elsif ($COMMAND eq ":list") { # list attributes of specified type
+    die "Syntax error: :list command must be followed by :p, :s or :a\n"
+      unless @ARGS == 0 and match_command() =~ /^:[psa]$/;
+    while (match_command() =~ /^:([psa])$/) {
+      get_block();
+      die "Syntax error: no arguments allowed for :list $COMMAND\n"
+        unless @ARGS == 0;
+      list_attributes($1);
+    }
+  }
+  else {
+    die "Command $COMMAND is not valid at this point. Aborted.\n";
+  }
+}
+
+## write back if any changes have been made
+if ($CHANGES > 0) {
+  my $regfile = $reg->filename;
+  # make a backup first
+  system "cp", "-p", $regfile, "$regfile~"; # ignore errors (e.g. if we don't have permissions to make a copy)
+  $reg->write;
+  print "Changes saved to ", $reg->filename, "\n";
+}
+
+
+##
+##  subroutines
+##
+
+## delete specified attributes (all of them must exist)
+sub delete_attributes {
+  my @atts = @_;
+  my @missing = grep {not defined $reg->attribute($_)} @atts;
+  die "Error in :del command: one or more attributes do not exist [@missing]. Aborted.\n"
+    if @missing;
+  print "Deleting attributes: @atts\n"; 
+  foreach my $a (@atts) {
+    $reg->delete_attribute($a);
+  }
+}
+
+## add attributes of specified type
+sub add_attributes {
+  my $type = shift;
+  my @atts = @_;
+  if ($type eq "s") {           # automatic expansion of s-attribute specs in cwb-encode format
+    my @expanded = ();
+    foreach my $spec (@_) {
+      if ($spec =~ /[:+]/) {
+        my $path = undef;
+        ($spec, $path) = split /=/, $spec; # remove optional directory path first
+        die "Syntax error in s-attribute specifier '$spec'. Aborted.\n"
+          unless $spec =~ /^([a-z0-9_-]+):([0-9])(\+([a-z0-9_+-]+))?$/;
+        my $base = $1;
+        my $recursion = $2;
+        my @xmlatt = ($4) ? split /\+/, $4 : ();
+        foreach my $i ("", 1 .. $recursion) {
+          foreach my $ext ("", map {"_$_"} @xmlatt) {
+            push @expanded, "$base$ext$i=$path";
+          }
+        }
+      }
+      else {
+        push @expanded, $spec;
+      }
+    }
+    @atts = @expanded;
+  }
+  my @invalid = grep {not /^[a-z_][a-z0-9_-]*(=[^=]+)?$/} @atts;
+  die "Error in :add :$type command: invalid attribute name(s) [@invalid]. Aborted.\n"
+    if @invalid;
+  print "Adding $type-attributes: @atts\n";
+  foreach my $spec (@atts) {
+    my ($a, $path) = split /=/, $spec;
+    my $exist = $reg->attribute($a);
+    if ($exist) {
+      die "Error: attribute '$a' already declared as $exist-attribute. Aborted.\n"
+        unless $exist eq $type;
+      print "[$type-attribute '$a' already declared]\n";
+    }
+    $reg->add_attribute($a, $type);
+    $reg->attribute_path($a, $path)
+      if defined $path;
+  }
+}
+
+## list attributes of specified type
+sub list_attributes {
+  my $type = shift;
+  my @atts = $reg->list_attributes($type);
+  print "@atts\n";
+}
+
+## check whether next token looks like a command (without removing it)
+sub is_command {
+  return( @ARGV and $ARGV[0] =~ /^:/ );
+}
+
+## match next token as command (without removing it) and return normalised name ("" if not a command)
+sub match_command {
+  my $cmd = (@_) ? shift : $ARGV[0];
+  my $norm = "";
+  for ($cmd) {
+    last unless defined $cmd;
+    $norm = ":info"  if /^:info$/i;
+    $norm = ":id"    if /^:id$/i;
+    $norm = ":home"  if /^:h(ome)?$/i;
+    $norm = ":name"  if /^:n(ame)?$/i;
+    $norm = ":ifile" if /^:ifile$/i;
+    $norm = ":prop"  if /^:pr(op)?$/i;
+    $norm = ":add"   if /^:add$/i;
+    $norm = lc($cmd) if /^:[psa]$/i;
+    $norm = ":del"   if /^:d(el(ete)?)?$/i;
+    $norm = ":list"   if /^:l(ist)?$/i;
+  }
+  return $norm;
+}
+
+## get a command block from the command line (command plus any number of non-command arguments)
+## result is stored in global variables $COMMAND and @ARGS; returns FALSE at end of input 
+sub get_block {
+  $COMMAND = "";
+  @ARGS = ();
+  return 0
+    unless @ARGV > 0;
+  die "Syntax error: expected command, got '$ARGV[0]'\n"
+    unless is_command();
+  $COMMAND = match_command();
+  die "Syntax error: unknown command '$ARGV[0]'\n"
+    unless $COMMAND;
+  shift @ARGV;
+  # collect command arguments (if any)
+  while (@ARGV and not is_command()) {
+    push @ARGS, shift @ARGV;
+  }
+  return 1;
+}
+
+__END__
+
+=head1 NAME
+
+cwb-regedit - A simple command-line editor for CWB registry files
+
+=head1 SYNOPSIS
+
+  cwb-regedit [options] (CORPUS | <filename>) <command> [<command> ...]
+
+Options:
+
+  -r <dir>, --registry=<dir>  use registry directory <dir> [system default]
+  -h, --help                  display usage summary
+     
+
+Commands:
+
+  :info
+       print basic information about the registry entry
+  (:id | :home | :name | :ifile) [<value>]
+       print or set corpus ID (:id), data directory (:home),
+       descriptive name (:name) or info file path (:ifile)
+  :prop <property> [<value>]
+       query or set corpus property
+  :list (:p | :s | :a)
+       list declared attributes of specified type
+  :add (:p | :s | :a) <name>[=<path>] ...
+       add positional, structural or alignment attributes
+  :del <names>
+       delete attributes of any type
+
+Command names are case-insensitive, and some intuitive abbreviations and variations
+are allowed (but only the forms listed above are guaranteed to work).
+
+
+=head1 DESCRIPTION
+
+B<cwb-regedit> is a simple command-line editor for CWB registry files in B<canonical format>.
+It allows you to display and modify header information, corpus properties and attribute declarations.
+For more complex editing tasks (such as adding descriptive comments), use the functionality
+provided by the B<CWB> module (see L<CWB/"REGISTRY FILE EDITING"> manpage).
+
+The first argument must be the name of a CWB registry file or a corpus ID.
+In the latter case, B<cwb-regedit> will attempt to locate the corresponding registry file in
+the system registry, or in a directory specified with the C<--registry> (C<-r>) option.
+The remaining arguments are editing or display commands, which are applied to the registry entry in turn.
+If any changes have been made, the modified registry file will be written back to disk automatically.
+
+The following commands are currently supported:
+
+=over 4
+
+=item B<:info>
+
+Print basic information about the registry entry, including pathname of the registry file,
+corpus ID, name, data directory and info file, as well as all corpus properties defined in the registry entry.
+
+=item (B<:id> | B<:name> | B<:home> | B<:ifile>)
+
+Display corpus header information (corpus ID, corpus name, data directory, info file).
+
+=item (B<:id> | B<:name> | B<:home> | B<:ifile>) I<value>
+
+Modify corpus header information (corpus ID, corpus name, data directory, info file).
+Don't forget to quote I<value> with single or double quotes if it contains whitespace or other special characters.
+
+=item B<:prop> I<name>
+
+Display corpus property I<name>.  If this property is not defined, B<cwb-regedit> prints an
+empty line and issues a warning message on B<stderr>.
+
+=item B<:prop> I<name> I<value>
+
+Modify or add corpus property I<name>.  Don't forget to quote I<value> if it contains whitespace or special characters.
+
+=item B<:list> (B<:p> | B<:s> | B<:a>) ...
+
+List all attributes of the specified type: B<:p> for positional attributes, B<:s> for structural attributes, 
+and B<:a> for alignment attributes.  Attribute names are printed on a single line separated by blanks.
+You can specify multiple attribute types without repeating the B<:list> keyword, e.g. C<:list :p :s>.
+
+=item B<:add> (B<:p> | B<:s> | B<:a>) I<name> ... [ (B<:p> | B<:s> | B<:a>) I<name> ... ]
+
+Add one or more attribute declarations to the registry entry.  The attribute type is indicated by 
+B<:p> (positional), B<:s> (structural) or B<:a> (alignment), followed by the names of the new attributes.
+For structural attributes, the same extended specifications are supported as in the B<cwb-encode> program
+(see the L<cwb-encode> manpage and the I<Corpus Encoding Tutorial> for details).
+
+A separate data directory for each attribute can be appended to the attribute name in the form I<name>=I<path>.
+For example, the command C<:add :s np:1+h=/ext_data/corpora/gigaword> would declare 4 s-attributes named
+C<np>, C<np_h>, C<np1> and C<np_h1> and set their data path to F</ext_data/corpora/gigaword>.
+
+=item B<:del> I<name> ...
+
+Delete attribute declarations, regardless of attribute type.  Note that the corresponding data files
+will not automatically be deleted.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright (C) 2002-2012 Stefan Evert [http::/purl.org/stefan.evert]
+
+This software is provided AS IS and the author makes no warranty as to
+its use and performance. You may use the software, redistribute and
+modify it under the same terms as Perl itself.
+
+=cut
+

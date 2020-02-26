@@ -1,0 +1,283 @@
+=head1 NAME
+
+cwb-s-encode - Add structural attribute to an existing CWB corpus
+
+=head1 SYNOPSIS
+
+B<cwb-s-encode> [-BMamsqDh] [-d I<output_dir>] [-f I<file>]
+    [[-r I<registry_dir>] -C I<corpus>] (-S I<attribute>|-V I<attribute>)
+
+=head1 DESCRIPTION
+
+This utility allows you to add a single new structural attribute (s-attribute)
+to an existing encoded corpus.
+
+An s-attribute is a set of regions marked in the corpus, where each region
+has a start point, an end point, and optionally an annotation value.
+In input data, s-attributes are represented as XML tags, and most features
+of a corpus that can be encoded using XML tags (such as sentence or 
+utterance boundaries, or the structures of a constituency parse) can also
+be represented as s-attributes. 
+
+Normally, an s-attribute is present within the original input data of a
+corpus, with the XML tags that represent it being placed on lines
+before/after the token positions with which the start/end points are
+associated. However, it is also possible to encode an s-attribute
+from a separate input file that contains only the start and end points
+of the s-attribute's regions, using this program.
+
+One typical use of this program is to take the start/end points of
+an existing s-attribute (extracted using B<cwb-s-decode>), add an annotation to them, and re-import them.
+So, for example, if you had C<<u>> tags in your original file, you could extract them,
+add a sequential number to each region, and re-import them as the s-attribute I<u_num>.
+The result is exactly the same as if you had had C<< <u num="..."> >> tags in your
+original data.
+ 
+Tables of corpus positions as input for B<cwb-s-encode>
+can also be created from CQP query results
+using the C<dump> or C<tabulate> command in a CQP session. Or you can create
+a list of pairs of corpus positions in any other way you wish.
+The input file format is the same in any case, and is described below.
+
+If you add an s-attribute to a corpus using B<cwb-s-encode>, you must also update its
+registry; B<cwb-s-encode> does not do this for you. You can either add the attribute manually,
+by inseritng a line such as the following:
+
+   STRUCTURE u_num
+   
+into the registry; or you can use the B<cwb-regedit> program from the CWB-Perl distribution.
+
+B<NB:> Command-line B<options> must always precede the I<attribute declaration> 
+(made with a B<-S> or B<-V> flag).
+
+B<NB:> It is not necessary to run B<cwb-makeall> after adding or modifying a 
+structural attribute with B<cwb-s-encode>.
+
+=head1 OPTIONS
+
+Please note that the CWB utilities do not currently support GNU-style C<--long-options>.
+
+=over 4
+
+=item B<-a>
+
+Adds the new regions to an existing s-attribute. In this case, you must specify the corpus from
+which the existing attribute comes with B<-C>, and you must declare the new attribute with the same
+name as the existing attribute. They must also be the same type of attribute: that is, if one of them
+has values (B<-V> declaration), both must. 
+
+When you add to an existing attribute, all its regions are read first, and then new regions
+from the input are added to that list.
+
+Overlaps will be resolved in the process of adding new regions, requiring in-memory mode;
+so use of B<-a> implies B<-M>.
+
+=item B<-B>
+
+Strips leading/trailing blanks from the annotations before they are encoded.
+
+=item B<-c> I<charset>
+
+Specifies the character encoding of the annotations in the input file on the s-attribute 
+(thus, it only has any effect if you are creating a B<-V> attribute). 
+
+The possible values for I<charset> are the same as the possible values for the equivalent
+option in B<cwb-encode> (pleaxse see the list in that program's manual). 
+If this option is left unspecified, I<latin1> data will be assumed. Please note that we may change the default
+character set to I<ascii> or I<utf8>, or even remove the default altogether 
+(so that specifying a character set explicitly will be obligatory), in future versions of CWB. 
+
+Note that this option will not have any effect if you are adding data to an existing corpus 
+(specified with the B<-C> option). In that case, the character set assumed for encoding 
+the annotations is that of the existing corpus.
+
+=item B<-C> I<corpus>
+
+Specifies that you want to work on I<corpus> (this is requried if you are adding to existing annotation 
+with the B<-a> option). The name of the corpus should be given in the all-lowercase format.
+
+=item B<-d> I<output_dir> 
+
+Specifies the directory where the output files will be placed. This should normally be the data directory
+of the corpus you wish to add the s-attribute to. You do not need to actually name the corpus
+unless you are using the B<-a> option.
+
+=item B<-D>
+
+Activates debug mode; additional messages about what B<cwb-s-encode> is doing will be printed on standard error.
+
+=item B<-f> I<file>
+
+Specifies that the input data for the new s-attribute will be read from I<file>.
+By default, data is read from the program's standard input. Files with extension
+C<.gz> or C<.bz2> are automatically decompressed. If <file> starts with a pipe
+character (C<|>), it is interpreted as a shell command, which can be useful for
+generating the input format required by B<cwb-s-encode> on the fly.
+
+=item B<-m>
+
+Specifies that the attribute's annotations are to be treated as feature
+set (or 'multi-value') items. This is equivalent to adding '/' to the end
+of an attribute specification in B<cwb-encode>. Note that this only works if the
+new attribute is declared with B<-V>.
+
+=item B<-M>
+
+Activates in-memory mode: a list of regions will be built in memory cumulatively as the input
+data is read, and only written to disk when input is complete - in contrast to the normal
+operation, where encoded regions are written to disk as they're read. 
+
+Creating the list of regions in memory allows the input overlaps to be resolved. This is done
+as follows. 
+
+=over 4
+
+=item *
+
+When the start point of a new region is the same as one previously read in, 
+the longer region is retained and the other ignored. 
+
+=item *
+
+When the start point of the new region
+is within (but not at the start of) a previous region, the new region is ignored. 
+
+=item *
+
+Any previously read-in regions whose start point is within (but not at the start of)
+the new region are deleted.
+
+=back
+
+That is, priority is given to the earliest-starting of a pair of clashing regions,
+with ties broken on the length of the region.
+
+This resolution I<cannot> be done in normal mode, because regions are written to disk 
+as soon as they are encountered.
+
+The process of building a list of regions in memory also serves to sort the regions.
+So when in-memory mode is active, it is not necessary for the regions to be sorted
+into ascending order.
+
+=item B<-q>
+
+Silences the progress messages that are otherwise printed to standard output when
+operating in-memory mode (i.e. "be quiet!"). This has no effect if neither of B<-M> 
+and B<-A> are set.
+
+=item B<-r> I<registry_dir>
+
+Specifies that the registry directory should be I<registry_dir> on startup,
+instead of the standard registry. If this option is not specified, then a directory 
+specified by the CORPUS_REGISTRY environment variable will be used; if that is not available, 
+the built-in CWB default will be used.
+
+Note that the registry is only actually needed if a corpus is specified with B<-C>.
+
+=item B<-s>        
+
+This option should be used along with -m. It makes B<cwb-s-encode> check that the form 
+of set annotations is consistent - that is, that all the sets use EITHER the normal
+pipe-based divisors, OR the alternative whitespace-based divisors, but not both.
+
+=back
+  
+=head1 ATTRIBUTE DECLARATIONS
+
+Only one attribute declaration can be given. Note that as only a single s-attribute
+is generated, the complex s-attribute declarations allowed by B<cwb-encode> such as
+C<att:2+n+id...> are not allowed here, as they are implicit declarations of
+multiple attributes.
+
+=over 4
+
+=item B<-S> I<attribute>
+
+Specifies the name of the s-attribute to generate as I<attribute>. In this case,
+the regions I<do not> have annotation values.
+
+=item B<-V> I<attribute>
+
+Specifies the name of the s-attribute to generate as I<attribute>. In this case,
+the regions I<must> have annotation values.
+
+=back
+
+
+=head1 INPUT FORMAT
+
+One line for each region of the new attribute, with the following TAB-delimited fields:
+
+=over 4
+
+=item region-start
+
+The corpus position of the first token in the region.
+
+=item region-end
+
+The corpus position of the last token in the region.
+
+=item [ annotation ]
+
+The string value of this region's annotation (only if the attribute has been declared with C<-V>).
+
+If the attribute is treated as a feature set (via the B<-m> flag), it can contain either a list
+of features divided by and surrounded by | (the suual feature set syntax), or a list of features
+divided by whitespace, which will be corrected to | during the encoding process.
+
+=back
+
+B<NB:> Regions must be provided in corpus order (i.e. sorted by ascending start position) 
+and may not overlap - I<except> in in-memory mode, where the regions are sorted
+as they are read in and where overlapping regions are left out. See discussion of the 
+B<-M> flag above.
+
+
+
+=head1 ENVIRONMENT
+
+=over 4
+
+=item B<CORPUS_REGISTRY>
+
+If set, this environment variable specifies the location of the corpus registry directory. 
+The CORPUS_REGISTRY is overruled by the B<-r> option, if present; if neither of these means
+of specifying the registry is used, then the built-in CWB default registry location will be used.
+
+=back
+
+
+
+=head1 SEE ALSO
+
+L<cqp>, L<cwb-describe-corpus>, L<cwb-s-decode>, L<cwb-encode>, L<cwb-align-encode>.
+
+
+=head1 COPYRIGHT
+
+=over 4
+
+=item
+B<IMS Open Corpus Workbench (CWB)> L<http://cwb.sourceforge.net/>
+
+=item
+Copyright (C) 1993-2006 by IMS, University of Stuttgart
+
+=item
+Copyright (C) 2007- by the respective contributers (see file F<AUTHORS>)
+
+=back
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details
+(in the file F<COPYING>, or available via WWW at
+L<http://www.gnu.org/copyleft/gpl.html>).
+
+=cut
+

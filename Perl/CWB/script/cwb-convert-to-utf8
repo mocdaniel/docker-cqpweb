@@ -1,0 +1,346 @@
+#!/usr/bin/perl
+## -*-cperl-*-
+## Author:  Stefan Evert
+## Purpose: Convert existing CWB corpus into UTF-8 encoding
+##
+$| = 1;
+use warnings;
+use strict;
+
+use CWB;
+use CWB::Encoder;
+
+use Getopt::Long;
+use Pod::Usage;
+
+die "This program requires CWB version 3.4.2 or newer (you have $CWB::Config::VersionString)\n"
+  unless $CWB::CWBVersion >= 3.004_002;
+
+## configuration variables and arguments
+our $Opt_Registry = undef;      # -r <dir> ... search source corpus in registry <dir>
+our $Opt_OutRegistry = undef;   # -or <dir> ... registry directory for the new corpus (default: same as original)
+our $Opt_OutName = undef;       # -n <name> ... CWB name of the new corpus (default: <old_name>_UTF8)
+our $Opt_Force = 0;             # -f ... overwrite existing registry entry and/or data directory
+our $Opt_Memory = 1000;         # -M <n> ... use ca. <n> MiB of RAM for indexing
+our $Opt_Verbose = 0;           # -v ... verbose output (progress shows individual attributes)
+our $Opt_Help = 0;              # -h ... show usage message
+
+our $Corpus = undef;            # source corpus
+our $OutDir = undef;            # data directory for new corpus
+
+OPTIONS_AND_USAGE:
+{
+  my $ok = GetOptions("r|registry=s" => \$Opt_Registry,
+                      "or|output-registry=s" => \$Opt_OutRegistry,
+                      "n|name|on|output-name=s" => \$Opt_OutName,
+                      "M|memory=i" => \$Opt_Memory,
+                      "f|force" => \$Opt_Force,
+                      "v|verbose" => \$Opt_Verbose,
+                      "h|help" => \$Opt_Help,
+                     );
+  pod2usage(-msg => "(Type 'perldoc cwb-convert-to-utf8' for more information.)",
+            -exitval => 0, -verbose => 1) if $Opt_Help;
+  pod2usage(-msg => "(Type 'cwb-convert-to-utf8 -h' for more information.)",
+            -exitval => 1, -verbose => 0) if $ok and @ARGV == 0;
+  pod2usage(-msg => "SYNTAX ERROR.", 
+            -exitval => 2, -verbose => 0)
+    unless $ok and @ARGV == 2;
+
+  ($Corpus, $OutDir) = @ARGV;
+}
+
+## global variables
+our @Registry = ($Opt_Registry) ? $Opt_Registry : CWB::RegistryDirectory(); # registry directories
+our $RegistryDir1 = undef;      # registry directory of old corpus
+our $RegistryDir2 = undef;      # registry directory of new corpus
+our $RegistryFile1 = undef;     # registry file of old corpus
+our $RegistryFile2 = undef;     # registry file of new corpus
+our $DataDir1 = undef;          # data directory of old corpus
+our $DataDir2 = $OutDir;        # data directory of new corpus
+our $Corpus1 = uc($Corpus);     # CWB name of old corpus
+our $Corpus2 = ($Opt_OutName) ? uc($Opt_OutName) : $Corpus1."_UTF8";
+our $R1 = undef;                # metadata of old corpus (CWB::RegistryFile object)
+our $R2 = undef;                # metadata of new corpus
+our $Charset1 = undef;          # character set of old corpus
+our $Charset2 = "utf8";         # character set of new corpus (what else?)
+
+
+SETUP:
+{
+  ## try to locate registry file of old corpus
+  foreach my $dir (@Registry) {
+    my $filename = $dir . "/" . lc($Corpus1);
+    if (-f $filename) {
+      $RegistryDir1 = $dir;
+      $RegistryFile1 = $filename;
+      $RegistryDir2 = ($Opt_OutRegistry) ? $Opt_OutRegistry : $RegistryDir1;
+      $RegistryFile2 = $RegistryDir2 . "/" . lc($Corpus2);
+      last;
+    }
+  }
+  die "Error: can't locate corpus $Corpus1 in registry ", join(":", @Registry), "\n"
+    unless defined $RegistryFile1;
+  die "Error: old and new corpus cannot use the same registry file $RegistryFile1\n"
+    if $RegistryFile1 eq $RegistryFile2;
+
+  ## load registry file of old corpus and check metadata
+  $R1 = new CWB::RegistryFile $RegistryFile1
+    or die "Error: can't read registry file $RegistryFile1\n";
+  $DataDir1 = $R1->home;
+  die "Error: old and new corpus cannot use the same data directory $DataDir1/\n"
+    if $DataDir1 eq $DataDir2;
+  $Charset1 = $R1->property("charset");
+  die "Corpus $Corpus1 is already in UTF-8 encoding.  Nothing to be done.\n"
+    if $Charset1 eq "utf8";
+
+  ## check whether new registry file and/or data directory already exist
+  die "Error: registry directory $RegistryDir2/ for new corpus doesn't exist\n"
+    unless -d $RegistryDir2;
+  if (-f $RegistryFile2) {
+    if ($Opt_Force) {
+      print "[removing existing registry entry $RegistryFile2]\n"
+        if $Opt_Verbose;
+      CWB::Shell::Cmd(["rm", "-f", $RegistryFile2]);
+    }
+    else {
+      die "Error: registry file $RegistryFile2 for new corpus already exists (use --force to overwrite)\n";
+    }
+  }
+  if (-d $DataDir2) {
+    if ($Opt_Force) {
+      print "[removing existing data directory $DataDir2/]\n"
+        if $Opt_Verbose;
+      CWB::Shell::Cmd(["rm", "-rf", $DataDir2]);
+    }
+    else {
+      die "Error: data directory $DataDir2/ for new corpus already exists (use --force to overwrite)\n";
+    }
+  }
+  print "\n"
+    if $Opt_Verbose;
+}
+
+CREATE:
+{
+  print "Creating new data directory and registry entry\n";
+
+  ## create new data directory
+  CWB::Shell::Cmd(["mkdir", $DataDir2]);
+
+  ## copy registry file and adjust
+  $R2 = new CWB::RegistryFile $RegistryFile1; # we've checked above that file can be loaded
+  $R2->id(lc($Corpus2));
+  $R2->name($R2->name . " (UTF-8)");
+  $R2->home($DataDir2);
+  my $old_info_file = $R2->info;
+  if ($old_info_file and -f $old_info_file) {
+    print " - copying info file\n"
+      if $Opt_Verbose;
+    my $new_info_file = "$DataDir2/.info"; # default name for INFO file
+    CWB::Shell::Cmd(["cp", $old_info_file, $new_info_file]);
+    $R2->info($new_info_file);
+  }
+  else {
+    $R2->delete_info();
+  }
+
+  ## save modified registry entry
+  $R2->property("charset", $Charset2);
+  $R2->write($RegistryFile2);
+
+  print "\n"
+    if $Opt_Verbose;
+}
+
+my $iconv = "iconv -f $Charset1 -t $Charset2 -c"; # iconv command to recode from old charset to utf8
+
+POSITIONAL:
+{
+  print "Converting positional attributes\n";
+
+  foreach my $att ($R1->list_attributes("p")) {
+    my @decode = CWB::Shell::Quote($CWB::Decode, "-Cx", "-r", $RegistryDir1, $Corpus1, "-P", $att);
+    my @encode = CWB::Shell::Quote($CWB::Encode, "-x", "-c", $Charset2, "-d", $DataDir2, "-p", $att, "-0", "corpus");
+
+    printf " - %-14s .. recoding ", $att
+      if $Opt_Verbose;
+    CWB::Shell::Cmd("@decode | $iconv | @encode");
+
+    print ".. indexing "
+      if $Opt_Verbose;
+    my $Make = new CWB::Indexer "$RegistryDir2:$Corpus2";
+    $Make->memory($Opt_Memory);
+    $Make->make($att);
+
+    print ".. OK\n"
+      if $Opt_Verbose;
+  }
+
+  print "\n"
+    if $Opt_Verbose;
+}
+
+STRUCTURAL:
+{
+  print "Converting structural attributes\n";
+
+  foreach my $att ($R1->list_attributes("s")) {
+    my $path = $R1->attribute_path($att) || $DataDir1; # data directory for this attribute
+    my $rng_file = "$path/$att.rng";                   # .rng file must be present
+    die "Error: can't find data file $rng_file\n"
+      unless -f $rng_file;
+
+    if (-f "$path/$att.avs" || -f "$path/$att.avx") {
+      ## s-attribute with annotations -> need to recode
+      my @decode = CWB::Shell::Quote($CWB::SDecode, "-r", $RegistryDir1, $Corpus1, "-S", $att);
+      my @encode = CWB::Shell::Quote($CWB::SEncode, "-c", $Charset2,  "-d", $DataDir2, "-V", $att);
+
+      printf " - %-14s .. recoding ", $att
+        if $Opt_Verbose;
+      CWB::Shell::Cmd("@decode | $iconv | @encode");
+    }
+    else {
+      ## s-attribute without annotations -> copy .rng file
+      printf " - %-14s .. copying  ", $att
+        if $Opt_Verbose;
+      CWB::Shell::Cmd(["cp", $rng_file, "$DataDir2/$att.rng"]);
+    }
+
+    print ".. OK\n"
+      if $Opt_Verbose;
+  }
+
+  print "\n"
+    if $Opt_Verbose;
+}
+
+ALIGNMENT:
+{
+  print "Copying alignment attributes\n";
+
+  foreach my $att ($R1->list_attributes("a")) {
+    my $path = $R1->attribute_path($att) || $DataDir1; # data directory for this attribute
+    my @files = grep {-f} ("$path/$att.alx", "$path/$att.alg");  # .alx = new format, .alg = (very) old format (may be added for compatibility)
+    die "Error: can't find data files for alignment $Corpus1.$att\n"
+      unless @files > 0;
+
+    printf " - %-14s .. copying  ", $att
+      if $Opt_Verbose;
+    foreach my $file (@files) {
+      CWB::Shell::Cmd(["cp", $file, "$DataDir2"]);
+    }
+
+    print ".. OK\n"
+      if $Opt_Verbose;
+  }
+
+  print "\n"
+    if $Opt_Verbose;
+}
+
+print "Processing complete.\n";
+
+print "\n";
+print "Old corpus: $Corpus1\n";
+print "  registry file: $RegistryFile1\n";
+print "  index files:   $DataDir1/\n";
+print "  encoding:      $Charset1\n";
+print "\n";
+print "New corpus: $Corpus2\n";
+print "  registry file: $RegistryFile2\n";
+print "  index files:   $DataDir2/\n";
+print "  encoding:      $Charset2\n";
+print "\n";
+
+
+__END__
+
+=head1 NAME
+
+cwb-convert-to-utf8 - Convert existing CWB corpus to UTF-8 encoding
+
+=head1 SYNOPSIS
+
+  cwb-convert-to-utf8 [options] <CORPUS> <new_datadir>
+
+Options:
+
+  -r <dir>,              registry directory for old corpus [system default]
+    --registry=<dir>
+  -or <dir>,             registry directory for new corpus [same as old corpus]
+    --output-registry=<dir>
+  -n <id>, -on <id>,     CWB name of new corpus [<CORPUS>_UTF8]
+    --name=<id>, --output-name=<id>
+  -M <n>, --memory=<n>   use ca. <n> MBytes of RAM for corpus indexing [1000]
+  -f, --force            overwrite existing registry entry and data directory
+  -v, --verbose          show progress message for each attribute
+  -h, --help             display short help page
+
+=head1 DESCRIPTION
+
+This script provides a convenient method to convert existing CWB-indexed corpora in legacy encodings (C<latin> = ISO-8859-1 etc.) into UTF-8 encoding for use with recent versions of CWB (v3.4.2 and newer).
+
+B<cwb-convert-to-utf8> requires two arguments, the CWB name of the old (non-UTF-8) corpus and a data directory for the binary index files of the new (UTF-8) corpus. It will then automatically convert and re-index all corpus attributes and create a new registry file in the same registry directory, appending C<_UTF8> to the corpus name (unless these default choices are overridden by command-line options).  For example,
+
+  cwb-convert-to-utf8 TIGER /Corpora/CWB/TigerUTF
+
+would locate the corpus C<TIGER> (presumably a copy of the German Tiger Treebank, encoded in C<latin1>) somewhere in the default registry path, create a new registry entry C<TIGER_UTF8> in the same directory, and store the re-encoded index files in the directory F</Corpora/CWB/TigerUTF/>.
+
+=head1 OPTIONS
+
+=over 4
+
+=item --registry=I<dir>, -r I<dir>
+
+Search the input corpus in registry directory I<dir> rather than the default registry path.
+
+=item --output-registry=I<dir>, -or I<dir>
+
+Create registry entry for the new corpus in I<dir> rather than the same directory as the old corpus.
+
+=item --name=I<id>, -n I<id>
+
+=item --output-name=I<id>, -on I<id>
+
+Set the CWB name of the new corpus to I<id>. The default setting append C<_UTF8> to the CWB name of the input corpus.
+
+=item --memory=I<n>, -M I<n>
+
+Allow B<cwb-make> to use approx. I<n> MBytes of RAM for indexing.
+
+=item --force, -f
+
+Silently overwrite an existing registry entry and/or data directory.  Use with caution, as this will remove all files from an existing data directory.
+
+=item --verbose, -v
+
+Show progress message for each individual attribute (recommended for large corpora).
+
+=item --help, -h
+
+Display short help page.
+
+=back
+
+=head1 PREREQUISITES
+
+B<cwb-convert-to-utf8> requires a recent version of CWB with Unicode support, viz. B<CWB v3.4.2> or newer. If you have installed multiple CWB releases on your computer, make sure that the CWB/Perl modules are configured to use an appropriate CWB version.
+
+For efficiency reasons, character encodings are converted with the external B<iconv> utility, which must be installed somewhere in the system path. Your version of B<iconv> must support command line options C<-f> (source encoding), C<-t> (target encoding) and C<-c> (ignore conversion errors); it also needs to understand CWB style encoding names such as C<utf8> and C<latin1>. Suitable versions of B<iconv> are provided by Linux and Mac OS X, and by any POSIX-conformant system. 
+
+=head1 BUGS
+
+Feature set attributes (C<|feat1|feat2|...|>) containing non-ASCII characters may no longer be sorted correctly after the conversion.  This will only affect queries involving the built-in C<unify()> function, though, which is rarely used in practice.
+
+=head1 COPYRIGHT
+
+Copyright (C) 2007-2018 Stefan Evert [http://purl.org/stefan.evert]
+
+This software is provided AS IS and the author makes no warranty as to
+its use and performance. You may use the software, redistribute and
+modify it under the same terms as Perl itself.
+
+=cut
+
+
+

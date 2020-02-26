@@ -1,0 +1,21 @@
+Corpus *	T_PTROBJ
+Attribute *	T_PTRREF
+PosAttrib	T_PTROBJ_CL
+StrucAttrib	T_PTROBJ_CL
+AlignAttrib	T_PTROBJ_CL
+
+#############################################################################
+INPUT
+T_PTROBJ_CL
+  if (sv_derived_from($arg, \"CWB::CL::${ntype}\")) {
+    IV tmp = SvIV((SV*)SvRV($arg));
+    $var = INT2PTR($type,tmp);
+  }
+  else {
+    Perl_croak(aTHX_ \"$var is not of type CWB::CL::${ntype}\");
+  }
+
+#############################################################################
+OUTPUT
+T_PTROBJ_CL
+  sv_setref_pv($arg, \"CWB::CL::${ntype}\", (void*)$var);

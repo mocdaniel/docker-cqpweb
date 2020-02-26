@@ -1,0 +1,42 @@
+
+    Benchmark results for the implementation of n-gram hashes
+
+ - obtained with cwb-scan-corpus
+ - reference corpus: WP500 (a 230M token subset of Wackypedia)
+ - reference system: Retina MacBook Pro (Mid 2012), Intel Core i7 2.6 GHZ, 16 GiB RAM, Mac OS X 10.10.3
+ - RAM usage tracked with Activity Monitor
+
+1) Bigrams over word forms: ca. 21M types
+
+$ cwb-scan-corpus -o /dev/null -C WP500 word+0 word+1
+
+v3.4.8:            996.3 MB     8m 58s        538s
+10M buckets:      1065.0 MB     7m 36s        456s
+v3.4.9:            791.0 MB     4m 27s        267s
+new hash func:     718.5 MB     1m 56s        116s
+
+2) Trigrams over word forms: ca. 60M types
+
+$ cwb-scan-corpus -o /dev/null -C WP500 word+0 word+1 word+2
+
+v3.4.8:             2.70 GB    12m 41s        761s
+10M buckets:        2.77 GB     6m  9s        369s
+v3.4.9:             1.92 GB     4m 20s        260s
+new hash func:      2.04 GB     3m 30s        210s
+
+3) Six-grams over POS tags: ca. 44M types
+
+$ cwb-scan-corpus -o /dev/null -C WP500 pos+0 pos+1 pos+2 pos+3 pos+4 pos+5
+
+v3.4.8:             2.69 GB     9m 25s        565s
+50M buckets:        3.05 GB     4m 11s        251s
+v3.4.9:             2.50 GB     3m 49s        229s
+new hash func:      2.25 GB     4m  9s        249s
+
+4) Unfiltered word/POS/lemma table: 
+
+$ cwb-scan-corpus -o /dev/null WP500 word+0 pos+0 hw+0
+
+v3.4.8:            130.2 MB     1m 45s        105s
+v3.4.9:             91.5 MB     1m 33s         93s
+new hash func:      93.4 MB     1m 30s         90s

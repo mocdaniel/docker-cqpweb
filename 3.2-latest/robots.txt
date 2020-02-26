@@ -1,0 +1,7 @@
+# CQPweb is wholly dynamic. Robots should not interrogate it.
+# 
+# Note, if CQPweb is installed in a subdirectory rather than the
+# server root, this file will have no effect. But it won't hurt
+# either.  
+User-agent: *    # applies to all robots
+Disallow: /      # disallow indexing of all pages

@@ -1,0 +1,89 @@
+#!/bin/sh
+
+cat <<__END__
+#!/bin/sh
+
+## Directory tree where the CWB will be installed
+## (e.g. /usr/local installs CQP in /usr/local/bin, manpages in /usr/local/share/man, etc.)
+PREFIX='${PREFIX}'
+
+## You can also change individual installation directories
+BINDIR="\${PREFIX}/bin"         # CQP and other executable programs ("binaries")
+INCDIR="\${PREFIX}/include"     # C header files (CL library and CQi specification)
+LIBDIR="\${PREFIX}/lib"         # CL library (can be linked into C programs)
+MANDIR="\${PREFIX}/share/man"   # manual pages
+
+## If you have a GNU-compatible "install" program on your system, you can use it instead of
+## the "install.sh" script; simply change the line below to INSTALL='install'
+INSTALL='instutils/install.sh -c'
+
+## Optionally, change access permissions, owner and group membership of installed files
+INSTFLAGS_DIR='-d -m 755'
+INSTFLAGS_BIN='-m 755'
+INSTFLAGS_DATA='-m 644'
+INSTFLAGS_USER=''  # set to '-o <user>' to change owner of installed files
+INSTFLAGS_GROUP='' # set to '-g <group>' to change group of installed files
+
+############### DO NOT CHANGE ANYTHING BELOW THIS LINE ###############
+
+VERSION='${VERSION}'
+REGISTRY='${REGISTRY}'
+
+MANEXT='${MANEXT}'
+REALINCDIR="\${INCDIR}/cwb"
+REALMANDIR="\${MANDIR}/man\${MANEXT}"
+
+CFLAGS="-I\${INCDIR}"
+LDFLAGS="-L\${LIBDIR} -lcl"
+
+INSTFLAGS_EXTRA="\${INSTFLAGS_USER} \${INSTFLAGS_GROUP}"
+
+# update cwb-config program (in case installation paths have been changed)
+echo "Updating cwb-config script ..."
+export PREFIX BINDIR INCDIR LIBDIR MANDIR VERSION REGISTRY CFLAGS LDFLAGS
+if [ -f bin/cwb-config ]; then rm -f bin/cwb-config; fi
+sh instutils/cwb-config.in > bin/cwb-config || exit 1
+chmod 755 bin/cwb-config
+
+# install CQP and utilities (including cwb-config)
+echo "Installing CQP and utilities in \${BINDIR}"
+if [ ! -d "\${BINDIR}" ]
+	then
+	\$INSTALL \$INSTFLAGS_DIR \$INSTFLAGS_EXTRA "\${BINDIR}" || exit 1
+fi
+for prog in bin/*
+	do
+	\$INSTALL \$INSTFLAGS_BIN \$INSTFLAGS_EXTRA "\${prog}" "\${BINDIR}" || exit 1
+done
+
+# install CL library and header files
+echo "Installing CL library and header files in \${LIBDIR} and \${INCDIR}"
+if [ ! -d "\${LIBDIR}" ]
+	then
+	\$INSTALL \$INSTFLAGS_DIR \$INSTFLAGS_EXTRA "\${LIBDIR}" || exit 1
+fi
+if [ ! -d "\${REALINCDIR}" ]
+	then
+	\$INSTALL \$INSTFLAGS_DIR \$INSTFLAGS_EXTRA "\${REALINCDIR}" || exit 1
+fi
+\$INSTALL \$INSTFLAGS_DATA \$INSTFLAGS_EXTRA lib/libcl.a "\${LIBDIR}" || exit 1
+\$INSTALL \$INSTFLAGS_DATA \$INSTFLAGS_EXTRA include/cwb/cl.h "\${REALINCDIR}" || exit 1
+\$INSTALL \$INSTFLAGS_DATA \$INSTFLAGS_EXTRA include/cwb/cqi.h "\${REALINCDIR}" || exit 1
+
+# install manpages
+echo "Installing manual pages in \${MANDIR}"
+if [ ! -d "\${REALMANDIR}" ]
+	then
+	\$INSTALL \$INSTFLAGS_DIR \$INSTFLAGS_EXTRA "\${REALMANDIR}"
+fi
+for manpage in man/man1/*
+	do
+	\$INSTALL \$INSTFLAGS_DATA \$INSTFLAGS_EXTRA "\${manpage}" "\${REALMANDIR}" || exit 1
+done
+
+# that's it!
+echo "Congratulations, the IMS Open Corpus Workbench v\${VERSION} has been installed successfully."
+echo "Please make sure that \${BINDIR} is in your search path."
+__END__
+
+

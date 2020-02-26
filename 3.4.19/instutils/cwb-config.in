@@ -1,0 +1,70 @@
+#!/bin/sh
+
+cat <<__END__
+#!/bin/sh
+
+VERSION='$VERSION'
+PREFIX='$PREFIX'
+BINDIR='$BINDIR'
+LIBDIR='$LIBDIR'
+INCDIR='$INCDIR'
+MANDIR='$MANDIR'
+CFLAGS='$CFLAGS'
+LDFLAGS='$LDFLAGS'
+REGISTRY='$REGISTRY'
+
+usage ()
+{
+  echo "Usage:  cwb-config <flag>"
+  echo "Available configuration flags:"
+  echo "   --version, -v    installed CWB version"
+  echo "   --prefix         CWB installation prefix (may have been overridden)"
+  echo "   --bindir         install location of binaries"
+  echo "   --libdir         install location of CL library"
+  echo "   --incdir         install location of C header files"
+  echo "   --mandir         install location of manual pages"
+  echo "   --cflags, -I     compiler flags for linking against CL library"
+  echo "   --ldflags, -L    linker flags for linking against CL library"
+  echo "   --registry, -r   effective registry directory or directories"
+  echo "   --default-registry, -d  default registry directory compiled into CWB"
+}
+
+if [ \$# != 1 ]
+then
+  usage
+  exit 2
+fi
+
+case "\$1" in
+  --version|-v)
+    echo "\$VERSION";;
+  --prefix)
+    echo "\$PREFIX";;
+  --bindir)
+    echo "\$BINDIR";;
+  --libdir)
+    echo "\$LIBDIR";;
+  --incdir)
+    echo "\$INCDIR";;
+  --mandir)
+    echo "\$MANDIR";;
+  --cflags|-I)
+    echo "\$CFLAGS";;
+  --ldflags|-L)
+    echo "\$LDFLAGS";;
+  --registry|-r)
+    if [ "x\$CORPUS_REGISTRY" = "x" ]
+      then
+      echo "\$REGISTRY"
+      else
+      echo "\$CORPUS_REGISTRY"
+    fi
+    ;;
+  --default-registry|-d)
+    echo "\$REGISTRY";;
+  --help|-h)
+    usage;;
+  *)
+    echo "Error: unknown option \$1"; exit 1;;
+esac
+__END__

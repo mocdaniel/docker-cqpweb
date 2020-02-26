@@ -1,0 +1,89 @@
+h1. Rules-of-thumb for formatting code in CWB / CQP
+
+NB. There may be numerous exceptions to these rules-of-thumb in the existing CWB code, since CWB contains multiple strata of code done by different people in different styles. The aim of these 
+
+* Note that everything here only applies to the main CWB package. The CWB-Perl and CQPweb code bases may (and, in fact, do) follow different conventions.
+
+h2. ANSI
+
+* All C code in CWB should adhere to ANSI C standard
+* This means, for example, no old-style prototypes (with untyped parameters) should ever be used
+
+h2. Encoding
+
+* Since CWB handles many character encodings, the code itself should be character-set-neutral
+* Therefore, all code files must be valid 7-bit ASCII
+** Corollary: use neither literal UTF-8 nor literal Latin-1 characters within code files
+** Use numbers or hex escape sequences instead
+* There may be Latin-1 characters left over in pre-3.0 parts of the code, these will be weeded out and removed over time. 
+
+h2. Brace style
+
+* For blocks after control structures:
+** opening braces are on the same line as the control structure that they go with
+** closing braces are on a line of their own, aligned with the start of the control structure keyword
+* For function definitions:
+** opening brace on a line of its own, hard-left-aligned
+** closing brace on a line of its own, hard-left-aligned
+
+h2. Indenting
+
+* Indent width: 2 spaces per level of indentation
+* Indent lines within braces 1 level
+* As a corollary of this, indent second half of a one-statement @if / for / while@ by 1 level
+* Spaces, not tab characters, are used for aligning comments at the _end_ of code lines
+* Where possible standardise on spaces rather than tab characters at the start of code lines as well
+
+h2. Function definitions
+
+* the return type of the function goes on the line before the function name and parameter list
+* if there are relatively few parameters they should all go on the same line as the function name
+* if there are many parameters:
+** put the first on the same line as the function name
+** put each subsequent parameter on a line of its own, using spaces to indent so they all begin at the same point as the first
+
+h2. Function and object names
+
+* data structure, enumeration etc. typedefs have names in CamelCase with an initial cap (the actual @struct@ names can be anything)
+* functions have names in all-lowercase (except when referring to an object name that contains uppercase) with "words" separated by underscore
+** "families" of functions, e.g. in a single module, share a @prefix_@ where possible
+* global variables should be named like functions
+
+h2. Global variables
+
+* Global variables should be declared in source files when they are local to the source file
+* Global variables should be declared in header files when they are used by other source files or exported in the API
+* @extern@ statements for global variables go in the corresponding header file. They should not be added to every source file that uses the variable.
+
+h2. Boolean values
+
+* The _preferred_ way to represent Boolean values in CWB code is as an @int@ (_not_ unsigned)
+** "False" is represented as literal 0
+** "True" is represented as literal 1
+* _Also found_ in the code are instances of a type @Boolean@ (@typedef@ of a @char@). This is _depracated_.
+
+h2. Commenting
+
+* Two sorts of comments are distinguished: those that constitute the documentation of functions / variables / structures, and incidental comments
+** Incidental comments are in normal C-style /* ... */
+** "API documentation" commenting should be done in Javadoc-style, as outlined below.
+
+h2. Doxygen Javadoc-style API comments
+
+* CWB uses the Doxygen system for generating HTML documentation of the macros, functions, structures and global variables in the C source and header files.
+** See http://www.doxygen.nl
+* Only _a subset of_ the Doxygen comment syntax is used in CWB:
+** Use Javadoc-style syntax, _not_ any of the other syntaxes supported by Doxygen
+** For each documented item, give a _brief description_ (compulsory) and a _detailed description_ (optional).
+*** The brief description is the first sentence of the documenting comment, followed by a blank line
+**** The brief description may not contain any sentence-final punctuation, except at its end.
+*** The detailed description follows, across as many lines as necessary
+** For functions, also give &#64;param and &#64;return specifications
+** Structures and functions are always _preceded_ directly by their documentation.
+** Members of structures can be documented on the same line using the abbreviated syntax with < (see file of examples)
+** For functions, it is the definition that should be documented, not the protype.
+** Other possible tags: &#64;see for a crossref; &#64;file to document the contents of an entire file.
+* Open-angled brackets cannot be used in documentation comments - they will be interpreted as HTML tag openers.
+** Use an lt-entity instead, or just use curly braces. 
+* Examples are given in the file @API-documentation-examples@.
+

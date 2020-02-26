@@ -1,0 +1,98 @@
+
+ ###########################################################################
+ ##                                                                       ##
+ ##                Centre for Speech Technology Research                  ##
+ ##                     University of Edinburgh, UK                       ##
+ ##                         Copyright (c) 1996                            ##
+ ##                        All Rights Reserved.                           ##
+ ##                                                                       ##
+ ##  Permission to use, copy, modify, distribute this software and its    ##
+ ##  documentation for research, educational and individual use only, is  ##
+ ##  hereby granted without fee, subject to the following conditions:     ##
+ ##   1. The code must retain the above copyright notice, this list of    ##
+ ##      conditions and the following disclaimer.                         ##
+ ##   2. Any modifications must be clearly marked as such.                ##
+ ##   3. Original authors' names are not deleted.                         ##
+ ##  This software may not be used for commercial purposes without        ##
+ ##  specific prior written permission from the authors.                  ##
+ ##                                                                       ##
+ ##  THE UNIVERSITY OF EDINBURGH AND THE CONTRIBUTORS TO THIS WORK        ##
+ ##  DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING      ##
+ ##  ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT   ##
+ ##  SHALL THE UNIVERSITY OF EDINBURGH NOR THE CONTRIBUTORS BE LIABLE     ##
+ ##  FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES    ##
+ ##  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN   ##
+ ##  AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,          ##
+ ##  ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF       ##
+ ##  THIS SOFTWARE.                                                       ##
+ ##                                                                       ##
+ ###########################################################################
+ ##                                                                       ##
+ ##                    Makefile for editline library                      ##
+ ##                        (Visual C version)                             ##
+ ## --------------------------------------------------------------------- ##
+ ##                 Author: Richard Caley (rjc@cstr.ed.ac.uk)             ##
+ ##                                                                       ##
+ ###########################################################################
+
+VERSION=1.2-cstr
+
+prefix=/usr/local
+exec_prefix=$(prefix)
+
+INSTALL_LIB=$(exec_prefix)/lib
+INSTALL_INCLUDE=$(prefix)/include
+INSTALL_MAN=$(prefix)/man
+
+srcdir=.
+TOP=.
+
+CFLAGS= /DSYSTEM_IS_WIN32=1 -DHAVE_CONFIG_H  /Yd /Zi
+CXXFLAGS=  /DSYSTEM_IS_WIN32=1 -DHAVE_CONFIG_H /Yd /Zi
+CPPFLAGS= /Iinclude /Isrc /I. 
+CXX=cl /nologo  $(CPPFLAGS) $(CXXFLAGS)
+CC=cl /nologo /DSYSTEM_IS_WIN32=1  $(CPPFLAGS) $(CFLAGS)
+VCLIBS=libeditline.lib
+WINLIBS= wsock32.lib winmm.lib
+
+INLIB=libeditline.lib
+
+ ###########################################################################
+ ## Actual rules for Package
+
+CSRC=src/editline.c src/el_complete.c src/el_sys_win32.c
+
+CXXSRC=
+
+OBJ=$(CSRC:.c=.obj) $(CXXSRC:.cc=.obj)
+
+all: test
+
+test.obj: test.c editline_config.h
+
+test: test.obj libeditline.lib 
+	link/nologo $(LINKFLAGS) /out:test.exe test.obj  $(VCLIBS) $(WINLIBS)
+
+test.o $(OBJ): editline_config.h include/editline.h
+
+$(INLIB): $(OBJ)
+	@echo add to $(INLIB) $(OBJ)
+	@if EXIST $(INLIB) lib/nologo $(INLIB) $(OBJ)
+	@if NOT EXIST $(INLIB) lib/nologo /out:$(INLIB) $(OBJ)
+	echo built > .vcbuildlib
+
+editline_config.h : vc_editline_config.h
+	copy  vc_editline_config.h editline_config.h
+
+clean:
+	del $(OBJ) libeditline.lib test.obj test
+
+ ###########################################################################
+ ## Build rules.
+
+.SUFIXES: .cc .obj
+
+.cc.obj:
+	$(CXX) $(CFLAGS) /c /Tp$*.cc /Fo$*.obj
+.c.obj:
+	$(CC) $(CFLAGS) /c $*.c /Fo$*.obj

@@ -1,0 +1,357 @@
+=head1 NAME
+
+cwb-align - A simple sentence alignment program for CWB-encoded corpora
+
+=head1 SYNOPSIS
+
+B<cwb-align> [-vh] [-r I<registry_dir>] [-s I<x>] [-w I<n>]
+    [-P I<attribute>] [-S I<attribute> | -V I<attribute>]
+    -o I<filename> I<source_corpus> I<target_corpus> I<grid_attribute>
+    [-C:I<weight>] [-S:I<weight>:I<ratio>] [-W:I<weight>:I<file>]
+    [-1:I<weight>] [-2:I<weight>] [-3:I<weight>] [-4:I<weight>]
+
+=head1 DESCRIPTION
+
+B<cwb-align> is a simple program for aligning units in parallel corpora. That is, given two
+corpora in two different languages, where one (the I<target corpus>) is a translation of the other (the 
+I<source corpus>), and where each corpus contains an s-attribute that divides the corpus up into fairly
+short units (for example, sentences), then B<cwb-align> will work out a "best guess" as to which units
+in the source corpus correspond to which units in the target corpus. B<cwb-align> is also capable
+of exploiting I<pre-alignment>, that is, working only within the bounds of known-equivalent
+regions of the corpus as defined by some other s-attribute.
+
+B<cwb-align> is I<not> intended to represent the state-of-the-art in alignment software; rather it is
+intended to provide a basic, fallback option for users of parallel corpora who do not have access to more
+advanced tools. While it will in many cases do a decent job of aligning, say, a pair of Romance or Germanic
+languages with a lot of similar vocabulary, it will work much less well if asked to align, say, French and 
+Chinese. 
+
+B<cwb-align>'s alignment engine works by measuring a similarity score for pairs of units (i.e. sentences)
+from the two corpora. This similarity score can be based on a number of different criteria:
+
+=over 4
+
+=item * The length of each corpus segment, measured in characters.
+
+=item * The presence of shared words across the two corpora (ignoring case and accents).
+
+=item * The presence of shared letter sequences (for spotting I<similar but not identical> words).
+
+=item * The presense of words specified as translation equivalents 
+(a file containing the list of word-pairs must be provided by the user) 
+
+=back
+
+The features used by the alignment engine to compute similarity can be configured by the user by means of
+the available I<configuration flags>. It is also possible to specify the relative weight placed on each feature.
+The default configuration is to use all the above criteria I<except> the last.
+
+B<cwb-align> is called as follows: first the command line options, if any, are specified;
+then the three compulsory arguments (I<source_corpus>, I<target_corpus>, I<grid_attribute>) are given; 
+finally, configuration flags for the alignment engine are added after these arguments.
+
+I<source_corpus> is the name of the source corpus, I<target_corpus> is the name of the target corpus, 
+and I<grid_attribute> is the s-attribute used as the alignment grid (typically, an s-attribute that
+represents sentences). It is important to note that
+the s-attribute specified for use as the grid attribute must exist, and must have the same name, 
+in both the source AND target corpora). If, for instance, sentences are represented as C<<s>> in one corpus
+but as C<<sent>> in the other, then they cannot be aligned by this program.
+
+The possible options and configuration flags are specified in the following two sections of this manual.
+
+B<cwb-align-show> will look for the two aligned corpora in the registry directory, as usual. If a registry
+location is not specified with the B<-r> option, then either a directory specified by the CORPUS_REGISTRY
+environment variable, or CWB's built-in default registry will be used.
+
+
+=head1 OPTIONS
+
+Please note that no CWB programs currently support GNU-style C<--long-options>.
+
+
+=over 4
+
+=item B<-h>
+
+Displays B<cwb-align>'s help message, with short information about the usage of the command line options.  
+This usage message will be also shown if B<cwb-align> is called with invalid options.
+After the usage message is printed, B<cwb-align> will exit.
+
+=item B<-o> I<filename>
+
+Specifies the filename to which the program's output should be written. If this option is not used,
+then the default destination file C<out.align> is used. 
+
+If the filename given ends in C<.gz>, the output will be automatically compressed using B<gzip>.
+
+=item B<-q>
+
+Activates quiet mode; many progress messages will be suppressed.
+
+=item B<-P> I<attribute>
+
+Specifies the p-attribute whose content should be analysed to establish the alignment
+(using the criteria of shared words, shared letter sequencies, and so on). 
+By default, the C<word> attribute is analysed.
+
+=item B<-r> I<registry_dir>
+
+Specifies that the registry files for the two aligned corpora are located in I<registry_dir>,
+instead of the standard registry. If this option is not specified, then a directory 
+specified by the CORPUS_REGISTRY environment variable will be used; if that is not available, 
+the built-in CWB default will be used.
+
+=item B<-s> I<x>
+
+Sets the 2:2 split alignment factor to I<x>. 
+
+This factor determines the treatment of detected alignments between 
+a group of two sentences (or other segments) in the source corpus and a group of two sentences in the target 
+corpus, that is 2:2 alignments. When a 2:2 alignment is found, it is always possible that it really consists of
+two 1:1 alignments (first sentence in source => first sentence in target, second sentence in source => second 
+sentence in target). B<cwb-align> will only output a 2:2 alignment if the quality score for the 2:2 
+alignment exceeds the I<combined> quality scores of the two separate 1:1 by at least this factor. 
+Otherwise, B<cwb-align> will instead output the two 1:1 alignments.
+    
+The default split alignment factor is 1.2, i.e. the 2:2 alignment will be accepted if its score
+is at least 1.2 times greater than the combined scores of the two 1:1 alignments within it. 
+
+If you find that the program consistently outputs 2:2 alignments when it should be outputting 1:1 alignemnts, 
+you should experiment with increasing this factor; if the program does not output 2:2 alignments when it
+ought to, then you should experiment with decreasing this factor.
+
+=item B<-S> I<attribute>
+
+"Pre-alignment" means that some correspondences are already known - an example use case would be
+where both corpora are made up of a sequence of I<texts> where there is a one-to-one correspondence
+between texts, but the correspondence between sentence I<within> each text remain to be determined 
+by B<cwb-align>.
+
+This option specifies that such a pre-aligned s-attribute is available and should be used. Note
+that a pre-aligned s-attribute must have the same name (ID label) in both corpora, just like
+the "grid" s-attribute.
+
+When B<-S> is used, it is assumed that the pre-aligned S-attribute has an equal number of instances
+in the source and target corpora, and that instance I<x> in the source corresponds to instance I<x> 
+in the target. That is, the links between the pairs of regions are determined solely by their appearance
+in identical order in the source and target corpora.
+
+Please note that only one of B<-S> and B<-V> may be specfied (since it makes no sense for there to be 
+I<both> types of pre-alignment). If both are specified, or one is specfied multiple times, all but
+the last specification will be ignored. 
+
+=item B<-v>
+
+Activates verbose mode. In this mode, additional progress information is printed on standard output in the course
+of the calculation of the alignment.
+
+=item B<-V> I<attribute>
+
+See discussion of B<-S> above for general comments on pre-alignment. 
+
+The B<-V> option is used if an
+s-attribute exists that pre-aligns the corpora, just like B<-S>. The difference is that whereas with B<-S> 
+the pre-aligned regions in the two corpora are linked by virtue of appearing in the same order in both corpora, 
+with B<-V> the pre-aligned regions are linked by having identical annotation strings. In this case, it is not
+necessary for matching regions to occur in the same order in source and target corpora.
+
+Naturally B<-V> can only be used if the pre-alignment s-attribute is one that has annotations. 
+
+=item B<-w> I<n>
+
+Specifies the I<beam width> used when calculating alignments. The default is 50. It is usually safe to use the default value.
+
+=back
+
+=head1 CONFIGURATION FLAGS
+
+Configuration flags specify what kinds of features the alignment engine should use in assessing the similarity of
+possibly-equivalent regions in the two corpora. Only the types of feature that you specify here will be used (the
+exception is that, if you give I<no> configuration flags at all, then a default list of feature-types will
+be used - see below). 
+
+There are four basic kinds of features: the size of the alignment regions, shared words, shared within-word
+letter sequences, and the presence of corresponding words from a translation-equivalents list. 
+
+The configuration flags I<also> specify how much weight should be placed on the corresponding sets of features:
+every flag is followed by a colon and then an integer indicating the weight factor; the higher this is, the
+more effect that set of features has on the final similarity measurement, relative to the other features.
+Typically, you would want to put more weight on shared words or shared translation-equivalents than
+on shared letter sequences.
+
+The full specification of the possible configuration flags is as follows:
+
+=over 4
+
+=item B<-C:<I<weightE<gt>>>
+
+Specifies that the lengths of the two possibly-equivalent regions (in characters) should be used as a feature
+for the similarity measurement, with the specified weight.
+
+=item B<-S:<I<weightE<gt>>:<I<thresholdE<gt>>>
+
+Specifies that the appearance of the same words in the two possibly-equivalent regions should be used as
+features for the similarity measurement, with the specified weight. You would normally want to include
+shared words as a feature with a high weight, as the presence of a lot of the same words in a section of the
+source corpus and a section of the target corpus is one of the strongest possible indicators that they are
+parallel to one another.
+
+As well as the weight, you must also specify a I<threshold>. The threshold is intended to make sure that the 
+frequencies of the shared word in the source and target corpus sections are not too dissimilar. In the
+case of "false friends", i.e. words with the same orthographic form that are not actually translation-equivalent,
+we would not expect the word-form to have similar overall corpus frequencies in the two corpora; 
+but for "true friends" we I<would> expect similar corpus frequencies. 
+The I<threshold> specifies a minimum proportion of the total frequency across both corpora that must be found
+in each corpus for a word-form to be used as a similarity feature.
+
+So, for instance, the default threshold is 0.4 (see below for more on default configuration). 
+This means that a word-form will only be used as a feature for measuring similarity if each corpus contains
+at least 40% of the total frequency across both corpora.
+
+(To put it formally:  frequency ratios f1/(f1+f2) and f2/(f1+f2) must be greater than I<<threshold>> .)
+
+Note that all comparisons for this same-word type of feature are (a) case-sensitive and (b) diacritic-sensitive. 
+That is, the word-forms must be absolutely identical. Case- and diacrictic-insensitive matching is done by the
+letter-sequence feature type (see below). 
+
+=item B<-1:<I<weightE<gt>>>
+
+Specifies that the appearance of shared one-letter sequences within words in the two possibly-equivalent regions
+should be used as features for the similarity measurement, with the specified weight.
+
+The configuration flags C<-1, -2, -3, -4> all specify the use of letter sequences as features, and they all
+work in the same way; the following general comments apply to all four of these flags. 
+
+Sub-word letter-sequence matching allows the presence of I<similar but not identical> words to count as a factor
+in similarity. Such words are often I<orthogrpahic cognates> that are likely to be translation equivalents and
+thus evidence that the pair of regions under analysis really are equivalent.
+The longer the letter sequence, the more impressive the evidence (so you would normally weight C<-4>
+more heavily than C<-3>, and so on; the default configuration (see below) does not include C<-1> and C<-2> at all).
+
+When letter saequences are compared, the comparison is case-insensitive and diacritic-insensitive.
+
+Only the letters C<A> to C<Z> are counted for the comparison; numbers, punctuation and any other symbol will be
+ignored. This means that the letter-sequence features are of no use at all, and should not be used,
+if either or both of the corpora is in a language that does not use the Latin alphabet.
+
+=item B<-2:<I<weightE<gt>>>
+
+Specifies that the appearance of shared two-letter sequences within words in the two possibly-equivalent regions
+should be used as features for the similarity measurement, with the specified weight. 
+(For general comments about letter sequences, see C<-1> above.)
+
+=item B<-3:<I<weightE<gt>>>
+
+Specifies that the appearance of shared three-letter sequences within words in the two possibly-equivalent regions
+should be used as features for the similarity measurement, with the specified weight. 
+(For general comments about letter sequences, see C<-1> above.)
+
+=item B<-4:<I<weightE<gt>>>
+
+Specifies that the appearance of shared four-letter sequences within words in the two possibly-equivalent regions
+should be used as features for the similarity measurement, with the specified weight. 
+(For general comments about letter sequences, see C<-1> above.)
+
+=item B<-W:<I<weightE<gt>>:<I<filenameE<gt>>>
+
+Specifies that the appearance of defined translation-equivalent words in the two possibly-equivalent regions 
+should be used as features for the similarity measurement, with the specified weight.
+
+The file containing the translation equivalents must use the same character encoding as the two corpora;
+character encoding errors will result in B<cwb-align> aborting. It should be formatted as follows: 
+one pair of words per line; the source-language word first, then a space, then the target-language equivalent.
+(Words cannot have any whitespace within them: such wordforms are allowed in p-attributes, 
+but the aligner can't make use of them.)
+
+A weight must be given if this configuration flag is used. Normally you would want transaltion equivalents 
+to be weighted similarly to shared words (weight 50 by default).
+
+=back
+
+The default configuration (if no flags are specified) is C<< S<-C:1 -S:50:0.4 -3:3 -4:4> >>.
+
+This means that, by default, the following sets of feature are used: (1) length of sentence, with weight 1;
+(2) presence of shared words, with weight 50 and threshold 0.4; (3) shared three-letter sequences, with
+weight 3; (4) shared four-letter sequences, with weight 4.
+
+=head1 OUTPUT FORMAT
+
+B<cwb-align>'s output file uses CWB's C<.align> file format. C<.align> files are ASCII text files (although
+they may contain characters from another encoding if the corpus IDs include non-ASCII characters), 
+formatted as follows.
+
+The first line is a header line, which contains the following four elements, separated by tabs:
+
+=over 4
+
+=item * The ID of the source corpus
+
+=item * The ID of the aligned s-attribute (the I<grid attribute> - see above)
+
+=item * The ID of the target corpus
+
+=item * The ID of the aligned s-attribute (repeated)
+
+=back
+
+Following the header, each individual line represents
+a single pair of aligned regions in the corpus.
+This is specified by six fields of information,
+separated by tabs. The six fields are as follows:
+
+=over 4
+
+=item * The I<beginning> of the range in the source corpus (expressed as a cpos, i.e. a token number)
+
+=item * The I<end> of the range in the source corpus (expressed as a cpos)
+
+=item * The I<beginning> of the range in the target corpus (expressed as a cpos)
+
+=item * The I<end> of the range in the target corpus (expressed as a cpos)
+
+=item * The I<type> of alignment: 1:1, 2:1, 1:2 or 2:2
+
+=item * The I<quality> of the alignment: a score calculated by the alignment engine
+
+=back
+
+For example,
+  
+  140    169    137    180    1:2
+  
+means that corpus position ranges [140,169] and [137,180] form a 1:2 alignment pair.
+
+(The final field, the I<quality>, is optional in this file format, and is absent in the example above;
+however, B<cwb-align> will always provide it.)
+
+=head1 SEE ALSO
+
+L<cqp>, L<cqpserver>, L<cwb-align-show>, L<cwb-align-encode>, L<cwb-align-decode>, L<cwb-describe-corpus>.
+
+=head1 COPYRIGHT
+
+=over 4
+
+=item
+B<IMS Open Corpus Workbench (CWB)> L<http://cwb.sourceforge.net/>
+
+=item
+Copyright (C) 1993-2006 by IMS, University of Stuttgart
+
+=item
+Copyright (C) 2007- by the respective contributers (see file F<AUTHORS>)
+
+=back
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details
+(in the file F<COPYING>, or available via WWW at
+L<http://www.gnu.org/copyleft/gpl.html>).
+
+=cut
+

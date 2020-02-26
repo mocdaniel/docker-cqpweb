@@ -1,0 +1,43 @@
+This directory contains a few example CQi client scripts written in Perl,
+based on the CWB::CQI reference implementation.
+
+
+1) Tkwic.perl
+
+Tkwic is a simple Perl/Tk GUI front-end for CQP.  In order to run this example,
+the complete Perl/Tk distribution has to be installed in addition to the CWB::CQI
+package.  If a CQPserver is available on the local machine, you can start up Tkwic
+simply by typing
+
+  perl Twkic.perl
+
+Tkwic will then use the CWB::CQI::Server module to launch a private CQPserver process.
+
+Otherwise, specify the connection details for a remote CQi server as follows:
+
+  perl Tkwic.perl <user> <password> [<host> [<port>]]
+
+If <port> is omitted, the default CQi port is assumed; if <host> is omitted, Tkwic
+attempts to connect to "localhost".
+
+
+2) MicroCQP.perl
+
+MicroCQP is a very minimalistic command-line front-end that executes CQP queries
+through the CQi client-server interface.  MicroCQP can either launch a private
+CQPserver process on the local machine (if available) with
+
+  perl MicroCQP.perl
+
+or connect to a remote CQi server if the connection details are specified on the
+command line:
+
+  perl MicroCQP.perl <user> <password> [<host> [<port>]]
+
+As with Tkwic, <host> and <port> default to "localhost" and the standard CQi port.
+
+When MicroCQP has started up, type "show" to display a list of corpora.  Then enter
+the name of a corpus in uppercase in order to activate this corpus.  You can now
+enter CQP commands, which will be executed on the CQi server.  MicroCQP automatically
+displays ALL matches with sentence context, so you may want to restrict your queries
+by appending a suitable "cut" clause.

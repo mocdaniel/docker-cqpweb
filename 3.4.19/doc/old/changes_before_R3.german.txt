@@ -1,0 +1,1509 @@
+
+
+**********************************
+**********************************
+**   WESENTLICHE  AENDERUNGEN   **
+**********************************
+**********************************
+
+
+* Makefile - Organisation wurde komplett umgestellt. Es gibt jetzt keine
+speziellen Unterverzeichnisse fuer versch. Plattformen mehr, in die frueher
+der Sourcecode kopiert (und dort gehackt) wurde. Alle unterstuezten
+Betriebssysteme verwenden denselben Sourcecode. Das Make-System wurde
+ueberarbeitet um die Anpassung an andere Betriebssysteme zu erleichtern. Es
+gibt wieder ein Toplevel-Makefile, mit dem alle Teile der CWB compiliert
+werden koennen.
+
+
+
+* Zur Anpassung der Byte-Ordnung (little-endian vs. big-endian) and das
+CWB-Format (32bit, big-endian = network) werden nun nicht mehr die
+Internet-Funktionen ntohl() und htonl() verwendet. Stattdessen definiert
+<cl/endian.h> unter den gleichen Namen Makros, die bei Bedarf die
+Konvertierung fuer eine 32bit Integer-Zahl ausfuehren (dazu muss bei der
+Konfiguration der CWB die Byte-Ordnung des verwendeten Systems bestimmt
+werden). Ist eine Konvertierung noetig, so erfolgt diese durch die Funktion
+
+	int cwb_bswap32(int); 
+
+der Corpus Library, die in <cl/endian.h> deklariert ist. Alle Sourcecodes der
+CWB wurden auf die neuen ntohl()-Funktionen umgestellt.
+
+
+
+* Insbesondere verhalten sich die Tools "atoi" und "itoa" jetzt so, wie man es
+erwarten wuerde, d.h. sie konvertieren auf allen Plattformen in das (bzw. aus
+dem) CWB-Standardformat (was bisher z.B. unter Linux nicht der Fall war!)
+
+
+
+* Die automatische Unterscheidung zwischen CWB_LITTLE_ENDIAN und CWB_BIG_ENDIAN
+nach dem verwendeten Betriebssystem wurde aus <cl/declarations.h> entfernt, da
+sie nur fuer SOLARIS, FREEBSD und i386-LINUX sicher funktioniert. Stattdessen
+wird an dieser Stelle nun getestet, ob die Byte-Ordnung korrekt konfiguriert
+wurde, d.h. ob genau eines der Symbole CWB_BIG_ENDIAN / CWB_LITTLE_ENDIAN
+definiert ist. Fuer die korrekte Einstellung der Byteordnung sind jetzt die
+Makefiles verantwortlich.
+
+
+
+* Kleiner Hack in CQP: beim Laden eines Systemcorpus wird jetzt die
+Corpusgroesse nicht mehr automatisch bestimmt um die gefuerchteten
+Verzoegerungen durch nicht zugreifbare Corpora beim Start zu
+vermeiden. Saemtliche Aenderungen stehen in "corpmanag.c". Dabei wird
+CL->mother_size (bei einem Systemcorpus = Corpusgroesse) auf 0 gesetzt und die
+Funktion findcorpus() prueft im Falle eines SYSTEM-Corpus die Corpusgroesse
+durch Aufruf von ensure_corpus_size().  Sollten Bugs beim Corpuszugriff
+auftreten, so muss vermutlich an irgendeiner anderen Programmstelle auch
+ensure_corpus_size() aufgerufen werden.
+
+
+
+* Eben beschriebener Hack wurde jetzt auch fuer Subcorpora
+implementiert. Bisher wurden beim Setzen des LocalCorpusDirectory saemtliche
+dort befindlichen Subcorpora komplett in den Speicher geladen!! (was bei
+manchen MP-Suites mehrere hundert MB belegen kann) Jetzt werden zunaechst nur
+Eintraege in der globalen Corpus-Liste fuer die Subcorpora angelegt, bei denen
+CL->loaded == False ist. Die Funktion ensure_corpus_size() laedt dann das
+Subcorpus in den Speicher (durch Aufruf der Funktion attach_subcorpus(), die
+bisher bereits beim setzen des LCD aufgerufen wurde). ensure_corpus_size()
+wird jetzt von findcorpus() _immer_ aufgerufen und liefert fuer unbekannte
+Corpustypen True als Rueckgabewert. Da die LocalCorpusDirectory eine Liste
+mehrer Verzeichnisse sein kann, steht jetzt in CL->local_dir das Verzeichnis, in
+dem das Subcorpus liegt (dieses Verzeichnis muss an attach_subcorpus()
+uebergeben werden).
+
+
+
+* TERMCAP-Support in CQP optional gemacht (um portabler zu werden). Um
+Termcap- Support zu aktivieren, muss in $(TERMCAP_DEFINES) -DUSE_TERMCAP
+gesetzt und in $(TERMCAP_LIBS) die passenden Linker-Flags angegeben
+werden. Dies sollte in der Plattform-spezifischen Konfigurationsdatei
+geschehen, kann aber in Makefile.inc durch MY_TERMCAP_DEFINES und
+MY_TERMCAP_LIBS ueberschrieben werden. $(TERMCAP_LIBS) wird im CQP-Makefile
+zum Linken verwendet, $(TERMCAP_DEFINES) wird zu der globalen %.o%.c-Regel
+hinzugenommen. 
+
+
+
+* Optionale Unterstuetzung der GNU Readline Library fuer Editorfunktionen in
+der CQP-Eingabezeile. Die Konfiguration erfolgt analog zur
+Termcap-Konfiguration, in der Regel mit
+	READLINE_DEFINES = -DUSE_READLINE
+	READLINE_LIBS = -lreadline
+wobei $(READLINE_DEFINES) zur globalen %.o%.c-Regel hinzugenommen und
+$(READLINE_LIBS) zum Linken von CQP verwendet wird. Bei Verwendung der
+Readline Library muss $(TERMCAP_LIBS) korrekt gesetzt sein. Die
+Kommandozeilen-Editorfunktionen muessen beim Aufruf von CQP speziell aktiviert
+werden ("cqp -e").
+
+Die Readline-Unterstuetzung wurde jetzt etwas cooler gemacht :o)
+Wenn nach der Initalisierung (z.B. in ~/.cqprc) die HistoryFile-Option 
+gesetzt ist, wird bei aktivierter Readline-Unterstuetzung die History
+aus diesem File eingelesen uns steht in der command-line history zur
+Verfuegung.
+
+Die standardmaessige Filename-Completion ist in CQP natuerlich sinnlos
+und wurde durch eine eigene Completion ersetzt. Da ein explizites
+Parsen der Eingabezeile (um festzustellen, welche Art von Completion
+im aktuellen Kontext am sinnvollsten ist) zu aufwendig waere, gibt es nur eine Handvoll
+von Completion-Funktionen:
+ - variable name completion, falls aktuelles Token mit $... beginnt
+ - macro name completion, falls aktuelles Token mit $... beginnt
+ - file name completion, falls aktuelles Token mit <... >... >>... beginnt
+   [funktioniert etwas ungewoehnlich ... aber so ist das Leben]
+ - corpus/subcorpus name completion, immer sonst aktiv (default)
+
+==> inzwischen auf die Freie Editline-Bibliothek umgestellt, die nicht mehr 
+extern installiert werden muss.
+
+Ab Version 2.2.b95 wird außerdem im Readline-Modus automatisch ein Semikolon am 
+Zeilenende angefügt, falls es der Anwender bei der Eingabe eines Befehls vergessen 
+hat. :-)
+
+
+* Kleine Verbesserung fuer Einstellung auszugebender Attribute mit dem
+"show +/-"-Befehl. Es koennen jetzt mehrere Attribute gleichzeitig
+ein-/ausgeschaltet werden:
+
+	show +lemma +pos -word;
+
+Man kann sich mit
+
+	show cd;
+
+die aktuellen Einstellungen anzeigen lassen und
+
+	show -;
+
+fuehrt nicht mehr zum Absturz.
+
+"show cd;" zeigt nicht mehr die "Structure Values" an, sondern bei den
+"Structural Attributes" durch die Markierung "[A]", ob diese mit Strings
+annotiert sind. Die aktuell angewaehlten PrintStructures kann man sich
+mit "set PrintStructures;" anzeigen lassen.
+
+
+
+* Jetzt wollen wir versuchen, S-Attribute mit Werten zugaenglich zu machen.
+Dazu verwenden wir Blaetter vom Typ sa_ref in BoolTrees. Diese wurden bisher
+lediglich fuer Referenzen auf S-Attribute verwendet, z.B. 's'. 's' liefert 
+[nach Anpassung s.u.] einen numerischen Wert zurueck, bei dem diverse Flags
+gesetzt sind fuer 
+	- linke Bereichsgrenze
+	- rechte Bereichsgrenze
+	- innerhalb eines Bereichs des jeweiligen S-Attributs
+
+(schliesst rechte/linke Grenze mit ein) bezogen auf die aktuelle
+Korpusposition. Solche Referenzen koennen direkt abgefragt werden 
+[nach Anpassungen bei den Existenzausdruecken; s.u.], oder speziell 
+ueber die builtin-Funktionen lbound() und sbound().
+Beispielsweise liefert
+
+	[word = "Peter" & lbound(s)];
+
+Vorkommen von "Peter" am Satzanfang zurueck, und der Existenzausdruck
+
+	[word = "Peter" & title];
+
+Vorkommen von "Peter" in einer <title>..</title>-Umgebung. Diese Funktionen wurden
+spaeter von Oli durch SGML-Tags ersetzt:
+
+	<s> "Peter";
+
+und werden nur noch aus Kompatibilitaetsgruenden beibehalten. Andererseits
+sind die SGML-Tags etwas seltsam implementiert ...
+
+Wir erweitern sa_ref's nun um ein 'label'-Feld, d.h. es sind nun
+Referenzen von Labeln auf S-Attribute moeglich. Diese liefern den
+STRING-Wert der S-Umgebung zurueck, die das jeweilige Label enthaelt.
+In eval.c werden folgende Aenderungen noetig: 
+
+- eval_bool() muss sa_ref als linken Tochterknoten akzeptieren;
+  dadurch wird auch
+
+	[word = "Peter" & s = 1]; bzw. [word = "Peter" & s]
+
+  zulaessig. "s=1" darf jedoch nicht an erster Stelle der Query stehen, da
+  dort calculate_initial_matchlist() die Auswertung uebernimmt und keine
+  sa_ref's zulaesst. Wir benoetigen c_i_m() nicht, da unsere Erweiterungen
+  nur Label-Referenzen betrifft!
+- Hauptarbeit wird an get_leaf_value() noetig. Diese Funktion muss nun wie 
+  bei pa_ref's auch bei sa_ref's testen, ob das 'label'-Feld != 0 ist. 
+  Ist kein Label definiert, liefert get_leaf_value() wie bisher einen INT
+  zurueck, ansonsten den Wert der das Label enthaltenden Umgebung als STRING.
+- Wenn eval_bool() auf der rechten Seite eines Vergleichs einen STRING findet,
+  nimmt es an, dass es sich um einen konstanten String oder eine RegExp
+  handelt. An dieser Stelle muss nun zusaetzlich der Fall einer sa_ref
+  abgefragt werden.
+
+In parse_actions.c ist die Funktion do_LabelReference() entsprechend anzupassen.
+Jetzt kann man z.B. mit
+
+	x: [lemma = "Benzin"] :: x.dokument = ".*[a-z]{2}2301.*";
+
+im WHB das Lemma "Benzin" unter FG/FUG 23.01 finden. Die Dokument-Umgebung ist 
+im Corpus als <dokument ID="ap2301..."> annotiert. x.dokument hat genauer gesagt 
+den Wert ``ID="ap2301..."''. Bei geeigneter Annotation z.B. von
+Beispielsaetzen in Woerterbuechern:
+
+<beispiel Hund>Auf den Hund kommen.</beispiel> 
+<beispiel Katze>Wie Hund und Katz.</beispiel> 
+
+muesste
+
+	x: [lemma = "Hund"] :: x.lemma = x.beispiel;
+
+das Lemma "Hund" nur in den Beispielen liefern, die unter dem Stichwort "Hund"
+eingetragen sind, in unserem Beispielcorpus also nur die erste Zeile.
+
+
+
+* Fuer einige der mit "set" einstellbaren Optionen Abkuerzungen
+eingefuehrt. Namen wie "PrintStructures" sind reichlich nervig. Die
+Abkuerzungen werden bei Aufruf von "set;" in eckigen Klammern angegeben.
+
+
+
+* Die Syntaxbeschreibung in CQP ("cqp -h") wurde korrigiert und
+aktualisiert. Ebenso wurde die Copyright-Message ("cqp -v") aktualisiert ;-)
+Die 3 binaries CQP, CQPcl und CQPserver akzeptieren jetzt nur die fuer
+das jeweilige Programm sinnvollen Flags.
+
+
+
+* Zur Portierung nach Windows (Gnuwin32) mussten in einigen der Utils
+Initialisierungen mit file descriptors, z.B. 
+
+	FILE *debug_output = stderr;
+
+in einfache Definitionen und Wertzuweisung in main() aufgespalten werden:
+
+	FILE *debug_output;
+	...
+	debug_output = stderr;
+
+da diese file descriptors in Gnuwin32 keine konstanten Werte sind. 
+Desweiteren muessen ausfuehrbare Programme in Win95 den Suffix .EXE tragen,
+damit sie vom Betriebssystem erkannt werden. Der Gnuwin32-GCC fuegt diesen
+Suffix automatisch transparent hinzu, d.h.
+
+	gcc -o test test.c
+
+erzeugt eine Datei "TEST.EXE", aber fuer die Programminstallation muss die
+Erweiterung .EXE explizit angegeben werden. Daher wurden jetzt alle Dateinamen
+fuer Binaries um die Variable $(EXEC_PREFIX) ergaenzt, z.B.
+
+	PROGS = cqp$(EXEC_PREFIX) cqpcl$(EXEC_PREFIX)
+
+die normalerweise nicht definiert ist, in der plattformspezifischen Konfiguration 
+fuer Gnuwin32 jedoch auf ".exe" gesetzt wird. Es ist zu beachten, dass auch
+explizite Targets fuer einzelne Programme umbenannt werden muessen!! 
+(bei Unklarheiten: Makefiles in cqp/ und utils/ anschauen)
+
+
+
+* Zur Behandlung von Kongruenzen (Agreement) wurde eine Unifikations-Funktion
+unify() zu den internen Funktionen hinzugefuegt. Das Corpus muss dazu mit
+Feature-Vektoren in Form von ambigen Attributen (s.u.) annotiert sein:
+
+	|<f1>|<f2>|...|<f_n>|
+
+[ das zwischenzeitlich verwendete Format
+        -<f1>-<f2>-...-<f_n>-
+wird aus Kompatibilitaetsgruenden noch unterstuetzt, jedoch _nicht_ von den
+'matches' und 'contains' Operatoren]
+
+Die <f_i> stellen genaugenommen Belegungen der Features dar. Beispielsweise
+koennte man fuer Kongruenzen die Features CASE, GEND, NUM definieren. Eine 
+Belegung <f_i> waere z.B. CASE=gen, GEND=masc, NUM=sg; diese Belegung kann im
+Feature-Vektor durch
+
+	|gen:masc:sg|
+
+oder kuerzer etwa durch
+
+	|gms|
+
+repraesentiert werden. Als Repraesentationen der <f_i> sind beliebige
+ASCII-Bezeichner zulaessig. ASCII-Bezeichner sind hier beliebige Zeichenketten
+aus den graphischen ASCII-Zeichen OHNE " ", "-", "|", "*" und "?". Die <f_i>
+MUESSEN ALPHABETISCH SORTIERT vorliegen (mit strcmp() sortiert). Die
+Unifikation von zwei Feature-Vektoren <fv1> und <fv2> besteht aus allen
+Belegungen <f_i>, die in beiden Feature-Vektoren enthalten sind. z.B.:
+
+	unify( "|gen:masc:sg|nom:fem:pl|" , "|acc:fem:sg|gen:masc:sg|" )
+	  = "|gen:masc:sg|"
+
+Der leere Feature-Vektor wird durch die Zeichenkette
+
+	|
+
+repraesentiert. Implementiert wurde die Unifikation als neue builtin-Funktion
+unify(STRING, STRING), die -- im Gegensatz zu allen anderen builtins -- einen
+STRING als Ergebnis zurueckliefert. Dadurch wurde folgende Aenderung noetig:
+
+DynCallResult in <cl/cdaccess.h> wurde um einen Puffer fuer dynamische Strings
+erweitert, da es fuer derartige Objekte keinen Destruktor gibt (Ein
+Funktionsaufruf, der einen dynamischen String zurueckliefert, muss hierfuer
+Speicher allozieren, aber es ist kein Mechanismus zum Freigeben des Speichers
+vorgesehen.). Dadurch ergeben sich natuerlich 2 Probleme:
+  -  Speicherverschwendung (vertretbar, da DynCallResults nur lokal
+     verwendet werden)
+  -  ein Hardlimit fuer dynamische Strings (in <cl/cdaccess.h>, 2048 Zeichen)
+Loesung koennte spaeter Einfuehrung von Konstruktoren / Destruktoren fuer
+DynCallResult-Objekte sein (anstelle von malloc() / free()).
+
+Die unify()-Funktion wurde jetzt noch dahingehend ergaenzt, dass sie als
+erstes Argument auch ATTAT_NONE akzeptiert und in diesem Fall einfach das
+zweite Argument als Ergebnis zurueckliefert. Dadurch duerfen im jeweils linken
+Argument einer unify()-Kette auch Referenzen auf nicht gesetzte Labels vorkommen,
+was die Verarbeitung von Queries mit optionalen Elementen erheblich vereinfacht:
+
+	a:[pos = "NN"] (b:[pos = "ADJA"])? c:[pos = "NN"] 
+	  :: unify(a.agr, unify(b.agr, c.agr)) = "...";
+
+liefert jetzt das ''erwartete'' Ergebnis.
+
+Praktische Verwendung der unify()-Funktion: Anwendung auf Labelreferenzen 
+in der global constraint unter Verwendung der im naechsten Abschnitt erlaeuterten
+'matches' und 'contains' Operatoren. Beispielsweise liefert die folgende
+Query unter Annahme des oben genannten Annotationsformats saemtliche NPs (der 
+speziellen Bauart ART ADJ? NN) zurueck, die _eindeutig_ im Dativ plural stehen:
+
+	a:[pos = "NN"] (b:[pos = "ADJA"])? c:[pos = "NN"] 
+	  :: unify(a.agr, unify(b.agr, c.agr)) matches "dat:.*:pl";
+
+
+
+
+* Rudimentaere Unterstuetzung fuer Attribute mit ambigen Werten
+(multi-valued attributes). Solche Attribute koennen in dem speziellen
+Format 
+
+    |<Wert1>|<Wert2>|...|<Wert_n>|
+
+annotiert werden, wobei leere Eintraege durch
+ 
+    |
+
+repraesentiert werden. Zur einfachen Abfrage ambiger Werte gibt es 2
+neue Vergleichsoperatoren 'contains' und 'matches', die anstelle der
+herkoemmlichen Vergleichsoperatoren eingesetzt werden koennen. Seien
+z.B. ambige Lemmata als Attribut <alemma> annotiert:
+
+(1) word=Alte		alemma=|alt|Alte|
+(2) word=Bremsbacken	alemma=|Bremsback|Bremsbacke|Bremsbacken|
+(3) word=alte		alemma=|alt|
+
+   [ alemma contains "Bremsbacken" ]
+
+findet alle Eintraege, die "Bremsbacken" enthalten, also (2).
+
+   [ alemma contains "alt" ]
+
+findet (1) und (3).
+
+   [ alemma matches "Bremsback.*" ]
+
+findet Eintraege, bei denen _jeder_ Wert den regulaeren Ausdruck
+"Bremsback.*" matcht, also auch (2).
+
+   [ alemma matches "[aA]lt" ]
+
+findet nur (3), da "Alte" nicht durch die RegExp erfasst wird. In
+Zusammenhang mit dem 'matches'-Operator machen i.d.R. nur regulaere
+Ausdruecke Sinn;
+
+  [ alemma matches "alt" ]
+
+ist aequivalent zu
+
+  [ alemma = "|alt|" %l ] 
+
+Es koennen die ueblichen Flags fuer regulaere Ausdruecke verwendet
+werden, "%l" (literal) ist jedoch nicht zulaessig. 
+
+NB: in den regulaeren Ausdruecken, die mit 'contains' bzw. 'matches'
+verwendet werden, muessen literale Punkte ('.') auch innerhalb von
+Zeichenklassen mit einem Backslash escapet werden, z.B.
+
+  "Abk\." und "Abk[\.]", aber _nicht_ "Abk[.]"
+
+!!!
+
+Es wurde eine neue builtin-Funktion
+
+    ambiguity(alemma)
+
+implementiert, die die Anzahl der Werte eines Eintrages
+zurueckliefert; sie kann auch auf das Ergebnis der unify()-Funktion
+angewendet werden. Ebenso wie die unify()-Funktion kann sie auf
+Labelreferenzen, die nicht gesetzt wurden, angewendet werden und 
+liefert in diesem Fall die Ambiguitaet 0 (kein Wert) zurueck.
+
+
+
+* Was ist eine "existence expression"? Nun, CQP-Queries beruhen in
+unterster Stufe auf Vergleichsoperatoren, z.B.
+
+	lemma = "sein"
+
+Diese koennen zu logischen Ausdruecken fuer eine Corpusposition oder
+als global constraint zusammengefuegt werden:
+
+	[(lemma = "sein") & (pos = "VAFIN")]
+
+Die Ausdruecke, die auf der linken Seite des Vergleichsoperators
+erlaubt sind, duerfen nun auch alleine stehen und werden dann als
+"existence expression" bezeichnt. Hauptverwendungszweck sind
+Funktionsaufrufe, also z.B. 
+
+	[lemma = "sein" & rbound(s)]
+
+(Wortform von "sein" am Satzende). Der Wahrheitswert eines
+Existenzausdrucks haengt vom Datentyp des Ausdrucks ab, entspricht
+aber weitgehend den in C ueblichen Konventionen. Dies gilt vor allem
+fuer Funktionen, die oft einen Integer-Wert zurueckliefern. Bei den
+anderen Ausdruecken wurde jetzt die Definition so abgeaendert, dass
+sie True ergeben, wenn sie fuer die gegebene Corpusposition definiert
+sind. Speziell handelt es sich um folgende Aenderungen:
+
+- Referenzen auf S-Attribute (ohne Werte) setzen bis zu 3 Flags:
+     1  ..  am linken Rand einer Region
+     2  ..  am rechten Rand einer Region
+     4  ..  innerhalb der Region (inkl. Raender)
+  d.h. "[s]" ist True, wenn die entsprechende Corpusposition in 
+  einer <s>..</s> Umgebung enthalten ist.
+  [get_leaf_value() in eval.c]
+
+- Labelreferenzen auf S-Attribute sind nur fuer S-Attribute mit Werten
+  zulaessig (siehe oben) und liefern entweder die Annotation der entsprechenden 
+  Region zurueck oder ATTAT_NONE. D.h. ":: x.doc" ist True, wenn x in
+  der Umgebung
+	<doc "Kapitel1">..</doc>
+  liegt, nicht aber ausserhalb einer <doc>-Umgebung.
+
+- Direkte Referenzen auf positionelle Attribute liefern die Token-ID
+  dieses Attributs an der aktuellen Corpusposition zurueck und werden 
+  immer zu True ausgewertet; sie sind allerdings nicht an erster Stelle einer
+  Query zulaessig. "... [lemma]" ist aequivalent zu "... []"!
+
+- Labelreferenzen auf positionelle Attribute liefern die entsprechende
+  Token-ID zurueck, wenn das Label gesetzt ist, ansonsten ATTAT_NONE.
+  In Existenzausdruecken wird die Token-ID zu 'true' ausgewertet,
+  ATTAT_NONE zu 'false'.
+
+- Reine Labelreferenzen liefern immer eine Corpusposition zurueck,
+  die < 0 ist, falls das Label nicht gesetzt ist. Eine entsprechende
+  Behandlung des Ergebnistyps ATTAT_POS wurde ergaenzt.
+  [eval_bool() in <eval.c>]
+
+Zusammen mit der im naechsten Punkt beschriebenen Aenderung bei der
+Verarbeitung von Labels sind jetzt sinnvolle Existenzabfragen moeglich (dabei
+ist insbesondere an Fallunterscheidungen bei der global constraint zu denken,
+ja nachdem ob ein Label gesetzt ist oder nicht; etwa
+	...  :: (a & ...) | (!a & ...) ;
+)
+
+
+
+
+* Die Labelverarbeitung ist jetzt endlich auf eine solide Grundlage gestellt
+worden. Bisher gab es nur _eine_ globale symbol table; jetzt besitzt jeder
+aktive Zustand des endlichen Automaten eine eigene symbol table, die -- leider
+etwas umstaendlich durch Kopieren -- bei den Uebergaengen mitgefuehrt
+wird. Dadurch werden Labels _beinahe_ korrekt ausgewertet, da leider die
+gesamte Simulation des endlichen Automaten fehlerhaft ist. Die verbleibenden
+Fehler machen sich jedoch deutlich seltener bemerkbar als in der bisherigen
+Situation. Leider tritt der Fehler schon bei der naheliegenden Query
+	a:[pos="ART"]? b:[pos="ADJA"]* c:[pos="NN"];
+auf *schnief* und zwar, wenn von Zustand <a> zwei oder mehr Uebergaenge in 
+denselben Zielzustand <b> fuehren. Jetzt wird die symbol table ERST DANN 
+in den Zielzustand kopiert, wenn die mit dem Uebergang verbunden Bedingung
+ausgewertet und erfuellt ist. Vielleicht sollte man doch ein eigenes ReadMe ueber
+Labels schreiben. Vielleicht sollte man dieses beklagenswerte Phaenomen als
+'state clash' bezeichnen.
+
+Dieselben Probleme wie bei den Labeln traten auch beim Setzen des Target ('@') 
+auf, wodurch bei "group" ueber Targets oft ein unerwartet schlechter Recall zu
+beobachten war. Jetzt wird der Target nicht mehr in einer speziellen Variable
+bei der Automatensimualtion gespeichert sondern als Label mit dem speziellen
+Namen "_target". Dies laesst sich in Zukunft leicht auf mehrere Targets, also
+mehrere ``Rueckgabewerte'' verallgemeinern (z.B. "_target_<n>").
+
+
+
+
+* Extended Alignment provisorisch implementiert (fuer spaetere
+Wortalignment-Experimente). Muss jetzt noch ausgetestet werden.
+
+
+
+
+* Fuer die experimentelle Perl-Anbindung von CQP (ueber Pipes,
+Betrieb im Child-Modus mit "-c") benoetigen wir 2 neue Ausgabebefehle:
+
+  size <Subkorpus> [ <item> ] ;
+
+Gibt die Anzahl der Matches (Bereiche) im <Subkorpus> an. Mit <item>
+koennen einige weitere Dimensionen des Subkorpus abgefragt werden:
+
+    target  ->  Anzahl der Matches mit Target im Subkorpus
+    collocate (synonym zu target)
+    keyword  -> Anzahl der Matches mit Keyword im Subkorpus
+
+Es wird jeweils ein ASCII-Integer-Wert zurueckgeliefert.
+
+  dump <Subkorpus> [ [from] <first> [to] <last> ] [ > "file" ] ;
+
+Gibt das <Subkorpus> als Tabelle von Korpuspositionen aus; jede Zeile
+entspricht einem Match (einem Bereich). Format:
+  
+    <match start> TAB <match end> TAB <target> TAB <keyword>
+
+Nicht gesetzte Targets bzw. Keywords werden als -1 ausgegeben. Durch 
+<first> <last> kann die Ausgabe auf die Matches <first>..<last>
+eingeschraenkt werden. Die Ausgabe kann in eine Datei umgelenkt werden.
+
+Im Child-Modus wird nach kompletter Ausfuehrung eines jeden Befehls
+eine Leerzeile ausgegeben, so dass das Perl-Modul erkennen kann, wo
+die Ausgabe eines einzelnen Befehls endet. Die Ausgabe von Leerzeilen
+ist deaktiviert, so lange der .cqprc gelesen wird.
+
+Zusaetzlich werden im Child-Modus bei einigen kritischen Befehlen
+(z.B. der Aktivierung eines Corpus) ggf. Fehlermeldungen ausgegeben.
+Im einzelnen handelt es sich bis jetzt um folgende Meldungen:
+  - beim Start von CQP wird die Versionsnummer ausgegeben:
+     "CQP version 2.2.b12 (19 Feb 99)", "CQP version 2.3", ...
+
+Ein neuer Befehl ".EOL.;" gibt die Zeile
+
+    -::-EOL-::-    
+
+aus, woran das Perl-CQP-Modul erkennen kann, daß eine Kommandozeile
+(die mehrere Befehle, auch versteckt in Makros, enthalten kann)
+komplett abgearbeitet worden ist. Es wird weiterhin nach jedem Befehl
+eine Leerzeile ausgegeben, so daß die Ausgaben der einzelnen Befehle
+voneinander abgegrenzt werden können.
+
+[Der Child-Modus wird vermutlich vollstaendig durch das Netzwerk-
+Protokoll CQi abgeloest und daher nicht weiterentwickelt]
+
+Eine einzige Befehlszeile, die vom CQP-Modul abgearbeitet ist, kann
+mehrere Befehle enthalten (u.U. auch in Makros versteckt). Damit das
+CQP-Modul erkennen kann, wann die Eingabe komplett abgearbeitet ist,
+gibt es ab 2.2.b41 einen neuen Befehl (s.o.)
+
+
+
+
+* Anchors wurden jetzt endlich einigermassen richtig implementiert;
+d.h. die special labels
+
+	match, target, keyword, matchend
+
+duerfen in Subqueries verwendet werden und werden an den
+entsprechenden Stellen des Mutterkorpus verankert. Da es sich um Label
+handelt, verlangt die CQP-Syntax die Abfrage eines Attributwertes, z.B.
+
+	[target.word = ".*"];
+
+Subqueries, die an einem Ankerpunkt beginnen, werden sehr effizient
+abgearbeitet; allerdings duerfen an diese Korpusposition keine
+weiteren Bedingungen gestellt werden, da sonst fehlerhafte Ergebnisse
+auftreten! 
+
+	[target.word = ".*"] [] ... ;			ERLAUBT
+	[target.word = ".*" & word = ".*"] [] ... ; 	(funktioniert)
+	[word = ".*" & target.word = ".*"] [] ... ;	(funktioniert nicht!)
+	... [word = ".*" & target.word = ".*"] ... ;	ERLAUBT
+=== NO LONGER SUPPORTED, REPLACED BY ANCHOR TAGS ===
+
+
+
+* Query Lock: um CGI-Skripte und den CQPserver gegen Angriffe von aussen
+zu schuetzen, wurde der 'Query Lock'-Modus eingefuehrt, in dem nur Queries
+ausgefuehrt werden [im normalen Modus koennte ein Angreifer weitere Befehle 
+an Queries anhaengen, z.B. 
+ 	"ist"; HGC; "Geheimnis.*";
+oder
+	"ist"; cat Last > "| cat /etc/passwd > mail pate@mafia.it";
+]. Der QueryLock-Modus ist als Option implementiert und wird mit
+
+	set QueryLock <key>;
+
+aktiviert. <key> ist eine am besten zufaellig gewaehlte Integer-Zahl. Danach 
+koennen nur noch Queries ausgefuehrt werden, alles andere fuehrt zu einem 
+Parsing-Fehler und der Ausgabe einer Warnung (STDERR). Um den QueryLock-Modus
+aufzuheben, muss der neue Befehl
+
+	unlock <key>;
+
+ausgefuehrt werden. Stimmt <key> nicht mit der beim Aufruf des QueryLock-Modus
+hinterlegten Zahl ueberein, bricht CQP mit einer Fehlermeldung ab.
+
+
+
+* Implementierung von Corpus Properties in den Registry-Eintraegen begonnen.
+Um mit aelteren CQP-Versionen kompatibel zu sein, werden Properties als Kommentare
+mit dem speziellen Format "##::" angegeben:
+
+##:: <property> = <value>
+
+<property> .. Bezeichner, Standard: [a-z_][a-z0-9_-]*
+<value> .. Zeichenkette (muss in "..." eingeschlossen sein)
+           (Bezeichner und Zahlen duerfen auch ohne "..." stehen)
+
+In CQP kann man sich die Properties mit 'info <corpus>;' anzeigen lassen.
+Eine besondere Property ist 'charset'. Diese kann ueber cl_corpus_charset()
+ausgelesen werden und hat den Typ CorpusCharset (siehe <cl.h>). Gueltige
+Werte sind momentan:
+
+        ascii	                (plain ASCII)
+	latin1, ..., latin9     (ISO-8859-* Zeichensaetze)
+	cyrillic, arabic, greek, hebrew  (ISO-8859-* Zeichensaetze)
+	utf8                    (Unicode UTF-8 encoding)
+	unknown_charset		(Name ueber cl_corpus_property(corpus, "charset");)
+	
+Die ''bekannten'' Zeichensaetze sollen langfristig in den Ausgabe- und Sortier-
+funktionen von CQP (sowie bei den ''Latex-Escapes'' in CQP-Queries) automatisch 
+beruecksichtigt werden. 
+
+
+
+* "Randomize"-Befehl eingefuehrt, um bei "reduce" reproduzierbare Ergebnisse
+zu erhalten; dazu muss "randomize" _unmittelbar_ vor dem "reduce" aufgerufen
+werden:
+
+	randomize 42;
+	reduce Examples to 100;
+
+"randomize;" ohne Argument re-initialisiert Zufallsgenerator.
+
+
+
+* Strings duerfen jetzt wahlweise in "..." oder '...' eingeschlossen sein.
+Dadurch brauchen " in '...'-Strings nicht mit einem Backslash escapet werden,
+was von CQP manchmal irrtuemlich als Latex-Escape interpretiert wurde (man
+denke an [att = "id=\"ap[0-9]+\""]; jetzt: [att = 'id="ap[0-9]+"']). Vor allem
+werden durch diese Ergaenzung Makro-Definitionen (die ja als Strings in Anfz. 
+stehen muessen) und CQP-Befehle im Perl-Modul CQP einfacher und besser lesbar.
+
+
+
+* Die 'shortest match'-Strategie von CQP gilt nur ''auf der rechten Seite'',
+d.h. die Anfrage
+
+	[pos="ART"]? [pos="ADJA"]* [pos="NN"];
+
+liefert fuer die NP ''das huebsche Maedchen'' 3 Matches zurueck:
+
+	das huebsche Maedchen
+	huebsche Maedchen
+	Maedchen
+
+Das bringt natuerlich jegliche Frequenzzaehlung durcheinander. Zur Abhilfe wurde
+der reduce-Befehl erweitert:
+
+	reduce [ <subcorpus> ] to maximal matches;
+
+entfernt alle Matches, die ganz in einem laengeren Match enthalten sind. Im Beispiel
+bleibt nur
+
+	das huebsche Maedchen 
+
+uebrig. Inzwischen ist diese Funktion eigentlich veraltet (siehe
+MATCHING_STRATEGY), kann aber nützlich sein, wenn Ergebnisse aus
+mehreren Named Queries durch Mengenoperationen zusammengefügt werden.
+
+
+
+* Speicherallokation und -freigabe wird jetzt durchweg mit sauberer Fehlerbehandlung
+ausgefuehrt. Dazu definiert <cl/cl.h> die Funktionen
+
+	qmalloc(n)
+	qcalloc(n, size)
+	qrealloc(ptr, n)
+	qstrdup(s)
+
+die die entsprechende Systemfunktion aufrufen. Kann diese nicht genug Speicher 
+allozieren, so bricht das Programm mit einer (aussagekraeftigen) Fehlermeldung
+ab (Abfangen solcher Fehler in saemtlichen Programmteilen waere zu unhandlich).
+Dadurch brauchen die zurueckgelieferten Pointer nicht mehr auf != NULL getestet 
+zu werden. Zur weiteren Vereinfachung des Quellcodes wird in <cl/macros.h> 
+das Makro
+
+	qfree(ptr)
+
+definiert, das free(ptr) aufruft, sofern ptr != NULL ist, und danach ptr = NULL setzt.
+
+[spaeter koennte man noch eine callback-Routine einfuehren statt des einfachen
+Programmabbruchs, die entweder mit longjmp() in die Hauptschleife zurueckkehrt
+(eher weniger sinnvoll), oder noch ein paar Aufraeumarbeiten erledigt --
+CQPserver koennte z.B. eine Fehlermeldung zurueckgeben (CQI_CTRL_DIE :o)
+Denkbar waere auch eine Recovery-Routine (inkl. Callback), die zunaechst allen
+nicht unbedingt benoetigten Speicher freigibt, und dann erneut versucht,
+Speicher zu belegen. Die qmalloc(), ... Funktionen werden jetzt ueber <cl.h>
+exportiert; Programme, die die CL verwenden, sollten durchweg diese
+q-Varianten verwenden, um spaeter die Recovery-Routinen nutzen zu koennen. Bei
+den CWB-Utilities sind diese Aenderungen vorgenommen.]
+
+* ab cwb-2.2.b82 sind diese Routinen umbenannt und verwenden das einheitliche
+  Präfix "cl_", also:
+
+	cl_malloc(n)
+	cl_calloc(n, size)
+	cl_realloc(ptr, n)
+	cl_strdup(s)
+	cl_free(ptr)
+
+
+
+* Die matching strategy von CQP ist jetzt einstellbar mit
+
+	set MatchingStrategy ( traditional | shortest | standard | longest );
+
+Default ist 'standard'. Siehe MATCHING_STRATEGY.
+
+
+
+
+* Bei der Ausgabe von s-Attributen als SGML-Tags in den kwic-Zeilen werden jetzt 
+evtl. vorhandene Annotationen mit ausgegeben (wodurch die Tags in der von 'encode'
+eingelesenen Form rekonstruiert werden). Die Ausgabe laesst sich mit
+
+	set ShowTagAttributes no;
+
+abschalten.
+
+
+
+
+* Die Strategie zur Auswertung von Subqueries muss korrigiert werden, da auf einem
+Subkorpus mit ueberlappenden Intervallen als Suchraum manche Matches nicht korrekt 
+gefunden werden:
+
+Subkorpus  |---------------|  |-----------------|  
+				           |------------------|
+Matches        ******     -----  ******       XXXXXXX ***
+
+[* = gefunden, - = kein Match, X = faelschlicherweise nicht akzeptiert]
+Das letzte eigentlich korrekte Match im Beispiel wir nur im 2. Intervall des Subkorpus
+gesucht und daher nicht akzeptiert; das 3. Intervall wird nicht verwendet.
+Das genannte Problem verschaerft sich bei Subqueries mit Ankern oder bei Verwendung
+der longest_match-Strategie.
+
+Ansatz: in simulate() <eval.c> muessen fuer jede Startposition ggf. mehrere 
+Automatensimulationen durchgefuehrt werden (eine fuer jedes Subkorpusintervall).
+Dazu 'rp' (range pointer) um 'brp' (base range pointer) ersetzen, der auf das erste
+fuer diese Startposition moegliche Subkorpusintervall zeigt, von diesem ausgehend
+'rp' erhoehen und jeweils Simulation laufen lassen. 
+
+Fallunterscheidungen: 
+ - Matching Strategy: traditional
+   nur eine Simulation ausgehend fuer Intervall 'brp' durchfuehren (wie bisher)
+ - Matching Strategy: shortest / standard
+   'rp' erhoehen, bis das erste Match gefunden wird (oder kein Match mehr moeglich ist)
+ - Matching Strategy: longest
+   'rp' erhoehen, bis keine weiteren Matches mehr moeglich sind; aus allen gefundenen
+   Matches wird das laengste ausgewaehlt. 
+ - bei Verwendung von Ankern (gesetzte special labels testen) sollte zusaetzlich
+   die Bedingung fuer die 'first transition' ausgewertet werden (wird eigentlich aus
+   Optimierungsgruenden uebersprungen). Ansonsten koennte bei Verwendung eines Ankers
+   am linken Query-Rand ein falsches Subkorpusintervall ausgewaehlt werden
+
+Fragen:
+ - Wie ist eine Subquery mit 'keep'-Operator (''!'') zu behandeln?
+ - Um ausserhalb eines Matches liegende Felder (target/keyword) als Anker verwenden
+   zu koennen, muss das Subkorpus expandiert werden. ''... expand to s'' fasst
+   jedoch nach der Expandierung identische Ranges zu einem zusammen (ungeachtet der
+   gesetzten Felder). Laesst sich dieser Effekt mit implizitem Expandieren umgehen,
+   d.h. Ankerqueries auf ''A^s;'' ausfuehren? 
+   Nein. Implizites Expandieren fuehrt auch eine Reduktion durch. Evtl. sollte man
+   das implizite Expand so abaendern dass es bei matching_strategy != traditional 
+   auf eine Reduktion verzichtet. 
+ - Optimierungsmoeglichkeit: werden keine Anker verwendet, so braucht eigentlich nicht
+   fuer jedes moegliche Subkorpusintervall eine eigenen Automatensimulation zu laufen;
+   es genuegt, das ''laengste'' moegliche Intervall zur Bestimmung der rechten Grenze
+   fuer die Automatensimulation heranzuziehen.
+
+==> vorlaeufig sind ueberlappende Matches fuer Subqueries nicht erlaubt und
+werden vorher explizit geloescht (+ Warnung)
+
+
+
+* Optimierung fuer regulaere Ausdruecke vom Typ /.*bar/ -- die Regex-Library versucht
+grundsaetzlich, einen regulaeren Ausdruck als Teilstring zu matchen. CL und CQP 
+akzeptieren jedoch nur die Matches, die ein komplettes Token umfassen. Es ist wesentlich
+effizienter, den regulaeren Ausdruck am Anfang des Tokens zu verankern: /^.*bar/. Daher
+werden in <cdaccess.c> und <eval.c> regulaere Ausdruecke (aus Symmetriegruenden) zu
+/^(.*bar)$/ erweitert, bevor sie compiliert werden. [CQP-2.2 hatte diese Optimierung auch,
+allerdings in Form einer gehackten und voellig instabilen Regex-Library!]
+
+
+* Alignment-Attribute koennen jetzt auch als Kontext-Einstellung in CQP dienen. Syntax 
+wie fuer strukturelle Attribute mit
+	set Context hansard-fr;
+("set Context 2 hansard-fr;" usw. ist nicht zulaessig). Implementierung:
+ - "set Context hansard-fr;" setzt context_type auf STRUC_CONTEXT
+ - verify_context_descriptor()<context_descriptor.c> versucht bei STRUC_CONTEXT zunaechst 
+   ein strukturelles Attribut mit dem gegebenen Namen zu oeffnen; bei Misserfolg jetzt 
+   ein Alignment-Attribut mit demselben Namen, wobei in diesem Fall
+   context_type in ALIGN_CONTEXT geaendert wird
+ - in compose_kwic_line()<concordance.c> sind die entsprechenden Faelle bei der
+   Bestimmung des kwic-Fensters ergaenzt; wird keine Alignment-Umgebung fuer das Match
+   gefunden, so wird kein Kontext ausgegeben (fuer STRUC_CONTEXT ist der Default-Wert in
+   diesem Fall == 20 Token)
+
+
+* Bei Ausgabe von alignierten Corpora im interaktiven Modus (auf Terminal) wird der
+Korpusname am Anfang jeder Alignment-Zeile:
+	-->hansard-fr: ... 
+fettgedruckt angezeigt (bzw. so wie Target ausgegeben wird), um die Bildschirmdarstellung
+etwas uebersichtlicher zu machen.
+
+
+* Neuer Boolscher Operator '->' (Implikation). Vereinfacht bedingte Auswertung von 
+Constraints ueber moeglicherweise nicht gesetzte Label u.ä.; z.B.
+  ... :: a.pos = "ADJ." & (b -> a.pos = b.pos);
+'->' sollte niedrigere Praezedenz als '|' und '&' haben und kann nicht am linken Rand
+einer Query (query intial position) verwendet werden. (cqp-2.2.b28)
+
+
+* In der CL gibt es jetzt Bibliotheks-Funktionen fuer int- und string-Listen, sowie
+fuer LexHashes (Lexikon mit automatischer ID-Zuweisung und optionalem Pointer auf 
+Datenstruktur fuer jeden Eintrag). encode und s-encode bauen auf diesen LexHashes auf.
+(LexHashes koennen nicht ueberlaufen, d.h. ist z.B. der "-b"-Switch von encode allenfalls
+noch erforderlich, um das Hashing bei grossen Lexika zu beschleunigen, oder bei sehr
+kleinen Lexika Speicher zu sparen)
+
+
+* Debugging-Option in der CL (bisher noch kaum benutzt). (cl_set_debug_level()<cl.h>)
+
+
+* Memory-Limit-Option in der CL (cl_set_memory_limit()<cl.h>) 
+wird bisher nur von makeall bei der Erstellung des Index verwendet ("-M"-Flag).
+Dadurch kann makeall auch auf Rechnern mit wenig Hauptspeicher grosse Korpora 
+bearbeiten, und make-rc ist ueberfluessig geworden.
+
+
+* make-rc und die dafuer benoetigten schwer zu konfigurierenden file-utils
+aus dem utils/-Verzeichnis entfernt
+
+
+* Highlighting bei Ausgabe im Terminal ist jetzt so hingehackt, dass es (meistens)
+vernuenftig aussieht. Mit "show +targets;" wird fuer jeden Target-Anker zusaetzlich
+dessen Nummer (in Klammern) angezeigt, um spaeter zwischen den verschiedenen Ankern
+unterscheiden zu koennen. Momentan target=fett, keyword=unterstrichen. Wenn mehrere
+Targets implementiert sind: entweder abwechselnd fett/unterstrichen, oder die ersten
+5 Anker (@0..@4) fett, die restlichen (@5..@9) unterstrichen?
+"show +targets;" bringt die Formatierung bei einer festen Anzahl Zeichen als Kontext
+etwas durcheinander, daher nicht defaultmaessig aktiviert.
+
+
+* Subqueries auf Subkorpora mit ueberlappenden Matches werden nicht korrekt ausgefuehrt
+und sind daher bis auf weiteres nicht mehr zulaessig. In so einem Fall wird eine Warnung
+ausgegeben und bei Ueberlappungen jeweils nur das am weitesten links stehende Match 
+verwendet!
+
+
+* Neuer 'this'-Label "_" referenziert immer das aktuelle Token (fuer einfache Zugriffe
+auf die Annotation einer strukturellen Umgebung). Z.B. kann man statt
+	a: [pos = "NN"] :: a.lemma = a.sv;
+kuerzer und effizienter schreiben
+	[(pos = "NN") & (lemma = _.sv)];
+
+
+* Pretty-Printing: die Ausgabe von CQP wird defaultmaessig fuer die Anzeige auf dem
+Bildschirm moeglichst gut lesbar formatiert (z.B. Ausgaben von "show;", spaeter auch
+Groupings und kwic-Display). Wo dies sinnvoll ist, laesst sich mit "set PrettyPrinting no;"
+ein leichter zu parsendes Ausgabeformat (mit TABs als Trenner usw.) einstellen.
+
+
+* Ausgaben des "show" - Befehls
+  + "show $my_var;"
+    1. Zeile: "$my_var = "
+    danach:   in $my_var gespeicherte Strings als eingerueckte Liste
+  + "show var...;" 
+    jede definierte Variable wird im obigen Format ausgegeben
+  + "show corpora;"
+    1. Zeile: "System corpora:"
+    danach:   alle Korpora als eingerueckte Liste, alphabetisch sortiert,
+              jeweils Anfangsbuchstabe als Label
+    (ohne PrettyPrint: jeder Korpus in separated Zeile, alphabetisch sortiert, kein Header)
+  + "show named;"
+    1. Zeile: "Named Query Results:"
+    danach:   jedes Subkorpus auf eigener Zeile im Format
+	      "   <flags>  <corpus>:<name> [<nr_matches>]"
+              (<flags> = "md*", m=memory, d=disk, *=changed; '-' if not set)
+    (ohne PrettyPrint: Zeilen "<flags> TAB <corpus>:<name> TAB <nr_matches>", kein Header)
+  + "show;" == "show corpora; show named;"
+  + "show macro <prefix>;"
+    alle Makros, die mit <prefix> beginnen, alphabetisch sortiert als eingerueckte Liste;
+    jeweils mit Anfangsbuchstabe als Label
+    (ohne PrettyPrint: Zeilen "TAB <name>(<args>)")
+  + "show macro region(2);"
+    1. Zeile: "/region(·A·,·B·) = "
+    2. Zeile: Definition des Makro, wobei $0, $1, ... durch ·A·, ·B·, ... ersetzt werden
+  + "show cd;"
+    zeigt die aktuellen Kontext- und Ausgabeeinstellungen für die kwic-Darstellung mit
+    "cat" an; insbesondere werden alle für das Korpus definierten Attribute aufgelistet,
+    wobei ein voranstehender "*" bedeutet, daß das jeweilige Attribut ausgegeben wird;
+    das Anzeigeformat ist nur für Bildschirmdarstellung geeignet
+    (ohne PrettyPrint: nur die definierten Attribute werden jeweils auf einer separaten
+    Zeile im Format "<type> TAB <name> [TAB [-V]]" angezeigt; <type> ist "p-Att", "s-Att"
+    oder "a-Att" (analog zu cwb-describe-corpus); die dritte Spalte wird nur für 
+    s-Attribute ausgegeben und ist entweder leer (keine Annotationen) oder enthält den
+    Wert "-V" (für s-Attribute mit Annotationen, analog zu dem Flag bei cwb-encode) 
+
+* Progress Bar ("set ProgressBar on|off;" / "set pb on|off;"): waehrend der Ausfuehrung
+einer Query oder eines Group-Befehls (moeglichst auch fuer alle anderen langwierigen 
+Aktionen implementieren) zeigt CQP an, wie weit die Abarbeitung fortgeschritten ist. 
+(In <eval.c> erfolgt die Anzeige bei der Ausfuehrung einer Query nur ausserhalb von 
+Alignment-Constraints (!evalenv->aligned).)  Im "child mode" (-c) werden die Meldungen
+zeilenweise auf STDOUT ausgegeben, wo sie z.B. von dem CQP/Perl-Interface erkannt und
+verarbeitet werden können. (Format: "-::-PROGRESS-::-" TAB <poss> TAB <total> TAB <message>)
+
+
+* CL exportiert jetzt Funktionen fuer Feature-Set-Attribute (cl_make_set(), cl_set_size(), 
+cl_set_intersection()) und Normalisierung von Strings (Gross/Kleinschreibung, Umlaute und 
+Latex-Escapes: cl_string_canonical() und cl_string_latex2iso())
+
+
+* Gewisse (Syntax-)Fehler in CQP-Queries koennen erst zur Laufzeit erkannt werden; dazu 
+gehoeren u.a. falsche Argumenttypen bei builtin-Funktionen (Anzahl der Argumente wird bereits
+vorher getestet), nicht zulaessige Vergleiche (z.B. np_h="Hund" statt _.np_h="Hund"), etc.
+Strategie war bisher, eine Fehlermeldung auszugeben, das aktuelle Pattern abzubrechen, aber 
+mit der Query-Auswertung fortzufahren. Dies kann im schlimmsten Fall zu hunderttausenden von
+Fehlermeldungen und extrem langsamer Abarbeitung der Query fuehren. Daher wird jetzt beim
+Auftreten eines solchen Fehlers eine normale CQP-Fehlermeldung ausgegeben ("CQP Error") und
+dann die Query-Auswertung durch Simulation von Ctrl-C (=> EvaluationIsRunning = 0;) abgebrochen.
+
+
+* sort-Befehl weitgehend neu implementiert und Syntax komplett
+umgestellt; externe Sortierung wird nur teilweise unterstützt, ist
+aber wesentlich schneller :-( vielleicht kann man die interene
+Sortierung mit Memoizing verbesseren; parallel dazu sollte man auf
+jeden Fall versuchen, bei der externen Sortierung auch %c und %d zu
+unterstützen, soweit das möglich ist (evtl. Zeile in diesem Fall
+doppelt ausgeben und Feldtrenner auf "\t" umstellen); alles muß dann
+noch ordentlich dokumentiert und ausgetestet werden
+
+Unter anderem wird die Sortierung jetzt auch bei der dump-Ausgabe berücksichtigt;
+bei der sort-Doku sollte man die Ausgabe mit "cat" und "dump" erwähnen; Sortierung
+rückgängig machen mit "sort A;" (-> Default-Sortierung); interne Sortierung sollte
+jetzt identische Ergebnisse liefern wie die externe Sortierung, d.h. es werden bei
+%c und %d zunächst die kompletten Sortierstrings verglichen, und erst wenn diese 
+identisch (insb. auch gleich lang) sind, wird ohne Normalisierung verglichen; 
+externe Sortierung hängt von locale-Einstellungen ab (LC_ALL oder LC_COLLATE), wobei
+die interne Sortierung der locale "C" entsprechen sollte
+
+
+* neu: count-Befehl mit Syntax analog zu "sort", verwendet die Sortierung, um
+eine Häufigkeitstabelle der Matches (bzw. genauer gesagt der spezifizierten
+Sortierstrings) zu erstellen; die Tabelle wird automatisch auf dem Bildschirm
+ausgegeben und kann mit ">" in eine Datei gespeichert werden; optional werden
+mit "cut <n>" nur Matches (d.h. Äquivalenzklassen) mit Frequenz >= <n>
+angezeigt; die intern erstellte Sortierung bleibt nach Ausführung des Befehls
+erhalten und kann dazu benutzt werden, in einfacher Weise die Belege für jedes
+Match auszugeben (in der Tabelle sind die entsprechenden Zeilen im sortierten
+Query Result in Klammern aufgeführt)
+
+
+* group-Befehl gehackt, so daß jetzt auch Frequenzverteilungen über
+s-Attribute berechnet werden können; inoffizielles Feature, das nur
+funktioniert, wenn das Korpus mit einer neueren Version der CWB aufbereitet
+wurde (-> identische Annotationen werden nicht mehrfach in der .avs-Datei
+abgelegt); im ASCII-Modus wird jetzt ohne PrettyPrinting eine einfache
+TAB-getrennte Tabelle ausgegeben, wobei die Anzahl der Spalten von den im
+Befehl angegebenen Feldern abhängt
+
+* Ergänzung: die Anker im group-Befehl verwenden jetzt dieselbe Syntax wie
+bei "sort", d.h. können mit einem optionalen Offset versehen werden.  Das
+erspart mühsames und zeitaufwendiges Setzen von target oder keyword, wenn
+z.B. collocates im Sinne von Sinclair bestimmt werden sollen:
+
+  group Last match[-5] lemma; ... group Last match[+5] lemma;
+
+bzw. wenn z.B. nach einer MU-Query für adjazente Wörter nur ein Token markiert
+ist:
+
+  group Last match lemma by match[-1] lemma;
+
+(kleiner 30-Minuten-Hack :o)
+
+
+* cwb-scan-corpus wurde analog zum group-Befehl modifiziert, so daß es nun
+auch mit s-Attributen arbeitet (selbe Caveats wie oben, scheint bislang aber
+stabil zu laufen und ist extrem nützlich); dazu waren intern wesentlich mehr
+Änderungen notwendig, als nach außen hin sichtbar sind (Syntax bleibt
+identisch, nur sind jetzt eben auch s-Attribute zugelassen); außerhalb einer
+Region gilt die Annotation als undefiniert und wird in der Frequenztabelle als
+"" wiedergegeben; undefinierte Werte werden von Regex-Constraints nie
+akzeptiert, die Option -C lehnt sie jedoch nicht automatisch ab; ein kleiner
+Kniff sollte es ermöglichen, auch Teile von Korpora (definiert durch
+Constraints über s-Attribute) effizient zu scannen
+
+
+* Implementierung des Memory Manager (MMU) begonnen. Nur sinnvoll auf Ebene
+von Attributen, da bei erneutem Laden einer Komponente evtl. die Datenstruktur
+des Attribut-Objekts aktualisiert werden muß.  Für jedes Attribut wird der
+Zeitpunkt des letzten Zugriffs gespeichert (dazu check_arg()-Makro
+<cl/cdaccess.c> in Funktion umwandeln <cl/attributes.c>).  Kann qmalloc()
+etc. <cl/macros.c> nicht den angeforderten Speicher allozieren, so wird der
+MMU aufgerufen und löscht das am längsten nicht mehr verwendete Attribut aus
+dem Speicher ("naive" Suche über alle geladenen Korpora, evtl. später durch
+Liste der <n> ältesten Attribute optimieren), wobei das Attribut-Objekt
+usw. erhalten bleiben. Nach jeder Löschoperation wird erneut versucht, den
+benötigten Speicher zu allozieren. Ist keine weitere Löschung möglich, so
+folgt der Programmabbruch mit "out of memory"-Fehler.
+
+* Sämtliche mmap()-Aufrufe <cl/storage.c> werden durch eine neue Funktion
+cl_mmap() <cl/macros.c> ersetzt, die in analoger Weise die MMU aufruft, falls
+das Mapping fehlschlägt (sollte aber vorher überprüfen, ob errno==ENOMEM).
+
+* Die Funktion, die die Daten eines Attributs aus dem Speicher löscht, sollte
+über die CL-Api <cl/cl.h> verfügbar gemacht werden, so daß explizit Adreßraum
+freigegeben werden kann bzw. geänderte Korpusdaten korrekt neu geladen werden.
+Zusätzliche Funktion für alle Attribute eines Korpus (trivial) -- und zwar:
+
+  cl_new_corpus(c)
+  cl_new_attribute(c, name, type)
+
+liefern Zeiger auf ein (konstantes) Korpus- bzw. Attributobjekt und erhöhen
+dessen Refcount; 
+
+  cl_delete_corpus(c)
+  cl_delete_attribute(a)
+
+verringern den entsprechenden Refcount um 1, und rufen bei einem Wert von 0
+automatisch cl_unload_*() auf, um den Adreßraum freizugeben (kann günstiger
+und sicherer sein, als sich auf die MMU zu verlassen);
+
+  cl_discard_corpus(c)
+  cl_discard_attribute(a)
+
+vernichten das Korpus- bzw. Attributobjekt, so daß nicht mehr darauf
+zugegriffen werden kann; dabei wird der Refcount nicht berücksichtigt (sollte
+aber eine "laute" Warnung ausgeben), evtl. vorhandene Zeiger sind fortan
+ungültig (und führen i.d.R. zum Coredump);
+
+  cl_unload_corpus(c)
+  cl_unload_attribute(a)
+
+alle per Memory Mapping geladenen Datenfiles des Attributs werden aus dem
+Adreßraum entfernt; das entsprechende Attribut-Objekt bleibt gültig (und sein
+Refcount ändert sich nicht) und lädt die Datenfiles automatische wieder in den
+Speicher, wenn darauf zugegriffen wird; cl_unload_corpus() ruft einfach
+cl_unload_attribute() für alle Attribute des Korpus auf
+
+* MMU sollte Debugging-Information ausgeben, wenn cl_debug<globals.h>
+aktiviert ist.
+
+
+* CL hat jetzt einen eingebauten Zufallszahlengenerator (RNG), der
+  gleichverteilte double-Werte im Bereich [0,1) liefert (einer der RNG, die
+  auch in R implementiert sind)
+
+* reduce-Befehl neu implementiert mit einem Algorithmus, der auch im worst
+  case lineare Zeit braucht (mit dem alten Algorithmus kann "reduce A to 1;"
+  extrem lange laufen, wenn A sehr viele Matches enthält); verwendet den
+  integrierten RNG
+
+
+* mit dem neuen "undump"-Befehl (als Gegenstück zu "dump") können jetzt
+  Anfrageresultate bzw. Subkorpora auch von Hand oder von einem Skript
+  konstruiert werden; Zeilenformat ist identisch zu Dump, allerdings sind die
+  Spalten für target und keyword optional; sie werden mit der Option "with
+  target" bzw. "with target keyword" aktiviert, die Reihenfolge ist aber fest
+  verdrahtet; zusätzlich muß in der ersten Zeile der Eingabe die Anzahl der
+  Matches (d.h. der Tabellenzeilen) angegeben werden; die Tabelle kann von
+  stdin (funktioniert nur beim Aufruf von CQP mit "-e"), von einer Datei oder
+  von einer Pipe eingelesen werden; analog dazu wird die Ausgabe von "dump"
+  nun defaultmäßig im Pager angezeigt, und kann neben der Umleitung in eine
+  Datei nun auch an eine bestehende Datei angehängt oder an eine Pipe
+  weitergeleitet werden; u.a. soll das dump/undump-Paar eine effiziente
+  Anbindung z.B. an eine relationale Datenbank mit weiteren Informationen über
+  das Korpus ermöglichen
+
+* ab Version 2.2.b88 kann undump auch nicht aufsteigend sortierte Tabellen
+  mit überlappenden Matches einlesen; diese werden intern sortiert, um weiter
+  verarbeitet werden zu können; allerdings wird gleichzeitig ein sortidx
+  angelegt, so daß CQP die ursprünglich eingelesene Sortierung anzeigt (bis
+  diese durche einen "sort"-Befehl aufgehoben wird); wird zusätzlich das
+  keyword "asc(ending)" angegeben (muß nach "with target keyword" stehen), 
+  so akzeptiert "undump" nur sortierte Tabellen ohne Überlappungen
+
+
+* ein Header wird jetzt nur noch dann von "cat" ausgegeben, wenn er mit der
+  entsprechenden PrintOption angefordert worden ist (bisher wurde der Header 
+  automatisch erzeugt, wenn der kwic-Output in eine Datei umgelenkt wird, und
+  ließ sich in dieser Situation auch nicht deaktivieren)
+
+
+* neuer "tabulate"-Befehl für die statistische Auswertung und Nachbearbeitung
+  von Anfrage-Ergebnissen; damit können corpus positions, p-Attribute und
+  s-Attribute für einzelne Ankerpositionen oder Bereiche (z.B. match ..
+  matchend) ausgegeben werden; Attribute-Werte können dabei mit %c und %d
+  normalisiert werden; verschiedenen Anker und Attribute sind in der 
+  Ausgabe durch TAB getrennt, mehrere Token in einem Bereich durch SPC; das
+  Ausgabeformat von "tabulate" ist leichter zu parsen als die normale
+  kwic-Ausgabe, und kann erheblisch schneller von CQP erzeugt werden; daher
+  ist der "tabulate"-Befehl optimal geeignet für Web-Interfaces und die
+  Erstellung von Frequenztabellen bzw. -datenbanken [ab Version 2.2.b90]
+
+
+* zumindest neuere Versionen von "less" zeigen defaultmäßig nur noch ASCII an,
+  alle anderen Zeichen werden invers als numerische Codes dargestellt; um
+  ISO-8859-* oder UTF-8 anzuzeigen, muß die Umgebungsvariable LESSCHARSET
+  entsprechend gesetzt werden ("iso8859" bzw. "utf-8"); natürlich sind
+  unabhängig davon auch entsprechende Einstellungen für das Terminal
+  erforderlich; CQP setzt diese Umgebungsvariable jetzt automatisch, wenn
+  Anfrageergebnisse usw. über den Pager ausgegeben werden, passend zu dem
+  charset-Wert im registry-Eintrag des aktuellen Corpus; der Name der
+  Umgebungsvariable kann mit "set LessCharsetVariable [lvc] ...;" verändert
+  werden; durch "set lcv '';" wird das automatische Setzen deaktiviert, so
+  daß ein ggf. in der Shell vorgegebener Wert von LESSCHARSET nicht mehr
+  überschrieben wird
+
+
+* Version 2.2.b93 führt ein "-v"-Flag für cwb-encode ein, daß während der
+  Aufbereitung Meldungen über die Zahl der bisher verarbeiteten Token ausgibt
+  (was besonders bei sehr großen Korpora oder langsamen Vorverarbeitungs-Routinen
+  für den Benutzer sehr angenehm ist); sollte möglichst in Verbindung mit
+  "-q" verwendet werden, da die Ausgabe sonst unübersichtlich wird.
+
+
+**********************************
+**********************************
+**     SYNTAX - AENDERUNGEN     **
+**********************************
+**********************************
+
+
+* 'InhibitInteractives' - Option existiert nicht mehr
+(-> ersetzt durch InhibitActivation, Insecure, und v.a. den Query-Lock-Modus)
+
+* 'match', 'matchend', 'target' ('collocate'), 'keyword'  ("fields")
+[ + 'target0', ... , 'target9' ]
+sind jetzt reservierte Schluesselwoerter und werden von flex als individuelle 
+Token-Codes an die Grammatik weitergeleitet. Label-Referenzen werden wegen der
+longest-match Regel weiterhin als QID erkannt, d.h. als normale Label verarbeitet.
+An allen Stellen, an denen Anker verwendet werden, ist damit jetzt auch 'matchend'
+zulaessig.
+
+* Die MP-Funktion, regulaere Ausdruecke aus externen Dateien (1wpl) zu basteln,
+ist jetzt CQP-intern ueber Variablen zugaenglich. Eine Variable $liste kann
+entweder als Wortliste interpretiert werden:
+	[lemma = $liste];
+oder in einen regulaeren Ausdruck kompiliert werden (alle Elemente von $liste 
+muessen dann natuerlich wohlgeformte regulaere Ausdruecke sein):
+	[lemma = RE($liste) %c];
+Wie im Beispiel zu sehen ist, koennen dann auch die Flags %c und %d verwendet
+werden.
+
+* Der default-Pager von CQP wird nicht mehr von der Umgebungs-Variable $PAGER
+uebernommen, sondern von $CQP_PAGER. Dafuer ist der optimale Aufruf fuer
+eine aktuelle Version von GNU Less (less-354 oder neuer) intern voreingestellt.
+-> fuer CQP muss in der Regel eine neue Less-Version installiert werden
+-> CQP testet, ob der eingestellte Pager gestartet werden kann und wechselt
+   sonst automatisch auf den Default-Pager "more"
+
+* CQP ignoriert jetzt u.a. auch Emacs-Backup-Files (*~) in der Registry. Genauer gesagt 
+werden folgende Eintraege in Registry-Verzeichnissen ignoriert:
+ - Unterverzeichnisse
+ - Dateien, deren Name '.' enthaelt ("versteckte Dateien")
+ - Dateien, deren Name '~' enthaelt (emacs-Backups)
+ - Dateien, die vom (effektiven) User nicht gelesen werden koennen
+
+* Der "show"-Befehl akzeptiert jetzt folgende Schluesselwoerter:
+ - show corpora;     --> verfuegbare Corpora anzeigen
+ - show corp...;         (Abkuerzung)
+ - show sys...;          (compatibility)
+ - show queries;     --> Subcorpora == Named Queries anzeigen
+ - show named;           (Variante)
+ - show sub...;          (compatibility)
+ - show cd;          --> Kontext-Einstellungen anzeigen
+ - show var...;      --> Variablen (d.h. Wortlisten) anzeigen
+ - show macro <prefix>;  --> alle Makros anzeigen, die mit <prefix> beginnen
+ - show macro region(2); --> Definition des Makros /region(_,_) anzeigen
+Nur "cd" und "macro" sind dabei reservierte Schluesselwoerter.
+
+* Mengenoperationen mit Subcorpora:
+ - Schnitt:     inter, intersect, intersection
+ - Vereinigung: union, join
+ - Differenz:	diff, difference
+
+* PrintModes und PrintOptions:
+Ziemlich chaotisch programmiert, sollte eigentlich komplett
+überarbeitet werden. Fürs erste möglichst weit unterstützen.
+ - set PrintOptions; 
+   Zeigt jetzt zustand aller zulässigen Optionen an. Dabei werden
+   Abkürzungen verwendet, die auch beim Setzen der Optionen zulässig
+   sind. 
+ - Option "trailer" existiert nicht mehr (wurde nur bei HTML-Ausgabe
+   für eine "Werbebotschaft" eingesetzt.
+
+* Info-Befehl:
+"info;" gibt jetzt Informationen zum gerade aktiven Corpus aus
+(war bisher aequivalent zu "info Last;", was wenig intuitiv ist).
+
+* cl_new_corpus() (bzw. setup_corpus()<corpus.c>) akzeptiert jetzt auch grossgeschriebene
+Korpusnamen (BUCHHEIM-NEW-DE) und konvertiert diese automatisch in Kleinschreibung.
+
+* bei dem cat-Befehl koennen jetzt optional erste und letzte auszugebende Zeile 
+mit angegeben werden (Zaehlung beginnt bei 0), dann muss aber auch die Named Query 
+explizit aufgefuehrt sein; "cat A [from] 5 [to] 9;" gibt das 6. - 10. Match von A aus. 
+
+* der "set target"-Befehl operiert auf allen definierten Ankern; es gibt drei Varianten:
+ - set <query_result> <field> NULL;
+   --> loescht Anker aus Named Query Result (nicht bei match und matchend)
+ - set <query_result> <field1> <field2>;
+   --> setzt Anker <field1> identisch zu Anker <field2>; 
+   Sonderfall: match und matchend werden nur dort gesetzt, wo <field2> definiert ist,
+   ausserdem darf matchend nicht links von match liegen und umgekehrt
+ - set <query_result> <field1> .... from <field2> [ exclusive | inclusive ];
+   --> der bekannte (komplexe) "set target"-Befehl;
+   als <field1> ist jetzt auch match und matchend zugelassen, wird aber nur veraendert,
+   wenn ein Treffer gefunden wird; ausserdem darf matchend nicht links vom match liegen,
+   und umgekehrt;
+   ist "inclusive" NICHT angegeben ("exclusive" ist Default), so wird der Ausgangspunkt <field2>
+   nicht mit in die Suche einbezogen; ist <field2>==match, dann wird das komplette Match
+   ausgeschlossen und nur links bzw. rechts davon gesucht!
+
+* Option "LocalCorpusDirectory" [lcd] in "DataDirectory" [dd] umbenannt, da wir
+jetzt von named query results und nicht mehr von subcorpora sprechen. Der alte Name bleibt
+als versteckte Option erhalten und zeigt intern auf dieselbe Variable, um abwärtskompatibel
+zu bleiben
+
+* um Konflikte mit anderen Packages zu vermeiden und die Zugehoerigkeit zur CWB deutlich
+zu machen, wurden alle Tools umbenannt und tragen jetzt das Praefix "cwb-"; also
+encode => cwb-encode, makeall => cwb-makeall, s-decode => cwb-s-decode, ...
+Beim Update von v2.2 auf v3.0 muss man darauf achten, dass die alten Tools geloescht und
+nicht versehentlich weiter verwendet werden. 
+
+* Optionen fuer external sort und grouping umbenannt, damit man sie sich besser merken kann,
+ausserdem Abkuerzungen eingefuehrt: "ExternalGroup" [eg], "ExternalGroupCommand" [egc],
+"ExternalSort" [es], "ExternalSortCommand" [esc]
+
+* Syntax von LineRange beim "delete"-Befehl abgeändert: statt "delete A 100 - 199;" muß man jetzt
+"delete A 100 .. 199;" eingeben (analog zu der Syntax von "sort").
+
+* Nicht verwendete Felder für "remote data access" in den Datenstrukturen für
+  Korpora <cl/corpus.h> und Attribute <cl/attributes.h> entfernt.
+
+
+**********************************
+**********************************
+**       Behobene   BUGS        **
+**********************************
+**********************************
+
+
+* Hinterhaeltig: cqp_parse_file()<cqp.c> schliesst den Filehandle, der uebergeben wurde,
+mit fclose(), nachdem es die komplette Eingabe abgearbeitet hat. Beim Einlesen der 
+Initfiles (~/.cqprc, ~/.cqpmacros) wurde dies nicht beruecksichtigt, was unter Linux
+bei Einsatz der glibc etwas spaeter zu einem seltsamen Abstuerz innerhalb von malloc()
+fuehrt (allerdings verwirrenderweise nicht beim _ersten_ Aufruf von malloc()).
+
+* Kleiner Tippfehler in parse_actions.c / do_set_target() behoben,
+
+	set <Corpus> keyword target;
+
+usw. funktionieren jetzt.
+
+* In regex2dfa.c ist ein Hardlimit fuer die maximale Laenge eines Query- 
+Tokens (insbesondere auch einer RE) in Form der Konstanten MAX_CHAR enthalten.
+Diese Konstante wurde von 512 Byte auf 4k erhoeht. 
+
+* Mit 
+
+	show +cpos;  /  show -cpos;
+
+kann jetzt die Ausgabe der Corpusposition an- und ausgeschaltet werden.
+
+* Durch einen kleinen Bug war bisher die Ausgabe von Alignments in CQP
+deaktiviert. Jetzt kann z.B. ein alignierter Corpus "HANSARD-F" mit
+
+	show +hansard-f;
+
+ausgegeben werden ("show cd;" zeigt u.a. die alignierten Corpora an).
+
+* In cl/registry.y wird der Verzeichnispfad fuer Attribute per strdup() vom
+Verzeichnispfad des Corpus kopiert. Dies wurde jedoch an einer Stelle vergessen 
+(und statt dessen einfach der Zeiger auf den Pfadnamen kopiert), was unter
+Gnuwin32 (und Linux?) zu einem Abstury in drop_corpus() fuehrte.
+
+* In cl/bitio.c wurde ein weiterer der vielen Byte-Order-Bugs behoben. Dadurch
+laufen "huffcode" und "compress-rdx" jetzt auch unter Linux (und Gnuwin32) korrekt.
+Dieselbe Korrektur wurde auch in make-rc.c vorgenommen, so dass jetzt
+wirklich alle Aufbereitungstools auch unter Linux funktionieren
+sollten.
+
+* Aus ungeklaerten Gruenden wir der CD (CorpusDescriptor) fuer
+alignierte Corpora manchmal durcheinandergebracht (haengt offenbar
+irgendwie mit Einstellungen am globalen CD zusammen??). Aus diesem
+Grunde wird der CD jetzt bei jedem Aufruf von printAlignedStrings() 
+in cqp/print_align.c neu initialisiert. Dadurch wurde es moeglich, bei
+alignierten Corpora automatisch positionelle und strukturale Attribute
+auszugeben, die in der Quellsprache selektiert sind. Also gibt
+
+	show +pos +lemma;
+	show +alignierter_corpus;
+
+das alignierte Corpus mit POS und LEMMA aus, sofern diese beiden
+Attribute im alignierten Corpus erklaert sind.
+
+* Hinterhaeltiger Bug in "compress-rdx": bei sehr haeufigen Tags
+(wahrscheinlich ~50%) wird der Golomb-Code falsch generiert; CQP
+stuerzt beim Zugriff auf den reversen Index haeufig ab; ansonsten sind
+die Ergebnisse falsch! Zur Korrektur musste die Funktion compute_ba()
+in der CL geaendert werden. Da dies Funktion sowohl zur Generierung
+als auch zum Dekodieren komprimierter RDXs verwendet wird, muessen
+alle Programme gegen die neue CL gelinkt werden!
+Attribute ohne sehr haeufige Tags bleiben kompatibel zu aelteren
+Versionen, daher koennen bestehende Corpora auch mit den neuen
+Programmen gelesen werden bzw. alte Programme auch auf die normalen
+Attribute neuer Corpora zugreifen. Treten dabei Fehler bzw. Abstuerze
+auf, so waren die betreffenden Attribute bisher auch inkorrekt!
+(z.B. auf BNC '[class="m"];' und '[class!="m"];')
+
+* Manchmal fehlt "cderrno = CDA_OK;" nach korrekter Abarbeitung eines
+Corpus-Zugriffs. Beispielsweise in get_id_at_position() bei
+komprimierten Attributen (jetzt eingefuegt). Dadurch hat z.B. folgende
+Query
+
+> WHB-NEW-DE;
+> set printstructures "zelle";
+> "Benzin";
+
+ausserhalb von <zelle>..</zelle> Umgebungen Muell produziert. Wie
+heisst es doch so schoen ... ``Oli!! -- Gesundheit.''
+
+* Marion hat einen hinterhaeltigen Bug gefunden. Bei Subqueries wird
+zunaechst eine Kopie des Query-Corpus erzeugt, auf deren Match-Ranges,
+Targets und Keywords zugegriffen wird (nach Ausfuehrung der Query
+werden diese Werte in der Kopie ueberschrieben). Dabei hat Oli zwar
+die Targets kopiert, aber die Keywords vergessen :-(
+Ueber Speicherverschwendung wollen wir gar nicht erst reden ...
+
+* Ein dicker Oli in regex2dfa.c: die Funktion GET() liefert
+korrekterweise int zurueck, am Ende des Strings EOF; diese Werte
+werden jedoch in LEX() in eine char-Variable eingelesen, so dass auf
+Systemen, bei denen char per Default unsigned ist, EOF nicht mehr
+erkannt wird :-(
+Wir versuchen jetzt die lehrbuchgerechte Vorgehensweise: GET() liefert
+unsigned char in einem int-Wert zurueck, Weiterverarbeitung in
+int-Variable.
+
+* Ein noch dickerer Oli: die Funktion unsigned_char_strcmp() in
+cl/cdaccess.c operiert in Wirklichkeit auf signed char (da Oli nur
+char angegeben hat und dieser Datentyp unter Solaris und Linux signed
+ist). Der Kompatibilitaet zuliebe wurde diese Inkonsistenz jetzt
+festgeschrieben! (lief sonst nicht unter IRIX).
+
+* Anstelle der fehlerhaften (''missing closing paren bus error'') internen
+Regex-Bibliothek der CL werden nun die POSIX-Regex-Funktionen aus der 
+Standardbibliothek verwendet. Regex-Sources aus cl/ geloescht.
+In prepare_regmatch() <eval.c> wurde ein frisch allozierter regex buffer 
+(also _nicht_ mit regcomp() erzeugt) mit regfree() freigegeben, was zu
+unkontrollierten Abstuerzen fuehrte. Ersatz- und spurlos gestrichen.
+
+* Query Buffer (nur fuer Schreiben der Query History verwendet) von den
+seltsamen extendQueryBuffer()-Aufrufen in direkte Aufzeichnung aller ueber
+yy_input_char() <macro.c> eingelesen Zeichen geaendert; damit kann die
+Aufzeichnung waehrend laufender Makro-Expansion _zuverlaessig_ deaktiviert 
+werden.
+
+* RangeSetop() <ranges.c> so umgeschrieben, dass gesetzte targets/keywords
+jeweils vom linken Argument in das Resultat uebernommen werden (bei RUnion
+natuerlich von beiden Argumenten; liegt ein Intervall in beiden Subkorpora,
+so werden target/keyword vom linken Argument verwendet, auch wenn diese nur
+im rechten Argument gesetzt sein sollten!)
+
+* 'cut <n>' gibt jetzt auch bei Queries mit optionalen Pattern am Anfang 
+bzw. globalen Disjunktionen genau die ersten <n> Matches zurueck, und nicht
+primaer Ergebnisse aus der ersten Alternative. Man vergleiche
+
+	"sei(en)?" cut 10;
+vs.	"sei" | "seien" cut 10;
+
+Allerdings koennen bei der 'longest match'-Strategie die Ergebnisse in manchen
+Faellen inkorrekt sein, da hier verschachtelte Matches in das jeweils laengste
+Match kollabiert werden. Waehrend der Query-Auswertung laesst sich nur schwer
+vorhersagen, wie viele Matches durch diese Reduktion verlorengehen. Die
+'cut'-Angabe dient vorwiegend zu Preview-Zwecken. Fuer weiterverwendbare Resultate
+sollte immer mit voller Auswertung und anschliessendem 'reduce to ...' gearbeitet
+werden.
+
+* Es war etwas unklar, wann das Initfile von CQP eingelesen wird; die Semantik
+ist jetzt folgende:
+- eine mit -I <file> angegebene Datei wird als Initfile eingelesen
+- wurde nichts angegeben, so versucht CQP, ~/.cqprc einzulesen, 
+  AUSSER wenn CQP im Batchmode (-f <file>), Child Mode (-c), oder als CQPserver laeuft
+Fuer das Makro-Initfile gelten dieselben Regeln: -M <file> oder ~/.cqpmacros.
+Jedoch wird das Makro-IF nur eingelesen, wenn die Makroexpansion aktiviert ist!
+(dies kann z.B. durch 'set macros no;' in ~/.cqprc abgeschalten werden)
+
+* Flags bei regulaeren Ausdruecken: %d hat bisher auch Gross-/Kleinschreibung 
+normalisert, d.h. %cd machte keinen Sinn. Jetzt operieren %c und %d unabhaengig
+voneinander.
+
+* Mal wieder ein dicker Oli (Dank an Arne, der ihn entdeckt hat): beim
+matchen von ID-Listen ([word = $var] usw.) verwendet Oli in
+eval_bool() <eval.c> eine Binaersuche, hat aber die ID-Liste in
+GetVariableItems() <variables.c> nicht sortiert ... kann ja nix
+werden. qsort() in letztere Funktion eingefuegt. 
+
+* CWB liess sich unter Solaris 2.6 nicht statisch linken, da libdl.a und libxnet.a
+nicht vorhanden sind. Loesung: statt -lxnet mit den alten Libraries "-lsocket -lnsl"
+linken. Die fehlenden Funktionen aus libdl.a werden durch Stubs in <cl/dl_stub.c> ersetzt.
+<cl/dl_stub.o> wird immer compiliert, aber nur in der statisch gelinkten Solaris-Version
+(SITE = ims-release) mit eingebunden.
+
+* Ein Solaris-Feature: enthaelt eine regulaerer Ausdruck zu viele Klammern, dann
+schlaegt das kompilieren mit regcomp() fehl und es wird eine irrefuehrende Fehlermeldung 
+"( ) imbalance" ausgegeben.
+
+* Am 22.01.2001 ist doch noch einmal ein originaler Oli ans Tageslicht gekommen:
+
+> cqp -D BUCHHEIM-DE
+BUCHHEIM-DE> set Registry "/corpora/c1/registry";
+DMORPH> set Registry "/home/users0/fitschen/registry";
+:/corpora/c2/kwic/piklu/word.hcd[0]> 
+
+> cqp -D BUCHHEIM-DE
+BUCHHEIM-DE> set Registry "/home/users3/evert/registry";
+Segmentation fault
+
+Behoben und kommentiert in check_available_corpora()<corpmanag.c>
+
+* Kein Bug, aber ein sehr unschoenes Feature: "compress-rdx" verwendete bisher die
+Funktion get_positions() um jeweils alle Vorkommen eines jeden Token auszulesen; bei
+hochfrequenten Token (manche POS-Tags und besonders Flags!) und grossen Korpora kann
+das 500 MB Speicher und mehr verbrauchen und zum Absturz fuehren. Jetzt werden die
+Positionen einzeln ueber einen PositionStream ausgelesen, so dass der Speicherbedarf
+minimal ist. Ausfuehrungsgeschwindigkeit dadurch allenfalls marginal langsamer.
+
+* letzter bekannter Oli: 2.12.2001, gefunden von Gemma Boleda
+(get_positions()<cl/cdaccess.c> gibt unter gewissen Umständen einen
+Zeiger auf einen bereits freigegebenen Speicherbereich zurück.
+Klasse, Oli.)
+
+* nochmal ein Oli (22.6.2004): ein Frequency-Cutoff fuer "group" liefert
+sinnlose Ergebnisse, wobei zufaellig Ergebniszeilen verloren gehen;
+Implementierung war totaler Quatsch, ist in 2.2.b77 behoben
+
+* saemtliche Olis sind jetzt durch Schtepfs ersetzt (28.06.2004): ein
+grober Bug bei der Optimierung von Boolschen Ausdruecken in Patterns
+fuehrte zu einer falschen Reduktion des "->"-Operators, wenn einer der
+Operanden eine Konstante ist (d.h. nie erfuellt werden kann bzw. immer
+erfuellt ist); die Semantik der Optimierung ist jetzt aussagenlogisch
+korrekt und bei der Gelegenheit wurde eine entsprechende Optimierung
+auch fuer Wortlisten ermoeglicht (d.h. [lemma = $list] kann jetzt auch
+wegoptimiert werden, wenn die Bedingung unerfuellbar ist)
+
+* naja, fast alle: Oli hat immer noch an ein paar Stellen in der CL vergessen,
+cderrno auf CDA_OK zurückzusetzen, so daß Funktionsaufrufe in unvorhersagbarer
+Weise scheinbar fehlschlagen
+
+* creat_rev_corpus()<cl/makecomps.c> schreibt den Index zwar direkt in eine
+Datei um Speicherüberlauf zu vermeiden, lädt ihn dann aber automatisch in den
+Adreßraum (mit load_component()); dies wurde jetzt geändert: die Funktion wird
+nur in utils/makeall.c verwendet; falls der Index validiert werden soll, wird
+dort ohnehin noch einmal ensure_component() aufgerufen
+
+* und noch ein Oli, der frueher schon aufgefallen war, aber am
+19.1.2005 durch Arndts Arbeiten mit alignierten Korpora wieder
+aufgetaucht ist und diesmal richtig identifiziert werden konnte; die
+Funktion find_corpus()<cl/corpus.c> vergleicht die uebergebenen
+Parameter Korpus-ID und Registry-Verzeichnis mit allen Corpus-Objekten
+in der internen Liste; ist die Registry == NULL (Default-Verzeichnis)
+oder eine Liste mit mehreren Verzeichnissen (durch ":" getrennt), so
+schlaegt dieser Vergleich fehl, da im Corpus-Objekt jeweils nur das
+einzelne Verzeichnis aufgefuehrt ist, in dem die Registry-Datei
+tatsaechlich gefunden wurde; fuehrt insbesondere bei Ausgabe von
+Satzalignment (das ungeschickt implementiert ist und fuer jede
+Ausgabezeile setup_corpus() und find_attribute() neu aufruft) schnell
+dazu, dass mmap() keinen Addressraum (oder keine Handles) mehr hat und
+laufend Fehlermeldungen produziert; Bug behoben, indem find_corpus()
+das tatsaechliche Registry-Verzeichnis per strstr() in der
+eingegebenen Liste sucht
+
+* für Attribute mit wenig verschiedenen Werten (Types) werden reguläre
+Ausdrücke automatisch in ID-Listen kompiliert; sofern diese mehr als die
+Hälfte aller Typen umfassen, werden sie invertiert (so daß sie kompakter
+gespeichert und effizienter durchsucht werden können); dies kann bisweilen
+dazu führen, daß die invertierte Liste weit mehr als die Hälfte aller Token im
+Korpus matcht und beim Index-Lookup (am Anfang einer Query) große Mengen
+Speicher verschwendet (zunächst werden dort nämlich alle Korpuspositionen zur
+invertierten ID-Liste gesammelt, und diese Liste wird dann wiederum
+invertiert); um diesen Problemfall zu vermeiden werden ID-Listen jetzt nur
+dann invertiert, wenn sie mehr als die Hälfte aller Token im Corpus matchen;
+in den meisten Fällen sollte es keinen merklichen Unterschied geben, aber
+z.B. für ein dünn besetztes Attribut <att>, bei dem 90% aller Token den Wert
+"NULL" haben, wird die Query [att != "NULL" %c] jetzt ohne Speicherprobleme
+und effizient ausgeführt (%c ist notewendig, damit die Bedingung als regexp
+ausgewertet und in eine ID-Liste übersetzt wird)

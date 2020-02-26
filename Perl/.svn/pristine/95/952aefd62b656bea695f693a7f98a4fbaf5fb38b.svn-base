@@ -1,0 +1,206 @@
+#!/usr/bin/perl
+## -*-cperl-*-
+## Author:  Stefan Evert
+## Purpose: split CWB input data (.vrt file format) into multiple parts of specified sizes
+##
+$| = 1;
+use warnings;
+use strict;
+
+use CWB;
+
+use Getopt::Long;
+use Pod::Usage;
+
+our $CL_MAX_CORPUS_SIZE = 2147483647; # guaranteed limit for CWB 3.5 = 2^31 - 1
+our $MAX_EXTRANEOUS = 100000;   # maximum number of extraneous tokens before start of chunk
+
+## configuration variables and arguments
+our $Opt_Size = $CL_MAX_CORPUS_SIZE; # -n <size> ... maximal size of each corpus part (default: CL_MAX_CORPUS_SIZE)
+our $Opt_By = "text";           # -by <tag> ... XML tag delimiting independent chunks on which corpus can be split
+our $Opt_Verbose = 0;           # -v ... verbose output (progress messages)
+our $Opt_Help = 0;              # -h ... show usage information
+
+my $ok = GetOptions("size|n=i" => \$Opt_Size,
+                    "by|S=s" => \$Opt_By,
+                    "v|verbose" => \$Opt_Verbose,
+                    "h|help" => \$Opt_Help,
+                   );
+pod2usage(-msg => "SYNTAX ERROR.", 
+          -exitval => 1, -verbose => 0) unless $ok;
+pod2usage(-msg => "(Type 'perldoc cwb-split-vrt' for more information.)",
+          -exitval => 0, -verbose => 0) if $Opt_Help or @ARGV == 0;
+die "Error: upper limit on CWB corpus size is -n $CL_MAX_CORPUS_SIZE\n"
+  if $Opt_Size > $CL_MAX_CORPUS_SIZE;
+
+our $Basename = shift @ARGV;           # basename for output files
+our @VrtFiles = (@ARGV) ? @ARGV : "-"; # list of .vrt input files (default: STDIN)
+
+our $Part = 0;               # current output part
+our $OUT = undef;            # output filehandle
+our $outfile = "";           # and filename
+our @lines = ();             # data buffer for chunk
+our $n_chunk = 0;            # number of tokens in current chunk
+our $n_extraneous = 0;       # extraneous tokens before start tag
+our $n_file = 0;             # ~ in current file
+our $n_total = 0;            # ~ in entire corpus
+our $last_progress = 0;      # $n_file at last progress message
+
+open_next_part();
+foreach my $file (@VrtFiles) {
+  my $IN = ($file eq "-") ? \*STDIN : CWB::OpenFile $file;
+
+ LINE:
+  while (<$IN>) {
+    next if /^\s*$/;            # skip empty lines
+    push @lines, $_;
+
+    if (/^<\/${Opt_By}>/io) {
+
+      my $pushback = undef;
+    TRAILING:
+      while (<$IN>) {
+        if (/^<\//) {
+          push @lines, $_;      # append trailing end tags
+        }
+        else {
+          $pushback = $_;       # push back first line of next chunk (below)
+          last TRAILING;
+        }
+      }
+
+      flush_chunk();
+      redo LINE if $pushback;   # process pushback line
+
+    }
+    else {
+
+      if (/^<\/?[a-z]/i) {
+        $n_extraneous = -1
+          if /^<${Opt_By}(\s|>)/;
+      }
+      else {
+        $n_chunk++;             # count tokens
+        $n_extraneous++
+          if $n_extraneous >= 0;
+        die "\nERROR -- more than ${n_extraneous} tokens before start of chunk.\nDid you specify the wrong tag with -by?\n"
+          if $n_extraneous >= $MAX_EXTRANEOUS;
+      }
+
+    }
+  }
+
+  flush_chunk()
+    if @lines > 0;
+}
+close_part();
+
+print "\r", " " x 70, "\r" if $Opt_Verbose;
+printf "Completed: %d tokens split across %d parts\n", $n_total, $Part;
+
+
+## -- all subroutines operate on global variables defined above --
+
+sub open_next_part {
+  $Part++;
+  $outfile = "${Basename}-${Part}.vrt.gz";
+  $OUT = CWB::OpenFile ">", $outfile;
+}
+
+sub close_part {
+  $OUT->close;
+  print "\r", " " x 70, "\r" if $Opt_Verbose;
+  printf "%10d tokens in file %s\n", $n_file, $outfile;
+  $n_file = 0;
+  $last_progress = 0;
+}
+
+sub flush_chunk {
+  if ($n_file > 0 and $n_file + $n_chunk > $Opt_Size) {
+    close_part();
+    open_next_part();
+  }
+  foreach (@lines) {
+    print $OUT $_;
+  }
+  $n_file += $n_chunk;
+  $n_total += $n_chunk;
+  if ($Opt_Verbose and $n_file - $last_progress >= 50e3) {
+    printf "\r#%d: %6.1fM tokens / %6.0fM total", $Part, $n_file / 1e6, $n_total / 1e6;
+    $last_progress = $n_file;
+  }
+  $n_chunk = 0;
+  $n_extraneous = 0;
+  @lines = ();
+}
+
+__END__
+
+=head1 NAME
+
+cwb-split-vrt - Split CWB input data (.vrt) into multiple parts
+
+=head1 SYNOPSIS
+
+  cwb-split-vrt [options] <basename> [file1.vrt.gz file2.vrt.gz ...]
+
+    -n <size>   maximum size (# tokens) of each part [default: -n CL_MAX_CORPUS_SIZE]
+    -by <tag>   XML tag delimiting independent units for split [default: -by text]
+    -v          show progress information
+    -h          display this help page
+
+=head1 DESCRIPTION
+
+More and more corpora are becoming available that exceed the maximum CWB corpus size of 2.1 billion tokens. In order to index them with CWB, they have to be split into smaller parts. This script helps to automate the splitting procedure. It reads an arbitrary number of CWB input files C<.vrt> format and divides the complete data into blocks of less than 2.1 billion tokens each (or a lower limit specified by the user). The script also ensures that individual texts in the corpus (indicated by the XML tag C<< <text> >> or another tag specified by the user) are not broken across multiple parts.
+
+Input files with extension C<.gz>, C<.bz2> or C<.xz> are automatically decompressed. Output files are always GZip-compressed and are named C<< I<basename>-1.vrt.gz >>, C<< I<basename>-2.vrt.gz >>, etc.
+
+=head1 OPTIONS
+
+=over 4
+
+=item --size=I<limit>, -n I<limit>
+
+Split corpus into parts of up to I<limit> tokens each.  The default CL_MAX_CORPUS_SIZE = 2^32-1 is guaranteed to work for CWB 3.5, but older CWB releases may have a slightly lower limit.  It is recommended to set this option to C<-n 2147000000> or lower for best compatibility.
+
+=item --by=I<tag>, -S I<tag>
+
+B<cwb-split-vrt> takes care not to break textual units in the corpus - indicated by XML elements named I<tag> - across multiple parts. Following B<CQPweb> conventions, the default setting is C<-by text>, i.e. individual corpus texts are delimited by XML tags C<< <text> >> and C<< </text> >>.  See L<"DETAILS"> below.
+
+=item --verbose, -v
+
+Show progress information during splitting procedure (recommended since this will typically take a very long time).
+
+=item --help, -h
+
+Display short help page.
+
+=back
+
+=head1 DETAILS
+
+B<cwb-split-vrt> assumes that a corpus is a collection of individual texts (or other units) delimited by the XML tags specified with the B<-by> option. It reads each text unit into memory, starts a new corpus part if text does not fit into the current one, and then writes the text to the output file.  Any extraneous material before the start tag (e.g. C<< <text> >>) as well as trailing end tags (after e.g. C<< </text> >>) are included in the text unit.
+
+This implementation strategy has two important consequences:
+
+=over 4
+
+=item *
+
+Text units must be sufficiently small so that the Perl script can fit them comfortably into RAM. It is probably not a good idea to split e.g. a newspaper collection on yearly volumes.
+
+=item *
+
+There must not be any XML regions spanning multiple text units. B<cwb-split-vrt> is not aware of such regions and thus cannot replicate the corresponding start and end tags if they are broken across multiple parts. In other words, the XML elements specified with C<-by> must delimit completely independent chunks of the corpus.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright (C) 2007-2013 Stefan Evert [http://purl.org/stefan.evert]
+
+This software is provided AS IS and the author makes no warranty as to
+its use and performance. You may use the software, redistribute and
+modify it under the same terms as Perl itself.
+
+=cut

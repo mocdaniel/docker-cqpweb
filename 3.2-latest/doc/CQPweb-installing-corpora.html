@@ -1,0 +1,284 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="LibreOffice 3.3  (Unix)">
+	<META NAME="AUTHOR" CONTENT="Andrew Hardie">
+	<META NAME="CREATED" CONTENT="20090607;11102800">
+	<META NAME="CHANGEDBY" CONTENT="Andrew Hardie">
+	<META NAME="CHANGED" CONTENT="20110815;20022400">
+	<META NAME="Info 1" CONTENT="">
+	<META NAME="Info 2" CONTENT="">
+	<META NAME="Info 3" CONTENT="">
+	<META NAME="Info 4" CONTENT="">
+</HEAD>
+<BODY LANG="en-US" DIR="LTR">
+<H1 LANG="en-GB">Installing corpora in CQPweb</H1>
+<P LANG="en-GB" STYLE="margin-top: 0.42cm; page-break-after: avoid"><FONT FACE="Albany, sans-serif"><FONT SIZE=4><B>Introduction</B></FONT></FONT></P>
+<P LANG="en-GB">Caveat emptor: this document is currently very much a
+work-in-progress, gradually expanding on the brief guide given in the
+setup manual.</P>
+<P LANG="en-GB" STYLE="margin-top: 0.42cm; page-break-after: avoid"><FONT FACE="Albany, sans-serif"><FONT SIZE=4><B>Role
+of the superuser</B></FONT></FONT></P>
+<P LANG="en-GB">[[<FONT COLOR="#000080">Explain here that CQPweb is
+for </FONT><FONT COLOR="#000080"><I>static resources</I></FONT><FONT COLOR="#000080"><SPAN STYLE="font-style: normal">,
+therefore all setup is done by administrator, not by users loading
+their own text</SPAN></FONT><SPAN STYLE="font-style: normal">.]]</SPAN></P>
+<P LANG="en-GB" STYLE="margin-top: 0.42cm; page-break-after: avoid"><FONT FACE="Albany, sans-serif"><FONT SIZE=4><B>From
+Corpus Workbench to CQPweb</B></FONT></FONT></P>
+<P LANG="en-GB">CQPweb is a front-end to the IMS Open Corpus
+Workbench (CWB). While CQPweb is designed specifically so that end
+users <I>don't</I> <SPAN STYLE="font-style: normal">need to know much
+about CWB or CQP in order to get their work done, the superuser can
+benefit from knowing a bit about the underlying mechanics of CWB. For
+this, the following documentation comes recommended as background
+reading:</SPAN></P>
+<UL TYPE=DISC>
+	<LI><P LANG="en-GB"><SPAN LANG="en-GB">The current <A HREF="http://cwb.sourceforge.net/documentation.php">CWB
+	documentation page</A>.</SPAN></P>
+	<LI><P LANG="en-GB"><SPAN LANG="en-GB">The <A HREF="http://cwb.sslmit.unibo.it/doku.php">CWB
+	wiki</A>.</SPAN></P>
+	<UL>
+		<LI><P LANG="en-GB"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">This
+		page especially will come in handy – <A HREF="http://cwb.sslmit.unibo.it/doku.php?id=users:indexing_a_corpus">on
+		installing a corpus</A>. </SPAN></SPAN>
+		</P>
+	</UL>
+	<LI><P LANG="en-GB"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">The
+	old (pre-v3.0) CWB <A HREF="http://www.ims.uni-stuttgart.de/projekte/CorpusWorkbench/UsersCorner.html">documentation
+	at IMS Stuttgart</A></SPAN></SPAN></P>
+	<UL>
+		<LI><P LANG="en-GB"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">See
+		especially <A HREF="http://www.ims.uni-stuttgart.de/projekte/CorpusWorkbench/CQPTutorial/html/node4.html">this
+		page</A>.</SPAN></SPAN></P>
+	</UL>
+</UL>
+<P LANG="en-GB" STYLE="margin-top: 0.42cm; page-break-after: avoid"><FONT FACE="Albany, sans-serif"><FONT SIZE=4><B>Installing
+a corpus [<FONT COLOR="#000080">currently just copied from the setup
+manual with no changes</FONT>]</B></FONT></FONT></P>
+<P LANG="en-GB">Corpora must follow all the usual rules for CWB
+corpora and in addition there is the following requirement:</P>
+<P LANG="en-GB">Every text in the corpus must begin with</P>
+<P LANG="en-GB" STYLE="margin-left: 1.25cm"><FONT FACE="Courier New, monospace">&lt;text
+id=&quot;XXX&quot;&gt;</FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 1.25cm"><FONT FACE="Courier New, monospace">...</FONT></P>
+<P LANG="en-GB">and end with</P>
+<P LANG="en-GB" STYLE="margin-left: 1.25cm"><FONT FACE="Courier New, monospace">&lt;/text&gt;</FONT></P>
+<P LANG="en-GB">and there must be at least one of these “text”
+elements (ie if the whole corpus is one text you still need these XML
+bits at the start and finish).</P>
+<P LANG="en-GB">The XXX id-codes must be C / Unix words – i.e. made
+up only of the letters A to Z, a to z, the numbers 0 to 9, and the
+underscore (with an underscore or letter in the first position). This
+is because they are used as “handles” by the system to refer to
+different texts. So no spaces or punctuation (except underscore) are
+allowed.</P>
+<P LANG="en-GB">To install a corpus, you need:</P>
+<UL TYPE=DISC>
+	<LI><P LANG="en-GB">A file or files containing the corpus text, as
+	above 
+	</P>
+	<LI><P LANG="en-GB">A file of corpus metadata. 
+	</P>
+</UL>
+<P LANG="en-GB"><FONT COLOR="#0000ff"><B>[Add note here about maximum
+corpus size: 32 bit versus 64 bit – make this visible in the CQPweb
+admin view]</B></FONT></P>
+<P LANG="en-GB">The metadata file should be a tab-delimited database.
+The first column should be the text id-codes, with a line for each
+text. You can then have as many columns of metadata as you need.</P>
+<P LANG="en-GB">Metadata is of two sorts – classifications and free
+text</P>
+<UL TYPE=DISC>
+	<LI><P LANG="en-GB">Free text – for items where the metadata can
+	vary across every single text (e.g. text title) 
+	</P>
+</UL>
+<UL TYPE=DISC>
+	<LI><P LANG="en-GB">Classifications – for items where each text
+	falls into one of a limited number of categories (e.g. written vs
+	spoken) In this case the field values must be handles (Unix words as
+	described above), NOT multi-word explanations 
+	</P>
+</UL>
+<P LANG="en-GB">All files must be either ASCII or UTF-8. If they are
+UTF-8, the file must <U><B>not</B></U> have a leading byte-order
+mark. Linebreaks should be \n , not \r or \r\n .</P>
+<UL TYPE=DISC>
+	<LI><P LANG="en-GB">Upload all your files (text + metadata) to the
+	upload area (directory 6). Then go to “Install new corpus” in
+	the web admin interface. This form is pretty self-explanatory if you
+	know CWB, but note the following: 
+	</P>
+	<LI><P LANG="en-GB"><FONT COLOR="#ff0000"><B>There is a bug in
+	CQPweb just now that creates problems if the MySQL name and the CWB
+	name are not the same. Again, these are handles, so use Unix words
+	</B><SPAN STYLE="font-weight: normal">(and both must be
+	all-lowercase)</SPAN><B>. </B></FONT>
+	</P>
+</UL>
+<UL TYPE=DISC>
+	<LI><P LANG="en-GB">The following names cannot be used for installed
+	corpora, as they are the names of subdirectories that contain the
+	internal workings of CQPweb: <B>adm, css, doc, lib</B><SPAN STYLE="font-weight: normal">.
+	Any additional subdirectories we add in the future will be
+	three-letter-names as well. So to be future-proof, use four or more
+	letters/numbers in names for corpora.</SPAN></P>
+	<LI><P LANG="en-GB">CQPweb’s default P-attribute setup assumes
+	texts have Lancaster University's default annotation set, encoded
+	like the BNC (a future version of this documentation will contain
+	more details and examples). But you can use any number or kind of
+	tags, or none. If you have annotations you need to set one as
+	primary – this would usually be POS tag. 
+	</P>
+</UL>
+<UL TYPE=DISC>
+	<LI><P LANG="en-GB">Again each annotation column must have a Unix
+	word as its handle. 
+	</P>
+	<UL>
+		<LI><P LANG="en-GB">After your corpus is installed, you will need
+		to set up the interaction with CEQL on the “Manage annotation”
+		page – where annotations are referred to using these handles. See
+		below</P>
+	</UL>
+</UL>
+<P LANG="en-GB">When you have installed your corpus, you will need to
+fill in a form describing the metadata table, which is then loaded.
+Each field must have a handle, and you must specify whether it is a
+classification or not.</P>
+<UL TYPE=DISC>
+	<LI><P LANG="en-GB">At the bottom of the form are two alternative
+	methods: create a “dummy” table if there is no metadata, and use
+	information indexed in the XML of the corpus to create the metadata
+	table (this has a similar form to fill in).</P>
+	<LI><P LANG="en-GB">You also need to decide whether or not you want
+	to automatically run the frequency list setup. The best answer is
+	<B>yes</B> <SPAN STYLE="font-weight: normal">for small corpora and
+	</SPAN><B>no</B> <SPAN STYLE="font-weight: normal">for large
+	corpora.</SPAN></P>
+</UL>
+<P LANG="en-GB">Once the metadata table is loaded, you will be on a
+page called “<FONT COLOR="#000000"><FONT FACE="Times New Roman, serif"><FONT SIZE=3><SPAN STYLE="font-style: normal"><B>Admin
+tools for managing corpus metadata</B></SPAN></FONT></FONT></FONT> ”.
+If you didn't automatically setup frequency lists, you can now do so
+using the first four buttons under “<B>Other metadata controls</B>”.
+Or, for very big corpora, you may prefer to run the setup offline
+from the Unix terminal: the command for this is
+<FONT FACE="Courier New, monospace">../lib/offline-freqlists.php</FONT>
+and you must run it from within the web-directory that has been
+created for your corpus. Ideally, you should run this script as the
+web-user (see above), but if you run it under a different username,
+make sure all the files it creates are read-and-writeable by the
+web-user before going any further.</P>
+<P LANG="en-GB"><SPAN LANG="en-GB">The next (optional) step is to set
+up the interaction of your annotation with the CEQL Simple Query
+Parser. Click on “Manage Annotation” for this. The primary
+annotation will already be set up – it is accessed by putting the
+tag you want to search for after an underscore in Simple Query (like
+POS tags in BNCweb). But if you want to use CEQL to access other
+p-attributes, you need to set this up here. <A HREF="CQPweb-CEQL-manual.html">There
+is a full document explaining how this is done elsewhwere in the help
+system</A>, but here is the brief version:</SPAN></P>
+<UL TYPE=DISC>
+	<LI><P LANG="en-GB">The <B>secondary</B> annotation is just another
+	column like the primary annotation, accessed in CEQL by putting what
+	you want to search for in {braces}. Typically you'd put a “headword”
+	i.e. lemma here.</P>
+	<LI><P LANG="en-GB">The <B>tertiary</B> annotation is a bit
+	different. It accesses a third field, via
+	_{braces-with-leading-underscore}, but i<U>t also requires a mapping
+	table</U> as it is possible to set up multiple aliases for a single
+	tag. This is meant to support “simplified” POS tags like the
+	Oxford Simplified Tagset used in the BNC. For example, the tag SUBST
+	is used for nouns in the OST; but the aliases N and NOUN are set up
+	for this tag in the mapping table – the idea being to make access
+	to the simple tagsets more intuitive. Currently, mapping tables are
+	built into the CQPweb code (in <FONT FACE="Courier New, monospace">ceql.inc.php</FONT>
+	if you want to do some hacking).</P>
+	<LI><P LANG="en-GB">The <B>combination</B> annotation is for a type
+	of accelerated query. Due to the way CQP works, it is quicker to
+	query one p-attribute than two, especially in very big corpora. So,
+	to make the querying of lemma-plus-pos quicker, in BNC-style index
+	formats an extra p-attribute is added, consisting of the headword
+	(hw) and simple POS (class) attributes joined by an underscore. This
+	combined p-attribute is called “lemma” in the terminology of BNC
+	annotation.<BR><BR>If you have a combination attribute in your
+	corpus like this, then identifying it here will allow you to access
+	it via searches of the type {.../...}. If you <I>don't</I> have a
+	combination annotation, then searches of this type will convert
+	automatically to search the secondary and tertiary annotations at
+	the same time: i.e. {aaa/bbb} becomes the same as {aaa}_{bbb} –
+	<I><U>but note this back-up behaviour is currently buggy in the
+	CQPweb implementation of CEQL</U></I>.<BR><BR>The second half of the
+	combination annotation uses the same mapping table as the tertiary
+	annotation.</P>
+	<LI><P LANG="en-GB">Annotations that are not accessible via CEQL can
+	still be accessed using the full CQP syntax.</P>
+</UL>
+<P LANG="en-GB">You are now ready to go – point your browser at
+<B>http://your-server.net/path/to/cqpweb/web/directory</B> and you’re
+off.</P>
+<P LANG="en-GB" STYLE="margin-top: 0.42cm; page-break-after: avoid"><FONT FACE="Albany, sans-serif"><FONT SIZE=4><B>Sections
+that this manual needs [<FONT COLOR="#000080">aka the TODO list</FONT>]</B></FONT></FONT></P>
+<P LANG="en-GB"><FONT COLOR="#000080">Overall list of steps with
+links to sections</FONT></P>
+<P LANG="en-GB"><FONT COLOR="#000080">Input format for indexing</FONT></P>
+<P LANG="en-GB"><FONT COLOR="#000080">The format of the metadata file</FONT></P>
+<P LANG="en-GB"><FONT COLOR="#000080">Distinction between
+“classification” and “free text”</FONT></P>
+<P LANG="en-GB"><FONT COLOR="#000080">CEQL setup (summary ++ link to
+separate file)</FONT></P>
+<P LANG="en-GB"><FONT COLOR="#000080">XML visualisations (when
+they're done)</FONT></P>
+<P LANG="en-GB"><FONT COLOR="#000080">What the different buttons in
+Manage metadata do</FONT></P>
+<P LANG="en-GB"><FONT COLOR="#000080">Managing access to a corpus</FONT></P>
+<P LANG="en-GB"><FONT COLOR="#000080">[[more]]</FONT></P>
+<P LANG="en-GB" STYLE="margin-top: 0.42cm; page-break-after: avoid"><FONT FACE="Albany, sans-serif"><FONT SIZE=4><B>Non-integrated
+notes</B></FONT></FONT></P>
+<P LANG="en-GB">Here are some notes that have not yet been organised
+into the help file.</P>
+<P LANG="en-GB">ON USING CLASSIFICATIONS IN YOUR METADATA TABLE</P>
+<P LANG="en-GB">The way to get a longer label is to add a
+“description” to the short field value handle. The handle is
+limited to 20 characters, but you can have up to 255 in a
+description.</P>
+<P LANG="en-GB">Add descriptions on the “Manage text categories”
+page. when descriptions are available, they get used wherever
+possible in the interface instead of the category handles. EG in the
+restricted query page, in concordance headers, etc.</P>
+<P LANG="en-GB">Category handles aren’t supposed to have spaces!
+The code normally disallows this</P>
+<P LANG="en-GB">The “right” way to get decent descriptive labels
+on categories is to have abbreviated handles like in the metadata
+file you load (and thus in the underlying database), and then to
+insert the full names as descriptions.</P>
+<P LANG="en-GB">HOW TO GET A MULTI-KEY SORT</P>
+<P LANG="en-GB">Ah, you can do this, but it’s not obvious how from
+the interface...</P>
+<P LANG="en-GB">1) Got to “sort” on the Concordance menu. Press
+Go</P>
+<P LANG="en-GB">2) A sort control appears at the top.</P>
+<P LANG="en-GB">3) Set the controls for your level 2 sort and submit</P>
+<P LANG="en-GB">4) Then, instead of changing the controls at the top,
+go to “Sort” on the concordance menu again. Press Go.</P>
+<P LANG="en-GB">5) Now set the controls for your level 1 sort at the
+top, and submit</P>
+<OL START=6>
+	<LI><P LANG="en-GB">finally – give it a check to make sure it’s
+	worked, as this technique is experimental.</P>
+</OL>
+<P LANG="en-GB"><BR><BR>
+</P>
+<P LANG="en-GB">How to get fancy links in a textmeta display: pipe +
+url.</P>
+<HR>
+<P LANG="en-GB"><FONT COLOR="#808080"><FONT FACE="verdana"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal"><SPAN STYLE="font-weight: normal">CQPweb
+v2.13 © 2008-2010 – documentation by Andrew Hardie,
+<A HREF="mailto:andrewhardie@user.ssourceforge.net">andrewhardie@users.sourceforge.net</A>
+</SPAN></SPAN></SPAN></FONT></FONT></FONT>
+</P>
+</BODY>
+</HTML>

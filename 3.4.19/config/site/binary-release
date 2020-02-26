@@ -1,0 +1,40 @@
+##   -*-Makefile-*-
+## 
+##  IMS Open Corpus Workbench (CWB)
+##  Copyright (C) 1993-2006 by IMS, University of Stuttgart
+##  Copyright (C) 2007-     by the respective contributers (see file AUTHORS)
+## 
+##  This program is free software; you can redistribute it and/or modify it
+##  under the terms of the GNU General Public License as published by the
+##  Free Software Foundation; either version 2, or (at your option) any later
+##  version.
+## 
+##  This program is distributed in the hope that it will be useful, but
+##  WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+##  Public License for more details (in the file "COPYING", or available via
+##  WWW at http://www.gnu.org/copyleft/gpl.html).
+
+##
+##  SITE-SPECIFIC CONFIGURATION FILE: Binary releases (generic)
+##
+
+## Binary releases should always use standard configuration settings
+include $(TOP)/config/site/standard
+
+# - installation prefix defaults to /usr/local
+# - registry directory defaults to  /usr/local/share/cwb/registry
+
+## Access permission for installed files (octal code for regular files)
+INST_PERM = 644
+
+## Binary releases should use static linking for better portability and ease of installation.
+## Many recent operating systems don't support fully static linking, though, so this is not made the default.
+SITE_CFLAGS =
+SITE_LDFLAGS =
+
+
+
+
+
+

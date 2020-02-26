@@ -1,0 +1,153 @@
+ ###########################################################################
+ ##                                                                       ##
+ ##                Centre for Speech Technology Research                  ##
+ ##                     University of Edinburgh, UK                       ##
+ ##                         Copyright (c) 1996                            ##
+ ##                        All Rights Reserved.                           ##
+ ##                                                                       ##
+ ##  Permission to use, copy, modify, distribute this software and its    ##
+ ##  documentation for research, educational and individual use only, is  ##
+ ##  hereby granted without fee, subject to the following conditions:     ##
+ ##   1. The code must retain the above copyright notice, this list of    ##
+ ##      conditions and the following disclaimer.                         ##
+ ##   2. Any modifications must be clearly marked as such.                ##
+ ##   3. Original authors' names are not deleted.                         ##
+ ##  This software may not be used for commercial purposes without        ##
+ ##  specific prior written permission from the authors.                  ##
+ ##                                                                       ##
+ ##  THE UNIVERSITY OF EDINBURGH AND THE CONTRIBUTORS TO THIS WORK        ##
+ ##  DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING      ##
+ ##  ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT   ##
+ ##  SHALL THE UNIVERSITY OF EDINBURGH NOR THE CONTRIBUTORS BE LIABLE     ##
+ ##  FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES    ##
+ ##  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN   ##
+ ##  AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,          ##
+ ##  ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF       ##
+ ##  THIS SOFTWARE.                                                       ##
+ ##                                                                       ##
+ ###########################################################################
+ ##                                                                       ##
+ ##                    Makefile for editline library                      ##
+ ## --------------------------------------------------------------------- ##
+ ##                 Author: Richard Caley (rjc@cstr.ed.ac.uk)             ##
+ ##                                                                       ##
+ ###########################################################################
+
+ ## @configure_input@
+
+VERSION=1.2-cstr
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+
+INSTALL_LIB=@libdir@
+INSTALL_INCLUDE=@includedir@
+INSTALL_MAN=@mandir@
+
+srcdir=@srcdir@
+TOP=@top_srcdir@
+
+CFLAGS= @DEFS@ @CFLAGS@
+CXXFLAGS=  @DEFS@ @CXXFLAGS@
+CPPFLAGS= -Iinclude -Isrc -I. @CPPFLAGS@
+CC=@CC@
+CXX=@CXX@
+LIBS=@LIBS@ 
+
+ ###########################################################################
+ ## Actual rules for Package
+
+CSRC=src/editline.c src/el_complete.c src/el_sys_unix.c
+
+CXXSRC=
+
+HEADERS=include/editline.h include/editlineP.h include/el_os9.h include/el_unix.h include/el_win32.h
+
+CONFIG=Makefile.in acconfig.h aclocal.m4 configure configure.in \
+	editline_config.h.in editline_config.h.top editline_config.h.bot
+
+DOC=ReadMe ReadMe.rsalz Announce man/editline.3
+
+OTHER=test.c test_sh.c install-sh VCMakefile vc_editline_config.h Make.os9 \
+	src/el_sys_win32.c src/el_sys_os9.c
+
+OBJ=$(CSRC:.c=.o) $(CXXSRC:.cc=.o)
+
+all: test test_sh
+
+test.o: test.c 
+
+test_sh.o: test_sh.c 
+
+test: test.o libeditline.a 
+	$(CC) $(CFLAGS) -o test test.o -L. -leditline $(LIBS)
+
+test_sh: test_sh.o libeditline.a 
+	$(CC) $(CFLAGS) -o test_sh test_sh.o -L. -leditline $(LIBS)
+
+test_sh.o test.o $(OBJ): editline_config.h include/editline.h 
+
+$(OBJ) : include/editlineP.h include/el_unix.h
+
+libeditline.a: $(OBJ)
+	ar rv libeditline.a $(OBJ)
+	@RANLIB@ libeditline.a
+
+clean:
+	$(RM) $(OBJ) libeditline.a test.o test test_sh.o test_sh config.cache
+
+install:
+	@INSTALL@ -m 644 libeditline.a  $(INSTALL_LIB)
+	@INSTALL@ -m 644 editline.h  $(INSTALL_INCLUDE)
+	@INSTALL@ -m 644 man/editline.3  $(INSTALL_MAN)/man3
+
+ ###########################################################################
+ ## Packing rules
+
+dist: FORCE
+	[ -r editline-$(VERSION) ] || ln -s . editline-$(VERSION)
+	{ \
+	files=`echo $(CSRC) $(CXXSRC) $(HEADERS) $(CONFIG) $(DOC) $(OTHER)| sed -e 's/\([^ ][^ ]*\)/editline-$(VERSION)\/\1/g'` ;\
+	tar cvf editline-$(VERSION).tar $$files ;\
+	zip editline-$(VERSION).zip $$files ;\
+	}
+	gzip -v < editline-$(VERSION).tar >  editline-$(VERSION).tar.gz
+	bzip2 -v < editline-$(VERSION).tar >  editline-$(VERSION).tar.bz2
+FORCE:
+
+ ###########################################################################
+ ## Autoconf magic rules.
+
+
+# ${srcdir}/configure: configure.in aclocal.m4
+#	cd ${srcdir} && autoconf
+     
+ # autoheader might not change editline_config.h.in, so touch a stamp file.
+# ${srcdir}/editline_config.h.in: stamp-h.in
+
+# ${srcdir}/stamp-h.in: configure.in aclocal.m4 acconfig.h \
+#	editline_config.h.top editline_config.h.bot
+#	cd ${srcdir} && autoheader
+#	echo timestamp > ${srcdir}/stamp-h.in
+     
+# editline_config.h: stamp-h
+# stamp-h: editline_config.h.in config.status
+#	./config.status
+     
+# Makefile: Makefile.in config.status
+#	./config.status
+     
+# config.status: configure
+#	./config.status --recheck
+
+ ###########################################################################
+ ## Build rules.
+
+.SUFIXES: .cc
+
+.c.o:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -o $*.o -c $*.c
+.cc.o:
+	$(CXX) $(CFLAGS) $(CPPFLAGS) -o $*.o -c $*.c
+
+

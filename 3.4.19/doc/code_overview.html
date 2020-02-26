@@ -1,0 +1,960 @@
+<h1><span class="caps">CWB</span> V3 code architecture</h1>
+
+<p>This document is a rough guideline to the architecture of the <span class="caps">CWB </span>source code.</p>
+
+<ul>
+<li>It assumes basic familiarity with the corpus model, data formats and query processing strategies.</li>
+<li>Its main purpose is to show which tasks each source file is responsible for, in which header files declarations can be found, and how the source files depend on each other. </li>
+</ul>
+
+
+<h2>The CL library</h2>
+
+<p>CL stands for "Corpus Library". This library contains the most basic functions for <span class="caps">CWB </span>and <span class="caps">CQP.</span> Things in the CL only depend on other things in the <span class="caps">CL.</span></p>
+
+<p>Note that the "dependencies" given below are based on which modules #include each others&#39; headers. Some, e.g. attributes.c and cdaccess.c, are mutually ependent in this sense.</p>
+
+<h4>cl/cl.h</h4>
+
+<ul>
+<li>declares all exported functions, constants and type definitions</li>
+<li>other source files (and headers) in CL that implement the exported functions #include <code>cl.h</code></li>
+<li>various utility functions (added after v2.2): memory management, string functions, regular expressions with optimisation, hashes and lists (for lexical data)</li>
+<li>for the core CL functions, which give access to corpus data, there are currently two sets of declarations in this file<ul>
+<li>full declarations for the "old-style" functions (CWB v2.2)</li>
+<li>macro definitions that map "new-style" functions (as used in <span class="caps">CWB </span>v3.0) to the old-style names</li>
+</ul>
+</li>
+<li>old-style syntax is deprecated as of v3.0 and will no longer be supported in future releases (which may introduce yet another syntax change, depending on where open-source development of <span class="caps">CWB </span>leads)</li>
+<li>after the public release of 3.0, the source code should be rewritten to use new-style syntax only (also implementations in the <code>XXX.c</code> files should declare functions in new-style syntax)</li>
+<li>old-style function names have no set format; new-style function names are all prefixed as cl_</li>
+</ul>
+
+<h4>cl/attributes.h ; cl/attributes.c</h4>
+
+<ul>
+<li>defines the Component structure.</li>
+<li>also defines the Attribute object, which is a union of one of each of the different attribute structures: any, pos, struc, align, dyn.</li>
+<li>the functions for the Attribute and Component are declared and defined here; but also a large number of exported functions are defined here. </li>
+<li>the functions defined here and declared elsewhere are<ul>
+<li>aid_name(), argid_name(), attr_drop_attribute(), cl_make_set(), cl_set_intersection(), cl_set_size(), find_attribute(), find_cid_id(), find_cid_name()</li>
+<li>of these, attr_drop_attribute(), cl_make_set(), cl_set_size(), cl_set_intersection, find_attribute() are declared in <code>cl.h</code></li>
+</ul>
+</li>
+<li>There is some inconsistency here; find_component() is declared here, but none of the other find_ functions are.</li>
+<li><em>depends on</em>: globals; endian; corpus; macros; fileutils; cdaccess; makecomps; list</li>
+</ul>
+
+<h4>cl/binsert.h ; cl/binsert.c</h4>
+
+<ul>
+<li>a single function: binsert_g() (declared here)</li>
+<li><em>depends on</em>: globals; macros</li>
+</ul>
+
+<h4>cl/bitfields.h ; cl/bitfields.c</h4>
+
+<ul>
+<li>declares the Bitfield structure and 12 functions for dealing with it</li>
+<li>these functions are <code>@not</code>@ in <code>cl.h</code> </li>
+<li><em>depends on</em>: only globals</li>
+</ul>
+
+<h4>cl/bitio.h ; cl/bitio.c</h4>
+
+<ul>
+<li>These files include (respectively) the structures BFile and BStream for bit file / bit stream handles; and the functions for dealing with them</li>
+<li>for each of BF- and BS- there is a function to -open(), -close(), -flush(), -write(), -read(), -position()</li>
+<li>there is also BFwriteWord() and BFreadWord() (where "Word" == unsigned int)</li>
+<li>and finally, BSseek().</li>
+<li><em>depends on</em>: globals; endian</li>
+</ul>
+
+<h4>cl/cdaccess.h ; cl/cdaccess.c</h4>
+
+<ul>
+<li>The functions here are the "attribute access functions" part of the CL <span class="caps">API</span></li>
+<li>This is, so to speak, the business end of the CL -- the bit that actually finds things in the (various bits of the) corpus</li>
+<li>all functions are exported (i.e. in <code>cl.h</code>)</li>
+<li><em>depends on</em>: globals; endian; macros; attributes; special-chars; bitio; compression; regopt</li>
+</ul>
+
+<h4>cl/class-mapping.h ; cl/class-mapping.c</h4>
+
+<ul>
+<li>defines the SingleMapping and Mapping pointers (and their structures)</li>
+<li>and provides all the functions for dealing with them</li>
+<li><em>depends on</em>: globals; macros; cdaccess</li>
+</ul>
+
+<h4>cl/compression.h ; cl/compression.c</h4>
+
+<ul>
+<li>contains four functions: compute_ba(), read_golomb_code_bs(), read_golomb_code_bf(), write_golomb_code()</li>
+<li>declared locally, not in <code>cl.h</code></li>
+<li>presumably having something to do with compression (??)</li>
+<li><em>depends on</em>: globals; bitio</li>
+</ul>
+
+<h4>cl/corpus.h ; cl/corpus.c</h4>
+
+<ul>
+<li>defines the Corpus and <span class="caps">IDL</span>ist data structures</li>
+<li>the functions for dealing with Corpus are also here (definitions in <code>cl.h</code>)</li>
+<li>plus two <span class="caps">IDL</span>ist functions: FreeIDList() and memberIDList()</li>
+<li><em>depends on</em>: globals; attributes; macros; registry.tab; plus also storage.h is #included. </li>
+</ul>
+
+<h4>cl/dl_stub.c</h4>
+
+<ul>
+<li>dummy functions for dynamic linker functions that some incarnations of Unix lack</li>
+<li>note no corresponding .h file</li>
+<li><em>depends on</em>: nichts, rien, nowt, nada</li>
+</ul>
+
+<h4>cl/endian.h ; cl/endian.c</h4>
+
+<ul>
+<li>Both files (but especially <code>endian.h</code>) contains various useful comments on how <span class="caps">CWB </span>handles byte-order</li>
+<li>These files also make available a byte-order-switching function, cl_bswap32()</li>
+<li><em>depends on</em>: only globals</li>
+</ul>
+
+<h4>cl/fileutils.h ; cl/fileutils.c</h4>
+
+<ul>
+<li>does exactly what it says on the tin: utilities for dealing with the filesystem.</li>
+<li>these functions are all defined here, not in <code>cl.h</code></li>
+<li>three functions for getting the size of a file, via stat(), from different identifiers:<ul>
+<li>file_length(): string filename</li>
+<li>fd_file_length(): <span class="caps">FILE </span>* pointer</li>
+<li>fd_file_length(): int file number</li>
+<li>fprobe() function seems to be a replica of fd_file_length() (??) </li>
+</ul>
+</li>
+<li>is_directory(), is_file(), is_link() functions</li>
+<li><em>depends on</em>: only globals</li>
+</ul>
+
+<h4>cl/globals.h ; cl/globals.c</h4>
+
+<ul>
+<li>It is expected that all the source files in CL will include <code>globasl.h</code></li>
+<li>The header file has the "include" statements for the C library header files</li>
+<li>These two files each contain some global configuration values as global variables</li>
+<li>Three functions are also defined here: cl_set_debug_level(), cl_set_optimize(), cl_set_memory_limit() -- their declarations are in <code>cl.h</code>, not <code>globals.h</code>, as per usual for exported functions in <span class="caps">CL.</span></li>
+<li><em>depends on</em>: cl.h (note that cl.h is included in globals.h, so every source file dependent on globals is also dependent on cl.h)</li>
+</ul>
+
+<h4>cl/lexhash.h ; cl/lexhash.c</h4>
+
+<ul>
+<li>contains code for the cl_lexhash_ object, as declared (structure and functions) in <code>cl.h</code></li>
+<li><em>depends on</em>: globals, macros</li>
+</ul>
+
+<h4>cl/list.h ; cl/list.c</h4>
+
+<ul>
+<li>structure definitions and functions for the cl_int_list and cl_string_list objects (defined in <code>cl.h</code>)</li>
+<li>the function prototypes are all in <code>cl.h</code>; but here is where you will find:<ul>
+<li>all functions beginning in cl_int_list_</li>
+<li>all functions beginning in cl_string_list_</li>
+<li>cl_new_[int/string]_list(), cl_delete_[int/string]_list(), and cl_free_string_list</li>
+</ul>
+</li>
+<li><em>depends on</em>: globals, macros</li>
+</ul>
+
+<h4>cl/macros.h ; cl/macros.c</h4>
+
+<ul>
+<li>lots of miscellaneous stuff is to be found here</li>
+<li>as you might expect, some macros are #defined here:<ul>
+<li>new() and New() are a quick way of getting a structure malloc&#39;ed (wrapping round cl_malloc() )</li>
+<li><acronym title="">STREQ</acronym> compares strings for equality</li>
+<li><acronym title="x,y">MIN</acronym> and <acronym title="x,y">MAX</acronym> returns the (lesser/greater) of two numbers</li>
+</ul>
+</li>
+<li>the cl_-prefix memory allocation functions (-malloc, -calloc, -realloc, -strdup) are defined here</li>
+<li>the cl_-prefix built-in random-number-generator functions (most notably, -randomize, -random, -runif) are defined here</li>
+<li>four functions for progress bars are defined and declared here</li>
+<li>functions for "indented lists" (i.e. lined-up columns on terminal output) are defined and declared here<ul>
+<li>the abbreviation is always "ilist".</li>
+</ul>
+</li>
+<li><em>depends on</em>: only globals</li>
+</ul>
+
+<h4>cl/makecomps.h ; cl/makecomps.c</h4>
+
+<ul>
+<li>stands for "make Components"</li>
+<li>functions to do with sorting and with creating memory for various Components.<ul>
+<li>creat_sort_lexicon</li>
+<li>creat_freqs</li>
+<li>creat_rev_corpus_idx</li>
+<li>creat_rev_corpus</li>
+</ul>
+</li>
+<li>scompare() is for use with qsort (it compares two void *s) </li>
+<li>also, this module declares two MemBlobs as global variables - SortIndex and SortLexicon</li>
+<li><em>depends on</em>: globals; endian; macros; storage; fileutils; corpus; attributes; cdaccess</li>
+</ul>
+
+<h4>cl/registry.l ; cl/registry.y</h4>
+
+<ul>
+<li>These are the source file for <code>registry.tab.c</code>, <code>registry.tab.h</code>, and <code>lex.creg.c</code>, which in turn contain the code a parser for registry entries</li>
+<li>The .c and .h files are generated by <span class="caps">GNU </span>bison and flex from the .l and .y files. </li>
+<li>See also the Makefile</li>
+</ul>
+
+<h4>cl/registry.tab.h</h4>
+
+<ul>
+<li>This file is the output of Bison running on registry.y ; see Makefile</li>
+</ul>
+
+<h4>cl/regopt.h ; cl/regopt.c</h4>
+
+<ul>
+<li>contains the functions for regular expression optimisation</li>
+<li>all declarations are in <code>cl.h</code>, but the actual CL_Regex structure is defined here.</li>
+<li>functions have the form cl_regex_* or cl_regopt_*</li>
+<li><em>depends on</em>: globals; attributes; macros</li>
+</ul>
+
+<h4>cl/special-chars.h ; cl/special-chars.c</h4>
+
+<ul>
+<li>contains global variables for handling features of 8-bit character sets - "mapping table" arrays, where the index is the thing to be mapped and the value is the output of the mapping<ul>
+<li>latin1_identity_tab -- map everything to itself (initialised in cl_string_maptable() )</li>
+<li>latin1_nodiac_tab -- gets rid of diacritics</li>
+<li>latin1_nocase_tab -- maps uppercase characters to lowercase</li>
+<li>latin1_nocase_nodiac_tab -- does both, for %cd in <span class="caps">CQP </span>(initialised in cl_string_maptable() )</li>
+<li>cp1251_nocase_tab -- maps ascii / cyrillic all to lowercase</li>
+</ul>
+</li>
+<li>we also have three exported functions: cl_string_canonical(); cl_string_latex2iso(); cl_string_maptable(). </li>
+<li><em>depends on</em>: only globals</li>
+</ul>
+
+<h4>cl/storage.h ; cl/storage.c</h4>
+
+<ul>
+<li>declares macro constants for <span class="caps">SIZE</span>_BIT, <span class="caps">SIZE</span>_INT, <span class="caps">SIZE</span>_LONG etc etc.</li>
+<li>declares and defines the MemBlob structure, and functions for dealing with it<ul>
+<li>note the prototypes are <code>not</code> in <code>cl.h</code> </li>
+</ul>
+</li>
+<li><em>depends on</em>: globals; endian; macros</li>
+</ul>
+
+<h4>cl/Makefile</h4>
+
+<ul>
+<li>a Makefile calling gmake, flex, and bison for the above </li>
+</ul>
+
+
+
+<h2>CQi - Corpus Query interface</h2>
+
+<p>This is the "cqpserver" program and some modules that it depends on. </p>
+
+<h4>CQi/CQi.h</h4>
+
+<p>This file #defines all the <span class="caps">CQI</span>_* constants; there are no function prototypes or data structures here. </p>
+
+<p>This part of <span class="caps">CWB </span>depends (a) on the CL library and (b) on <span class="caps">CQP.</span></p>
+
+<h4>CQi/cqpserver.c</h4>
+
+<ul>
+<li>contains the <code>main()</code> function for <code>cqpserver</code> and a whole load of other functions used by that program but with no prototypes declared</li>
+<li><em>depends on</em>: the CL <span class="caps">API </span>and <code>cl/macros.c</code></li>
+<li><em>depends on</em>: functions drawn from <span class="caps">CQP</span>: options, corpmanag, groups</li>
+</ul>
+
+<h4>CQi/auth.h ; CQi/auth.c</h4>
+
+<ul>
+<li>as you might guess, authorisation functions for controlling / working out whether people are allowed to access the server or not</li>
+<li><em>depends on</em>: <code>cl/macros.c</code></li>
+</ul>
+
+<h4>CQi/server.h ; CQi/server.c</h4>
+
+<ul>
+<li>a library of all the cqi_* functions</li>
+<li><em>depends on</em>: the CL <span class="caps">API </span>and <code>cl/macros.c</code></li>
+<li><em>depends on</em>: functions drawn from <span class="caps">CQP</span>: options, corpmanag, parse_actions, hash</li>
+</ul>
+
+
+
+
+
+<h2><span class="caps">CQP </span>(query processor and interactive environment)</h2>
+
+<p>Dependencies in this directory on the CL are not noted unless especially relevant. Basically everything here depends on the CL one way or another. Also, interdependencies between different cqp modules are not noted.</p>
+
+<h4>cqp/ascii-print.c ; cqp/ascii-print.h</h4>
+
+<ul>
+<li>this is one of a set of parallel "printing" modules<ul>
+<li>others are: <code>html-print, latex-print, sgml-print</code> -- q.v.</li>
+</ul>
+</li>
+<li>most of the functions in this module are prefixed <code>ascii_print_</code> and print various things to a file pointer.</li>
+<li>for instance, <code>ascii_print_corpus_header()</code></li>
+<li>there is a <code>PrintDescriptionRecord</code> called <code>ASCIIPrintDescriptionRecord</code> declared as global here.</li>
+<li>Two other functions deal with colour / typeface on the terminal: <ul>
+<li><code>get_colour_escape() get_typeface_escape()</code></li>
+</ul>
+</li>
+<li><em>depends on</em>: the <code>PrintDescriptionRecord</code> definition comes from <code>print-modes</code></li>
+</ul>
+
+<h4>cqp/attlist.c ; cqp/attlist.h</h4>
+
+<ul>
+<li>Creates two data types: <code>AttributeInfo</code> and <code>AttributeList</code><ul>
+<li>AttributeInfo is a linked-list holder structure for the Attribute type.</li>
+<li>AttributeList is a holder for the head pointer of such a linked-list.</li>
+</ul>
+</li>
+<li>As well as allocation and deallocation functions, there are also:<ul>
+<li><acronym title="">AddNameToAL</acronym></li>
+<li><acronym title="">RemoveNameFromAL</acronym></li>
+<li><acronym title="">NrOfElementsAL</acronym></li>
+<li><acronym title="">MemberAL</acronym></li>
+<li><acronym title="">FindInAL</acronym></li>
+<li><acronym title="">RecomputeAL</acronym></li>
+<li>VerifyList()</li>
+<li>... in all of these, AL is short for "attribute list" of course.</li>
+</ul>
+</li>
+<li><em>depends on</em>: <code>cl/attributes</code> obviously</li>
+</ul>
+
+<h4>cqp/builtins.c ; cqp/builtins.h</h4>
+
+<ul>
+<li>this has to do with the "built-in function", as described in the data structure <code>BuiltinF</code></li>
+<li>a global array of these structures called <code>builtin_function</code> is defined in <code>builtins.c</code></li>
+<li>The functions for dealing with these are:<ul>
+<li><code>find_predefined()</code> </li>
+<li><code>is_predefined_function()</code> </li>
+<li><code>call_predefined_function()</code></li>
+</ul>
+</li>
+<li>The function names declared in that global array are:<ul>
+<li><code>f distance dist distabs int lbound rbound unify ambiguity add sub mul prefix is_prefix minus ignore</code></li>
+</ul>
+</li>
+<li>Each of these is actrually implemented as a case statement within <code>call_predefined_function()</code></li>
+</ul>
+
+<h4>cqp/concordance.c ; cqp/concordance.h</h4>
+
+<ul>
+<li>Code for presentation of a concordance; the most notable function is <code>compose_kwic_line()</code></li>
+</ul>
+
+<h4>cqp/context_descriptor.c ; cqp/context_descriptor.h</h4>
+
+<ul>
+<li>The header contains a structure (<code>ContextDescriptor</code>) for describing context for searches</li>
+<li>and assorted functions for dealing with. The most improtant one is <code>verify_context_descriptor()</code>.</li>
+</ul>
+
+<h4>cqp/corpmanag.c ; cqp/corpmanag.h</h4>
+
+<ul>
+<li>Defines the CorpusList object (for a linked list of available corpora) and two global pointers to this: <code>current_corpus</code> and <code>corpuslist</code> </li>
+<li>There are also a bundle of functions for dealing with this object. There are extensive comments for (some) of these in the header file.</li>
+</ul>
+
+<h4>cqp/cqp.c ; cqp/cqp.h</h4>
+
+<ul>
+<li>There are two bundles of stuff here. The first is signal handling for the interrupt (CTRL+C).</li>
+<li>The second (and more major) bundle is the following three functions:<ul>
+<li><code>initialize_cqp()</code> -- sets up settings, reads the ini file, reads macro file, checks available corpora, </li>
+<li><code>cqp_parse_file()</code> -- this contains the main loop for the <span class="caps">CQP </span>command prompt and/or lines of file input<ul>
+<li>it adds its file handle argument to the <code>cqp_files</code> array, allowing a "stack" of handles to be remembered</li>
+<li>and it assigns that file handle to <code>yyin</code> - a pointer to the file handle that <code>yyparse</code> uses as file input.</li>
+</ul>
+</li>
+<li><code>cqp_parse_string()</code> -- loops on the string stored in <code>cqp_input_string</code> and calls <code>yyparse()</code><ul>
+<li>note that the <code>YY_INPUT()</code> macro, used by the parser, loads a character from the string (if there is one) and otherwise from the file handle.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>these functions call yyparse() which interprets the input commands and carries them out.</li>
+<li>note that cqp.h has the following:<ul>
+<li><code>typedef char Boolean; /* typedef enum bool { False, True } Boolean; */</code></li>
+<li>True and False are #defined as 1 and 0 here as well.</li>
+</ul>
+</li>
+<li><em>depends on</em>: most obviously on the parser!</li>
+</ul>
+
+<h4>cqp/cqpcl.c</h4>
+
+<ul>
+<li>Extremely lightweight <code>main()</code> function for cqpcl which calls <code>initialize_cqp()</code> and <code>cqp_parse_string()</code></li>
+<li>compare <code>llquery.c</code> </li>
+</ul>
+
+<h4>cqp/dummy_auth.c</h4>
+
+<ul>
+<li>dummy version sof the CQi user-authorisation functions which just print an error message</li>
+<li><em>depends on</em>: output, also <code>CQi/auth.h</code></li>
+</ul>
+
+<h4>cqp/eval.c ; cqp/eval.h</h4>
+
+<ul>
+<li>defines the (very complex, nested) <code>Constraint</code> object and <code>Constrainttree</code> as a pointer type to <code>Constraint</code></li>
+<li>also defines <code>ActualParamList</code> - structure for a linked list of @Constrainttree@s</li>
+<li>and various other unions and enumerations involved in evaluation trees </li>
+<li>_most notably: <code>Evaltree</code>, <code>EvalEnvironment</code> and its pointer type, <code>EEP</code><ul>
+<li>a global array of <code>EvalEnvironment</code> called <code>Environment</code> is created </li>
+</ul>
+</li>
+<li>most of the functions in this module are not in the header. The ones that are fall into 3 groups:<ul>
+<li>Ones relating to environments: <code>next_environment() free_environment() show_environment() free_environments()</code></li>
+<li>Ones relating to running <span class="caps">CQP </span>queries: <code>cqp_run_query()</code> and two variants, <code>cqp_run_mu_query() cqp_run_tab_query()</code><ul>
+<li>These look pretty central but I&#39;ve not worked out how yet....</li>
+</ul>
+</li>
+<li>One on its own: <code>eval_bool()</code></li>
+</ul></li>
+</ul>
+
+<h4>cqp/groups.c ; cqp/groups.h</h4>
+
+<ul>
+<li>defines the <code>Group</code> structure and gives 4 functions for use with it<ul>
+<li>most important one: <code>compute_grouping()</code> which sets up the Group object</li>
+<li>also: <code>Group_id2str()</code> -- which wraps @cl_id2str()</li>
+<li>also: <code>free_group() print_group()</code></li>
+</ul>
+</li>
+<li>there are other functions in the source file that are not prototyped in the header.</li>
+</ul>
+
+<h4>cqp/hash.c ; cqp/hash.h</h4>
+
+<ul>
+<li>four functions:<ul>
+<li><code>is_prime()</code> -- returns whether or not this its argument is a prime number</li>
+<li><code>find_prime()</code> -- returns the smallest prime number that is greater than its argument </li>
+<li><code>hash_string()</code> -- rolls a string into an int -- its 32bit hash value</li>
+<li><code>hash_macro()</code> -- rolls a macro name &amp; its number of arguments into an int</li>
+</ul></li>
+</ul>
+
+<h4>cqp/html-print.c ; cqp/html-print.h</h4>
+
+<ul>
+<li>this is one of a set of parallel "printing" modules</li>
+<li>the prefix for the functions here is <code>html_print_</code></li>
+<li>Also we have two other functions here:<ul>
+<li><code>html_convert_string()</code>, which copies  astring with replacement for &lt; &gt; &amp; &#34;</li>
+<li><code>html_puts()</code>, which streams text to a file pointer with replacement for &lt; &gt; &amp; &#34; </li>
+</ul></li>
+</ul>
+
+
+<h4>cqp/latex-print.c ; cqp/latex-print.h</h4>
+
+<ul>
+<li>this is one of a set of parallel "printing" modules</li>
+<li>the prefix for the functions is <code>latex_print_</code></li>
+<li>As well as these functions, there is <code>latex_convert_string()</code> which escapes Latex control characters in a string</li>
+</ul>
+
+
+<h4>cqp/llquery.c</h4>
+
+<ul>
+<li>This file contains the <code>main()</code> function for <code>cqp</code>.</li>
+<li>there are two "versions" of this file, one "normal" version and one which is compiled if <code>USE_READLINE</code> is defined. If this is the case, additional functions are defined.<ul>
+<li><code>cc_compl_list_init() cc_compl_list_add() cc_compl_list_sort()  cc_compl_list_sort_uniq() cqp_custom_completion() ensure_semicolon() readline_main()</code></li>
+<li>the most interesting is <code>readline_main()</code>, which is called by <code>main()</code> if <code>USE_READLINE</code> is defined.</li>
+<li>in the normal version, <code>main()</code> just passes either the batch file argument or stdin to @cqp_parse_file()</li>
+<li>in the <code>USE_READLINE</code> version, <code>readline_main()</code> takes the file handle argument and deals with it in the same way </li>
+</ul>
+</li>
+<li>note - there is no <code>.h</code> file here </li>
+<li><em>depends on</em>: the <code>cqp_parse_file()</code> function is in <code>cqp.c</code></li>
+</ul>
+
+<h4>cqp/macro.c ; cqp/macro.h</h4>
+
+<ul>
+<li>this is "macro" in the sense of "CQP macro", not "C macro" (as in <code>cl/macro.h</code>)</li>
+<li>these are functionas for definig, loading, etc. <span class="caps">CQP </span>macros.</li>
+<li>the ones defined in macro.h are fairly heavily commented</li>
+<li>macro.c contains many functions additional to those declared in macro.h </li>
+</ul>
+
+
+<h4>cqp/matchlist.c ; cqp/matchlist.h</h4>
+
+<ul>
+<li>Deals with matchlists and set ops on them</li>
+<li>Two data structures: <code>MLSetOp</code> and <code>Matchlist</code></li>
+<li>and five functions:<ul>
+<li>@init_matchlist() show_matchlist() show_matchlist_firstelements() free_matchlist() Setop()</li>
+<li><code>Setop</code> is the only one of these that is weighty. It performs an "operation" on two match lists.@</li>
+</ul></li>
+</ul>
+
+<h4>cqp/options.c ; cqp/options.h</h4>
+
+<ul>
+<li>As you might expect, this contains the code that creates option settings</li>
+<li>The options are of two types:<ul>
+<li>global integers declared in the header file</li>
+<li>options contained within a <code>CQPOption</code> structure</li>
+<li>for the latter type, a global array of <code>CQPOption</code> called <code>cqpoptions</code> is created (and initialised at declaration)</li>
+</ul>
+</li>
+<li>Functions made available here (for accessing said global array):<ul>
+<li><code>find_option set_string_option_value set_integer_option_value set_context_option_value int_option_values print_option_value parse_options</code></li>
+</ul>
+</li>
+<li>There are other functions as well. The most notable is <code>syntax()</code> which is the "print help and exit" function and which is called by <code>parse_options()</code></li>
+</ul>
+
+<h4>cqp/output.c ; cqp/output.h</h4>
+
+<ul>
+<li>Contains things related to the "tabulate" command (data structure, global list, and functions)</li>
+<li>Also contains functions for opening/closing streams and files (inc. temp files)</li>
+<li>Also contains the <code>cqpmessage()</code> function which is used all over the shop and which prints a message to <span class="caps">STDERR.</span></li>
+<li>And, finally, four other functions for printing things: most notably, <code>print_output()</code> </li>
+</ul>
+
+<h4>cqp/parser.l ; cqp/parser.y</h4>
+
+<ul>
+<li>source files processed by flex and bison to produce three source files:<ul>
+<li><code>lex.yy.c parser.tab.c parser.tab.h</code></li>
+</ul>
+</li>
+<li>what these files represent is a parser for the <span class="caps">CQP </span>query language</li>
+<li>the function <code>yyparse()</code> is key, it parses query strings (see <code>cqp/cqp.c</code>)<ul>
+<li>it takes its input from the global variable <code>cqp_input_string</code></li>
+</ul>
+</li>
+<li>in particular, note that the parser <em>executes</em> commands as well as just parsing them.<ul>
+<li>in <code>parser.tab.c</code> there is a huge switch statement which contains code for every possible action - depending on which instruction the parser found on the input line.</li>
+<li>the case statements in this switch derive from the <span class="caps">RULES </span>defned in <code>parser.y</code> <ul>
+<li>and typically involve the functions in <code>parse_actions</code></li>
+</ul></li>
+</ul></li>
+</ul>
+
+<h4>cqp/parse_actions.c ; cqp/parse_actions.h</h4>
+
+<ul>
+<li>This module contains the functions that are used within the rule definitions in <code>parser.y</code> </li>
+<li>The following "groups" of functions are declared in <code>parse_actions.h</code>:<ul>
+<li><span class="caps">PARSER ACTIONS</span></li>
+<li>Regular Expressions</li>
+<li><span class="caps">BOOLEAN OPS</span></li>
+<li>Variable Settings</li>
+<li><span class="caps">PARSER UTILS</span></li>
+<li><span class="caps">CQP</span> Child mode:  Size &amp; Dump </li>
+</ul></li>
+</ul>
+
+
+<h4>cqp/paths.c ; cqp/paths.h</h4>
+
+<ul>
+<li>contains just one function, <code>get_path_component()</code> . This breaks apart a string of:words:linked:like:this and returns them in l-to-r order, one by one on repeated calls.</li>
+</ul>
+
+
+<h4>cqp/print-modes.c ; cqp/print-modes.h</h4>
+
+<ul>
+<li>Defines two objects: <code>PrintDescriptionRecord, PrintOptions</code>; and one enum: <code>PrintMode</code> which contains a setting for what the output mode is.</li>
+<li>There are three functions made available via the header:<ul>
+<li><code>ComputePrintStructures() ParsePrintOptions() CopyPrintOptions()</code></li>
+</ul></li>
+</ul>
+
+<h4>cqp/print_align.c ; cqp/print_align.h</h4>
+
+<ul>
+<li>Just one function, <code>printAlignedStrings()</code></li>
+<li>which does pretty much what it says on the tin - pritns strings aligned between two corpora.</li>
+</ul>
+
+<h4>cqp/ranges.c ; cqp/ranges.h</h4>
+
+<ul>
+<li>This module contains the functions for sorting query results (e.g., <code>RangeSort()</code>, <code>SortSubcorpus()</code> ...)<ul>
+<li>and the <code>SortClause</code> pointer-to-structure that goes along with sorting</li>
+</ul>
+</li>
+<li>It also contains:<ul>
+<li>functions for deleting / copying concordance lines (called "intervals")</li>
+</ul></li>
+</ul>
+
+<h4>cqp/regex2dfa.c ; cqp/regex2dfa.h</h4>
+
+<ul>
+<li>"DFA" here = "deterministic finite-state automaton"</li>
+<li>defines the <span class="caps">DFA </span>datatype and functions for dealing with</li>
+<li>Lots and lots of functions but only four are in the header:<ul>
+<li><code>init_dfa()</code> and <code>free_dfa()</code></li>
+<li><code>regex2dfa()</code> -- the key one</li>
+<li><code>show_complete_dfa()</code>, whihc is a printout function for the data structure.</li>
+</ul></li>
+</ul>
+
+<h4>cqp/sgml-print.c ; cqp/sgml-print.h</h4>
+
+<ul>
+<li>this is one of a set of parallel "printing" modules</li>
+<li>the prefix for the functions here is <code>sgml_print_</code></li>
+<li>There is a difference between this and <code>html-print</code>: there are <code>sgml_convert_string()</code> and <code>sgml_puts()</code> functions with replacement for &lt; &gt; &amp; &#34; (same as <code>html_print_</code>) but these functions are not declared in the header file</li>
+</ul>
+
+
+<h4>cqp/symtab.c ; cqp/symtab.h</h4>
+
+<ul>
+<li>"global symbol table" -- explained in a long comment at the start of the header file</li>
+<li>has #definitions, data structures, and functions in two sections: <ul>
+<li>The <span class="caps">SYMBOL LOOKUP </span>part: SymbolTable and LabelEntry </li>
+<li>The <span class="caps">DATA ARRAY </span>part: RefTab </li>
+<li>(... where SymbolTable, LabelEntry, and RefTab are pointer-types to the structures dealt with)</li>
+</ul></li>
+</ul>
+
+<h4>cqp/table.c ; cqp/table.h</h4>
+
+<ul>
+<li><code>table.h</code> contains structure and function declarations for the "table" that contains a query result / subcorpus (i.e. a list of ~Match and MatchEnd coordinates with optional extra columns. Each column is represent as an <code>(int *)</code>.</li>
+<li><code>table.c</code> does not actually contain any definitions or declarations - where are the functions?</li>
+<li>There are <em>lots</em> of comments in <code>table.h</code> so the way it all works is mostly documented there.</li>
+</ul>
+
+<h4>cqp/targets.c ; cqp/targets.h</h4>
+
+<ul>
+<li>Contains code for four functions:<ul>
+<li><code>string_to_strategy()</code></li>
+<li><code>set_target()</code></li>
+<li><code>evaluate_target()</code></li>
+<li><code>evaluate_subset()</code></li>
+</ul></li>
+</ul>
+
+<h4>cqp/tree.c ; cqp/tree.h</h4>
+
+<ul>
+<li>"evaluation tree" -- this module contains functions for doing "things" with Evaltree and Constrainttree objects (see <code>eval</code>)</li>
+<li>many of the functions are for printing / deleting trees.</li>
+<li><em>depends on</em>: the <code>eval</code> module</li>
+</ul>
+
+<h4>cqp/treemacros.h</h4>
+
+<ul>
+<li>No .c file, only a .h file</li>
+<li>defines preprocessor macros <code>NEW_TNODE()</code>, <code>NEW_EVALNODE()</code>, <code>NEW_EVALLEAF()</code>, <code>NEW_BNODE()</code>, <code>DELETE_NODE()</code>,  and <code>DELETE()</code> (the last two being synonyms for <code>cl_free()</code>)  </li>
+<li><em>depends on</em>: only the corpus library - no other part of <span class="caps">CQP.</span></li>
+</ul>
+
+<h4>cqp/variables.c ; cqp/variables.h</h4>
+
+<ul>
+<li>This file contains code for handling "variables" which are elements in the evaluation of a search (I think)</li>
+<li>The VariableBuffer structure (and the Variable type which is a pointer to it) are declared here</li>
+<li>A global array of <code>Variable@s called @VariableSpace</code> is declared (as well as <code>nr_variables</code> which contains the size of that array)</li>
+<li>... and there are various functions for dealing with this array (allocating, reallocated, getting a variable from, etc.)</li>
+</ul>
+
+
+
+<h4>cqp/Makefile</h4>
+
+<ul>
+<li>a Makefile for all of this! There are many useful comments in this file, some of which are summarised here.</li>
+<li>Three binaries are built: cqp, cqpcl, and cqpserver.</li>
+<li>All three depend on the same source files, but<ul>
+<li>cqpcl and cqp add different files for their <code>main()</code> function: <code>cqpcl</code>  and <code>llquery.c</code> respectively</li>
+<li>cqpserver adds <code>server</code> and <code>auth</code> from CQi (whereas cqp uses the dummy versions of these)<ul>
+<li>the <code>main()</code> function for cqpserver is actually part of CQi, even though its build is here.</li>
+</ul></li>
+</ul></li>
+</ul>
+
+
+
+
+
+<h2>Command-line utilities</h2>
+
+<p>Most of these files contain the code for a single program, each of which is one of the non-interactive components of <span class="caps">CWB.</span> These files do not usually have headers - the functions in them are for that program alone.</p>
+
+<p>These utilities are used most importantly for corpus setup but also for a range of administration tasks.</p>
+
+<p>As a general rule, the utilities depend on the CL library. Most of them #include <code>cl/cl.h</code> but some #include other headers from the CL library.</p>
+
+<h4>utils/barlib.c ; utils/barlib.h</h4>
+
+<ul>
+<li>this is the <em>Beamed Array (BAR) Library</em> . A <span class="caps">BAR </span>is storage for a sparse matrix used in beam search methods.</li>
+<li>these files define a <span class="caps">BAR </span>data structure (BARdesc) and functions for handling them:<ul>
+<li><span class="caps">BAR</span>_new() -- create a new <span class="caps">BAR</span></li>
+<li><span class="caps">BAR</span>_reinit() -- change size of <span class="caps">BAR </span>(erases contents of <span class="caps">BAR</span>)</li>
+<li><span class="caps">BAR</span>_delete() -- destroy the <span class="caps">BAR</span></li>
+<li><span class="caps">BAR</span>_read() and <span class="caps">BAR</span>_write() -- read from / write to particular locations in the <span class="caps">BAR</span></li>
+</ul>
+</li>
+<li><em>depends on</em>: nothing </li>
+</ul>
+
+<h4>utils/feature_maps.c ; utils/feature_maps.h</h4>
+
+<ul>
+<li>here is defined the <span class="caps">FMS </span>data type ("feature map handle": it is a pointer-to-structure)</li>
+<li>this is a module used in alignment between corpora (i.e. a "feature mapping" between a source and target corpus)</li>
+<li>functions are documented in comments in <code>feature_maps.h</code></li>
+<li><em>depends on</em>: the CL library and <span class="caps">BAR</span>lib</li>
+</ul>
+
+<h4>utils/cwb-align-encode.c</h4>
+
+<ul>
+<li>code for <code>cwb-align-encode</code>, which<ul>
+<li>"Adds an alignment attribute to an existing <span class="caps">CWB </span>corpus"</li>
+</ul>
+</li>
+<li><em>depends on</em>: the CL via <code>cl/cl.h</code>, but <code>storage</code> and <code>attributes</code> are directly #included as well.</li>
+</ul>
+
+<h4>utils/cwb-align-show.c</h4>
+
+<ul>
+<li>code for <code>cwb-align-show</code>, which<ul>
+<li>"Displays alignment results in terminal."</li>
+</ul>
+</li>
+<li><em>depends on</em>: the CL library</li>
+</ul>
+
+<h4>utils/cwb-align.c</h4>
+
+<ul>
+<li>code for <code>cwb-align</code>, which<ul>
+<li>"Aligns two <span class="caps">CWB</span>-encoded corpora."</li>
+</ul>
+</li>
+<li><em>depends on</em>: the CL library and <code>feature-maps</code></li>
+</ul>
+
+
+<h4>utils/cwb-atoi.c</h4>
+
+<ul>
+<li>code for <code>cwb-atoi</code>, which<ul>
+<li>"Reads one integer per line from <span class="caps">ASCII </span>file <file> or from standard input and writes values to standard output as 32bit integers in network format (the format used by <span class="caps">CWB </span>binary data files)"</li>
+</ul>
+</li>
+<li><em>depends on</em>: the <code>endian</code> module in the CL (#included directly, not via <code>cl/cl.h</code>) </li>
+</ul>
+
+<h4>utils/cwb-compress-rdx.c</h4>
+
+<ul>
+<li>code for <code>cwb-compress-rdx</code>, which<ul>
+<li>"Compresses the index of a positional attribute."</li>
+</ul>
+</li>
+<li>contains a <code>main()</code> function, plus two "business end" functions: <code>compress_reversed_index()</code> and <code>decompress_check_reversed_index()</code></li>
+<li><em>depends_on</em>: the CL via <code>cl/cl.h</code>, but lots of CL modules are directly #included as well, including <code>compression</code>.</li>
+</ul>
+
+<h4>utils/cwb-decode-nqrfile.c</h4>
+
+<ul>
+<li>code for <code>cwb-decode-nqrfile</code>, which<ul>
+<li>"Decodes binary file format for named query results"</li>
+</ul>
+</li>
+<li>The usage description, -h option, and man page are currently incomplete.</li>
+<li>no dependencies.</li>
+</ul>
+
+<h4>utils/cwb-decode.c</h4>
+
+<ul>
+<li>code for <code>cwb-decode</code>, which<ul>
+<li>"Decodes <span class="caps">CWB </span>corpus as plain text (or in various other text formats)."</li>
+</ul>
+</li>
+<li><em>depends_on</em>: the CL via <code>cl/cl.h</code>, but <code>globals corpus</code> and <code>attributes</code> are directly #included as well.</li>
+</ul>
+
+<h4>utils/cwb-describe-corpus.c</h4>
+
+<ul>
+<li>code for <code>cwb-describe-corpus</code>, a simple but handy program for displaying info </li>
+<li><em>depends_on</em>: large chunks of CL but not via <code>cl/cl.h</code>. The following modules are #included:<ul>
+<li><code>globals corpus attributes macros</code></li>
+</ul></li>
+</ul>
+
+<h4>utils/cwb-encode.c</h4>
+
+<ul>
+<li>code for <code>cwb-encode</code>, which<ul>
+<li>"Reads verticalised text from stdin (or an input file; -f option) and converts it to the <span class="caps">CWB </span>binary format."</li>
+</ul>
+</li>
+<li>This is a pretty complex utility - it has a <span class="caps">BIG </span>main() function, plus lots of internal functions </li>
+<li><em>depends_on</em>: large chunks of CL but not via <code>cl/cl.h</code>. The following modules are #included:<ul>
+<li><code>globals lexhash storage macros endian</code></li>
+</ul></li>
+</ul>
+
+<h4>utils/cwb-huffcode.c</h4>
+
+<ul>
+<li>code for <code>cwb-huffcode</code>, which<ul>
+<li>"Compresses the token sequence of a positional attribute."</li>
+</ul>
+</li>
+<li><em>depends_on</em>: the CL via <code>cl/cl.h</code>, but some CL modules are directly #included as well, including <code>bitio</code>.</li>
+</ul>
+
+<h4>utils/cwb-itoa.c</h4>
+
+<ul>
+<li>code for <code>cwb-itoa</code>, which<ul>
+<li>"Reads 32bit integers in network format from <span class="caps">CWB </span>binary data file <file> or from standard input and prints the values as <span class="caps">ASCII </span>numbers on standard output (one number per line)."</li>
+</ul>
+</li>
+<li>a comment in the main() function says it only works with 32 bit integers -- correct?</li>
+<li><em>depends on</em>: the <code>endian</code> module in the CL (#included directly, not via <code>cl/cl.h</code>) </li>
+</ul>
+
+<h4>utils/cwb-lexdecode.c</h4>
+
+<ul>
+<li>code for <code>cwb-lexdecode</code>, which <ul>
+<li>"Prints the lexicon (or part of it) of a positional attribute on stdout..."</li>
+</ul>
+</li>
+<li><em>depends_on</em>: the CL via <code>cl/cl.h</code>, but <code>globals corpus attributes macros</code> are directly #included as well.</li>
+</ul>
+
+<h4>utils/cwb-makeall.c</h4>
+
+<ul>
+<li>code for <code>cwb-makeall</code>, which <ul>
+<li>"Creates a lexicon and index for each p-attribute of an encoded <span class="caps">CWB </span>corpus"</li>
+</ul>
+</li>
+<li><em>depends_on</em>: the CL via <code>cl/cl.h</code>, plus <code>globals corpus attribute endian fileutils</code></li>
+</ul>
+
+<h4>utils/cwb-s-decode.c</h4>
+
+<ul>
+<li>code for <code>cwb-s-decode</code>, which <ul>
+<li>"Outputs a list of the given s-attribute, with begin and end positions"</li>
+</ul>
+</li>
+<li><em>depends_on</em>: the CL via <code>cl/cl.h</code>, plus <code>globals</code></li>
+</ul>
+
+<h4>utils/cwb-s-encode.c</h4>
+
+<ul>
+<li>code for <code>cwb-s-encode</code>, which <ul>
+<li>"Adds s-attributes with computed start and end points to a corpus" </li>
+<li>(provisional description!)</li>
+</ul>
+</li>
+<li>several of the functions other than <code>main()</code> are for the SL object ("structure list"), which represents a single s-attribute</li>
+<li><em>depends_on</em>: the CL via <code>cl/cl.h</code>, but <code>globals endian macros storage lexhash</code> are directly #included as well.</li>
+</ul>
+
+<h4>utils/cwb-scan-corpus.c</h4>
+
+<ul>
+<li>code for <code>cwb-scan-corpus</code>, which finds out the frequency of pairs (or triplets or ...) of things in a corpus</li>
+<li>"pairs of things" might mean two different p-attributes on one token, or it might mean n-grams or....</li>
+<li>as per usual there are a bundle of functions here as well as <code>main()</code></li>
+<li><em>depends_on</em>: the CL via <code>cl/cl.h</code>, but <code>globals</code> is directly #included as well.</li>
+</ul>
+
+<h4>utils/Makefile</h4>
+
+<ul>
+<li>This is, obviously, the Makefile, but it is worth noting it contains in comments an overview of what each util does.</li>
+</ul>
+
+<h2>Other directories within the <span class="caps">CWB </span>root directory </h2>
+
+<h3>config</h3>
+
+<p>The subdirectories here contain chunks of makefile for use when compiling <span class="caps">CWB </span>on different operating systems.</p>
+
+<h3>doc</h3>
+
+<p>This contains documentation of the <span class="caps">CWB </span>code (note: <em>not</em> user documentation for <span class="caps">CWB</span>/CQP), including this file!</p>
+
+<h3>editline</h3>
+
+<p>This contains a (slightly patched) version of the Editline library, on which earlier versions of <span class="caps">CQP </span>were dependent.  Now that <span class="caps">CQP </span>has been backported to <span class="caps">GNU</span> Readline in <span class="caps">CWB</span> 3.2.4+, the directory is no longer needed and will be deleted in a future check-in.</p>
+
+<h3>instutils</h3>
+
+<p>This directory contains shell scripts (<code>sh</code>) for configuring / installing <span class="caps">CWB.</span></p>
+
+<h3>man</h3>
+
+<p>This contains the <code>*.pod</code> source files for the man entries for <code>cqp</code> and the <span class="caps">CWB </span>command-line utilties.</p>
+
+<h3>mingw-libgnurx-2.5.1</h3>
+
+<p>This contains an internal copy of the source code for the <code>libregex</code> needed to give <span class="caps">CWB </span>under windows (with MinGW) <span class="caps">POSIX </span>regular expression capability. It comes from here:<br />
+https://sourceforge.net/project/shownotes.php?release_id=140957<br />
+To quote the release notes, "This is a port of the <span class="caps">GNU </span>regex components from glibc, ported for use in native Win32 applications by Tor Lillqvist." There is a binary version, but for cross-compilation it seemed like<br />
+a better idea to have a copy of the source internal to the <span class="caps">CWB </span>tree.</p>
+
+
+<h2>Global variables in CL</h2>
+
+<p>(This is just an idea --- useful? Or overkill? -- AH)</p>
+
+<table><tr><th>Name</th><th>Type</th><th>Defined in</th><th>Declared <code>extern</code> in</th><th>What is it?</th></tr><tr><td>@@</td><td>@@</td><td>@@</td><td colspan="2">@@</td></tr><tr><td>@@</td><td>@@</td><td>@@</td><td colspan="2">@@</td></tr><tr><td>@@</td><td>@@</td><td>@@</td><td colspan="2">@@</td></tr><tr><td>@@</td><td>@@</td><td>@@</td><td colspan="2">@@</td></tr><tr><td>@@</td><td>@@</td><td>@@</td><td colspan="2">@@</td></tr><tr><td>@@</td><td>@@</td><td>@@</td><td colspan="2">@@</td></tr></table>
+
+
+
+
+<h2>Global variables in <span class="caps">CQP </span></h2>
+
+
+<p>(This is just an idea --- useful? Or overkill? -- AH)</p>
+
+<table><tr><th>Name</th><th>Type</th><th>Defined in</th><th>Declared <code>extern</code> in</th><th>What is it?</th></tr><tr><td>@@</td><td>@@</td><td>@@</td><td colspan="2">@@</td></tr><tr><td>@@</td><td>@@</td><td>@@</td><td colspan="2">@@</td></tr><tr><td>@@</td><td>@@</td><td>@@</td><td colspan="2">@@</td></tr><tr><td>@@</td><td>@@</td><td>@@</td><td colspan="2">@@</td></tr><tr><td>@@</td><td>@@</td><td>@@</td><td colspan="2">@@</td></tr><tr><td>@@</td><td>@@</td><td>@@</td><td colspan="2">@@</td></tr></table>

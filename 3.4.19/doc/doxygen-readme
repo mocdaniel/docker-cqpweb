@@ -1,0 +1,12 @@
+NOTES ON THE DOXYGEN HTML
+
+- to rebuild, type "make doxygen" in main directory
+
+- start page is html/index.html
+
+- if rebuilding leaves lots of missing files ("!" in svn st), they can be removed as follows:
+
+        cd html
+        svn rm $( svn status | sed -e '/^!/!d' -e 's/^!//' )
+
+- rebuilding may produce an sqlite db in this folder. DO NOT CHECK THIS IN.

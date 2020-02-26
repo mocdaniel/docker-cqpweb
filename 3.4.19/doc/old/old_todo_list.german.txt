@@ -1,0 +1,79 @@
+
+
+- CWB
+  -> Query-Lock-Modus auf "set target" und "subset" erweitern (auch in CWB/Perl)
+  -> arbitraere Laengenbeschraenkung fuer word lists in CQP?? 
+     -> Liste wird automatisch vergroessert, aber in sehr kleinen Schritten,
+        was zu Problemen bei grossen Wortlisten fuehren kann
+  -> cl_make_set() sollte automatisch doppelte Eintraege aus der Liste entfernen
+     (mit einem lexhash)
+  -> dann koennte man built-in Funktionen substr() und fsubstr() implementieren
+     (fuer Annotationen mit fester Struktur, z.B. agr)
+
+- CWB Dokumentation
+  -> Manpages von CQP und den Tools ueberarbeiten
+  -> CWB Admin Manual (stark kürzen und überarbeiten; Beispiel mit DICKENS corpus)
+  -> CWB Users Manual
+  -> CWB Tips & Tricks -- some use cases
+  -> alte HTML-Doku zu CQP  (Vorschau auf Version 2.3?) ??
+     alphabetischer Befehlsindex mit Bsp. usw., erklärt u.a. subset, sort, ...
+  -> Admin Tutorial um Alignment-Abschnitt ergaenzen (aus EasyAlign-Doku)
+
+- CWB Homepage
+  -> Entwurf in neuem Layout anlegen
+
+- Vorschläge der Beta-Tester
+  -> Stefan: wenn Files beschaedigt sind, kann es oft zu Segfaults kommen 
+     -> in FAQ, wird hoffentlich in CWB 4.0 behoben
+  -> Stefan: CQP-Manual muss erwaehnen, dass [_.np_h != "Hund"] und [!(_.np_h = "Hund")] verschieden sind
+     (ersteres ist ausserhalb einer <np_h> falsch, letzteres wahr)
+  -> ausserdem wuerde man gerne am Anfang einer Query [_ = 1042] schreiben und effizient auswerten koennen
+     -> schwer zu implementierender Sonderfall, vielleicht spaeter
+  ok Paul: xpath in CQP "simulieren"; dazu braucht man zumindest folgende builtin-Funktionen:
+     - STRING prefix(a,b)    =  longest common prefix of strings a and b
+     - INT    is_prefix(a,b) =  1 iff a is a prefix of b
+     - STRING minus(a,b)     =  suffix of a obtained by removing prefix(a,b) from a
+  ok Diana: scan-corpus ignoriert regex-constraints, wenn diese ueberhaupt nichts matchen
+  -> Dokumentation von CQP.pm ergaenzen: CQP verhaelt sich ueber die Perl-Schnittstelle 
+     ein bisschen anders (z.B. kein AutoShow; silent; keine pretty print)
+  -> Stefan: "-R"-Option fuer cwb-align-encode vollstaendig implementieren, um inverses Alignment
+     direkt encoden zu koennen, ohne cwb-align 2 Mal ausfuehren zu muesse
+     -> muss Alignment Regions aus .align File in aufsteigende Reihenfolge umsortieren
+  -> Alignment-Ausgabe in CQP ist moeglicherweise nicht korrekt, wenn Match sich ueber mehrere Alignments
+     erstreckt, die nicht aufsteigend geordnet sind. <print_align.c> muss eh mal anstaendig reimplementiert werden
+
+- CWB Version 3.1
+  -> Option, so dass pos. Attribute (oder alle?) nur im Match angezeigt werden,
+     aber nicht im Kontext (der verwendet dann immer "word")?
+  -> kann man bei "cqp -eC" Tags von s-Attributen noch farbig malen?
+     Nein, dazu muss die komplette Ausgabeformatierung ueberarbeitet werden (=> 3.1)
+  -> Protokoll bei huffcode sollte auch in Datei umgelenkt werden koennen
+  -> Reihenfolge der Attribute in "show cd" (und damit auch bei CQP-Ausgabe) ist meistens seltsam; 
+     Grund: bei Korpuswechsel werden die im Zielkorpus auch existierenden Attribute mit ihrem
+     Displaystatus (!) beibehalten, und dann weitere Att. ans Ende der Liste angehängt;
+     Lösung: noch ineffizienter, aber was solls ... erstelle jeweils komplett neue Attributliste,
+     und übertrage dann den Displaystatus aus der bestehenden Liste; 
+     [update_context_descriptor()<context_descriptor.c>, RecomputeAL()<attlist.c>]
+     dann sollte man aber den allzu häufigen Aufruf von update_context_descriptor() in
+     <print_align.c> unterbinden!
+     => Reihenfolge der Attribute ist wichtig, wenn XML-Tags später korrekt geklammert
+        werden sollen!!
+     ok inzwischen wird die Reihenfolge von XML-Tags automatisch angepasst, so dass wenigstens
+        die hierarchische Struktur stimmt; nur bei exakt gleichen Regions ist die Reihenfolge
+        der Tags "zufaellig" (aber konsistent)
+  -> (Jorge Vivaldi) evtl. "set Context 1 head | item | s;" erlauben 
+  ok (Hannah) Constraints ueber Label innerhalb der Query auswerten, ohne Token-Patten;
+     e.g. (a:'"')? (...)? (b:'"')? [:/xor[a,b]:] ... (erfordert neues Query-Element)
+     Schon passiert, aber nicht dokumentiert. :o)
+  -> Wortlisten in CQP ("variables") sind ziemlich ungeschickt implementiert
+     fuer grosse Listen ... 
+  -> multiple targets
+  -> neuer group-Algorithmus (-> fdist)
+  -> output-Module ueberarbeiten (*stoehn*) (mehr Farbe im ASCII-Mode)
+     - "orientation" scheint ueberfluessig: ConcLineVertical wird nie verwendet
+  -> anchored queries
+  -> "reduce A to 10" kann evtl. ziemlich lange brauchen, wenn A sehr gross ist;
+     - neu implementieren (einfacher Durchlauf des Query-Result, mit dynamischer Anpassung der Zufallsbedingung)
+     - dann kann man auch auf das Bitfeld fuer Selektion verzichten 
+  -> corpus properties in CL.pm zugaenglich machen
+  -> Liste def. Attribute in CL und CL.pm zugaenglich machen (evtl. erst bei 4.0)
