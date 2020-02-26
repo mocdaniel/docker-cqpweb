@@ -1,0 +1,48 @@
+#! /usr/bin/bash
+
+################################################################
+# INSTALL CQPWEB, CWB and PERL API
+################################################################
+
+# Move CQPweb files to Apache's web root and adjust permissions
+mv /tmp/3.2-latest/* /var/www/html
+chown -R www-data:www-data /var/www/html
+rm /var/www/html/index.html
+
+# Change the platform for CWB's installation routine
+sed -i "/PLATFORM=darwin-brew/c\\PLATFORM=linux-64" /tmp/3.4.19/config.mk
+
+# Build and install CWB
+cd /tmp/3.4.19
+./install-scripts/install-linux
+
+# Export the path to CWB's config in order to install the Perl API modules
+export CWBCONFIG=/usr/local/cwb-3.4.19/bin/cwb-config
+
+# Build and install Perl API
+cd /tmp/Perl/CWB
+perl Makefile.PL --config=$CWBCONFIG
+make
+make test
+make install
+
+cd /tmp/Perl/CWB-CL
+perl Makefile.PL --config=$CWBCONFIG
+make
+make test
+make install
+
+cd /tmp/Perl/CWB-CQI
+perl Makefile.PL --config=$CWBCONFIG
+make
+make test
+make install
+
+cd /tmp/CWB-Web
+perl Makefile.PL --config=$CWBCONFIG
+make
+make test
+make install
+
+# Remove source files since they are not further needed
+rm -rf /tmp/3.2-latest tmp/3.4.19 /tmp/Perl

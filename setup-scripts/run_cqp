@@ -1,0 +1,203 @@
+#! /usr/bin/bash
+
+
+################################################################
+# VARIABLES NEEDED THROUGHOUT THE SETUP, ALSO SETTABLE VIA 
+# ENVIRONMENT VARIABLES WHEN FIRST CREATING THE CONTAINER
+################################################################
+
+upload_max_filesize="${PHP_MAX_FILE_SIZE:-80M}"
+
+post_max_size="${PHP_MAX_POST_SIZE:-80M}"
+
+memory_limit="${PHP_MEMORY_LIMIT:-1024M}"
+
+max_execution_time="${PHP_MAX_EXECUTION_TIME:-60}"
+
+db_user="${DB_USER:-cqpweb_user}" 
+
+db_user_password="${DB_USER_PASSWORD:-cqpweb_password}"
+
+db_name="${DB_NAME:-cqpweb_db}"
+
+mysql_root_password="!53cur3#;secre7?$" # should not matter for the configuration at all; if it does, you can look it up here ;) 
+
+cqpweb_user="${CQPWEB_USER:-admin}"
+
+cqpweb_user_password="${CQPWEB_USER_PASSWORD:-cqpwebsecurepassword}"  
+
+################################################################
+################################################################
+################################################################
+# FOLLOWING HERE IS THE INITIAL SETUP OF THE CONTAINER WHICH 
+# SHOULD ONLY RUN WHEN RUNNING A CONTAINER FOR THE FIRST TIME
+################################################################
+################################################################
+################################################################
+
+if ! [[ -f "/etc/cqpweb_got_created.conf" ]]; then
+
+
+
+################################################################
+# ADJUST PHP's WEBSERVER-, CLI- AND MYSQL-RELATED SETTINGS
+################################################################
+
+# Max upload size needs to be adjusted for CLI and web PHP
+sed -i "/upload_max_filesize = */c\\upload_max_filesize = $upload_max_filesize" /etc/php/7.2/cli/php.ini
+sed -i "/upload_max_filesize = */c\\upload_max_filesize = $upload_max_filesize" /etc/php/7.2/apache2/php.ini
+
+# Max post size needs to be adjusted for CLI and web PHP
+sed -i "/post_max_size = */c\\post_max_size = $memory_limit" /etc/php/7.2/cli/php.ini
+sed -i "/post_max_size = */c\\post_max_size = $memory_limi" /etc/php/7.2/apache2/php.ini
+
+# Memory limit needs to be adjusted for CLI and web PHP
+sed -i "/memory_limit = */c\\memory_limit = $memory_limit" /etc/php/7.2/cli/php.ini
+sed -i "/memory_limit = */c\\memory_limit = $memory_limit" /etc/php/7.2/apache2/php.ini
+
+# Max execution time needs to be adjusted for CLI and web PHP
+sed -i "/max_execution_time = */c\\max_execution_time = $max_execution_time" /etc/php/7.2/apache2/php.ini
+sed -i "/max_execution_time = */c\\max_execution_time = $max_execution_time" /etc/php/7.2/cli/php.ini
+
+# MySQLi settings need to be adjusted for CLI and web PHP
+sed -i "/;mysqli.allow_local_infile = */c\\mysqli.allow_local_infile = On" /etc/php/7.2/cli/php.ini
+sed -i "/;mysqli.allow_local_infile = */c\\mysqli.allow_local_infile = On" /etc/php/7.2/apache2/php.ini
+
+touch /etc/cqpweb_got_created.conf
+echo "THIS FILE MANAGES THE SETUP STRATEGY OF THIS CONTAINER. DO NOT RENAME, MOVE OR DELETE IT!" >> /etc/cqpweb_got_created.conf
+
+
+
+################################################################
+# CONFIGURE CWB, CQPWEB AND FINALIZE THE SETUP
+################################################################
+
+# This is a manual execution of mysql_secure_installation which 
+# sets a new password for MySQL's root user, removes anonymous
+# users, disables remote login for root, removes test databases
+# and flushes the changes to MySQL's privilege tables
+service mysql start
+mysql -sfu root << EOF
+UPDATE mysql.user SET authentication_string=PASSWORD('$mysql_root_password') WHERE User='root';
+DELETE FROM mysql.user WHERE User='';
+DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+DROP DATABASE IF EXISTS test;
+DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
+EOF
+
+# Start database server and create database and user for CQPweb
+mysql -se "create database ${db_name} default charset utf8;
+create user ${db_user} identified by '${db_user_password}';
+grant all on ${db_name}.* to ${db_user};
+grant file on *.* to ${db_user};"
+
+# Create the data directories specified in CQPweb's config and
+# give Apache2 readwrite-access
+mkdir /cqpweb_files
+cd /cqpweb_files
+mkdir data registry temp uploads
+chown -R www-data:www-data /cqpweb_files
+chmod -R ogu+rwx /cqpweb_files
+
+# Create CQPweb's config file using the autoconfig.php script
+cd /var/www/html/bin
+php autoconfig.php << EOF
+$cqpweb_user
+n
+/cqpweb_files/data
+/cqpweb_files/registry
+/cqpweb_files/temp
+/cqpweb_files/uploads
+$db_user
+$db_user_password
+y
+$db_name
+localhost
+y
+EOF
+
+# Add one additional line to the created config file to indicate
+# the location of CWB's binaries
+echo "\$path_to_cwb = \"/usr/local/cwb-3.4.19/bin\";" >> /var/www/html/lib/config.inc.php
+
+# Create database schemes and finalize CQPweb's setup using the autosetup.php script 
+php autosetup.php << EOF
+$cqpweb_user_password
+y
+EOF
+
+################################################################
+# If FQDN and Email-Address have been provided, issue an SSL 
+# certificate using certbot
+################################################################
+
+if ! ([[ -z "${FQDN_NAME}" ]] && [[ -z "${FQDN_EMAIL}" ]]); then
+
+# Install certbot
+curl -O https://dl.eff.org/certbot-auto
+mv certbot-auto /usr/local/bin/certbot-auto
+chmod 0755 /usr/local/bin/certbot-auto
+
+# Create a virtual host for Apache2 to handle http-requests
+echo -e "<VirtualHost *:80>\n
+ServerName ${FQDN_NAME}\n
+ServerAlias www.${FQDN_NAME}\n
+DocumentRoot /var/www/html/\n
+\n
+<Directory /var/www/html/>\n
+Options FollowSymLinks\n
+AllowOverride None\n
+Require all granted\n
+</Directory>\n
+\n
+<Directory /var/www/html/bin/>\n
+deny from all\n
+</Directory>\n
+\n
+<Directory /var/www/html/lib/>\n
+deny from all\n
+</Directory>\n
+\n
+ErrorLog /var/log/apache2/www.${FQDN_NAME}-error.log\n
+CustomLog /var/log/apache2/www.${FQDN_NAME}-access.log combined\n
+</VirtualHost>" >> /etc/apache2/apache2.conf
+service apache2 restart
+
+# Let certbot issue a certificate and configure Apache2 
+certbot-auto --apache --force-interactive << EOF
+y
+$FQDN_EMAIL
+A
+N
+
+2
+EOF
+
+# Save date of creation for automatic re-issuing of certificate
+echo date >> /etc/apache2/date_of_ssl_creation.info
+fi
+
+fi
+################################################################
+################################################################
+################################################################
+# THIS IS WHERE THE INITIAL SETUP ENDS AND THE NORMAL STARTUP
+# ROUTINE FOLLOWS
+################################################################
+################################################################
+################################################################
+
+
+
+################################################################
+# START SERVICES AND MAKE CONTAINER STAY ALIVE
+################################################################
+
+service mysql start
+service apache2 start
+
+# Check if SSL-certificate should be renewed
+bash /setup-scripts/check_ssl_expiration
+
+# Make container run endlessly
+tail -f /dev/null

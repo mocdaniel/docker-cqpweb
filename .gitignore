@@ -1,0 +1,11 @@
+# Ignore CQP source code etc.
+*
+
+
+!.gitignore
+!Dockerfile
+!/setup-scripts
+!/setup-scripts/cqp_installation
+!/setup-scripts/check_ssl_expiration
+!/setup-scripts/run_cqp
+!README.md
