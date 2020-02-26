@@ -80,10 +80,19 @@ All you need to do so is a valid FQDN (*fully qualified domain name*) and the DN
 
 Certificates issued by Let's Encrypt are valid for **90 days**; The renewal is done automatically upon container (re-)start once there is **one** week (or less) left on the current certificate's validity or it has run out already. 
 
+## Further Configuration
+If you know your way around Ubuntu, Apache etc. you can do further configuration at any time as long as you got access to the physical host of the running container in one way or the other.
+
+Just log into the container as root from the physical host's terminal by starting an interactive bash session
+
+    docker exec -it container_id bash
+    
+Some useful tools for working on the command line such as *Vim* are preinstalled, of course you can install additional software.
+
 ## Known issues 
 * Setting up a fully working SMTP mail server within a non-dedicated docker container can be mildly annoying. Therefore sending emails from within the container does not work as of now. When creating new users, make sure to choose the option **"No, auto-verify the account"**.
-* At very rare occasions, **MySQL** is known to not start upon container start due to *PID-file leftovers* from the last session. In this case, you need to enter your container and start it manually:
-
-    docker exec -it *container_id* bash
+* At very rare occasions, **MySQL** is known to not start upon container start due to *PID-file leftovers* from the last session. In this case, you need to enter your container and start it manually 
+    ```
+    docker exec -it container_id bash
     service mysqld restart
-    
+    ```
