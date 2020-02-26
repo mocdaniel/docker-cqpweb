@@ -97,5 +97,5 @@ Some useful tools for working on the command line such as *Vim* are preinstalled
 * At very rare occasions, **MySQL** is known to not start upon container start due to *PID-file leftovers* from the last session. In this case, you need to enter your container and start it manually 
     ```
     docker exec -it container_id bash
-    service mysqld restart
+    service mysql restart
     ```
