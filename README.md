@@ -29,6 +29,7 @@ This container is trying to stick to the _best practices_ mentioned in the offic
 ## Installation
 ### Pulling the image from DockerHub
 There will always be a precompiled image built with these files here on DockerHub. You can pull it without any extra work by using
+
     docker pull dbodky/cqpweb:latest
 
 ### Building your own image
@@ -38,6 +39,7 @@ Alternatively, you can always pull this repository in order to configure and twe
 Before building your image you may want to configure the used setup variables located at `setup-scripts/run_cqp` which define the credentials of the admin user, database user, email and domain needed for SSL-certification etc.
 
 Then build the image.
+
     docker image build -t imagename:version .
     
 ## First start
@@ -60,6 +62,7 @@ Rule of thumb is, **if you can't derive the function from the variables' names, 
 | FQDN_EMAIL             | **NOT SET**          |**Set this for SSL encryption of CQPweb.** The email address used for registration with and certification by *Let's encrypt*                      |
 
 For example, a container instantiation could look as follows:
+
     docker run -d -p 80:80 -p 443:443 --env FQDN_NAME=cqp.mydomain.com --env FQDN_EMAIL=admin@mydomain.com --env CQPWEB_USER=bigboss --env CQPWEB_USER_PASSWORD=insanely_secure_password dbodky/cqpweb:latest
     
 **THE FIRST START OF A CONTAINER WILL NEED 1-2 MINUTES DEPENDING ON YOUR PHYSICAL HOST AND INTERNET CONNECTIVITY DUE TO FIRST-TIME SETUP AND SSL-CERTIFICATION**
@@ -67,6 +70,7 @@ For example, a container instantiation could look as follows:
 This command runs the container _detached_ (-d, means in the background), maps the container's ports 80 and 443 to the respective ports of the physical host (-p, 443 is only needed if you are going to use **SSL encryption**) and declares the domain you are going to use for the SSL-encrypted webpage, a corresponding email address for registration and an admin account for CQPweb via environment variables (--env).
 
 If you want to set a lot of environment variables, you can pass a *variable file* to Docker as well (An **example file** with the default values can be found at `setup-scripts/example_envs.list` in this repository).
+
     docker run -d -p 80:80 -p 443:443 --env-file ./setup-scripts/example_envs.list dbodky/cqpweb:latest
     
  ## SSL Encryption
@@ -79,6 +83,7 @@ Certificates issued by Let's Encrypt are valid for **90 days**; The renewal is d
 ## Known issues 
 * Setting up a fully working SMTP mail server within a non-dedicated docker container can be mildly annoying. Therefore sending emails from within the container does not work as of now. When creating new users, make sure to choose the option **"No, auto-verify the account"**.
 * At very rare occasions, **MySQL** is known to not start upon container start due to *PID-file leftovers* from the last session. In this case, you need to enter your container and start it manually:
+
     docker exec -it *container_id* bash
     service mysqld restart
     
