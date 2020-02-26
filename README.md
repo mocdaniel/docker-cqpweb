@@ -1,6 +1,8 @@
 # Docker-CQPweb
 
-This repository contains the necessary Dockerfile and Scripts to build an all-in-one image for the usage of [CQPweb](http://cwb.sourceforge.net/cqpweb.php). This Readme is meant to provide a short overview over its configuration as well as installation process and known _"gotchas"_.
+This repository contains the necessary Dockerfile, source code and Scripts to build an all-in-one image for the usage of [CQPweb](http://cwb.sourceforge.net/cqpweb.php). If you want to compile different versions of CQPweb's source code, [get them here](http://cwb.sourceforge.net/download.php).
+
+This Readme is meant to provide a short overview over its configuration as well as installation process and known _"gotchas"_.
 
 ## Features
 This container features a full stack of CQPweb and its surroundings, including
