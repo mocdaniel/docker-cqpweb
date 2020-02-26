@@ -33,6 +33,8 @@ This container is trying to stick to the _best practices_ mentioned in the offic
 There will always be a precompiled image built with these files here on DockerHub. You can pull it without any extra work by using
 
     docker pull dbodky/cqpweb:latest
+    
+For a full list of available container-tags, please visit the [DockerHub page](https://hub.docker.com/r/dbodky/cqpweb). The current **stable version** is **dbodky/cqpweb:1.0.0**.
 
 ### Building your own image
 Alternatively, you can always pull this repository in order to configure and tweak your own image to your purposes by using
