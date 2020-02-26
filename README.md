@@ -36,6 +36,7 @@ There will always be a precompiled image built with these files here on DockerHu
 
 ### Building your own image
 Alternatively, you can always pull this repository in order to configure and tweak your own image to your purposes by using
+    
     git clone https://https://github.com/mocdaniel/docker-cqpweb.git
     
 Before building your image you may want to configure the used setup variables located at `setup-scripts/run_cqp` which define the credentials of the admin user, database user, email and domain needed for SSL-certification etc.
