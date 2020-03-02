@@ -4,10 +4,15 @@
 # is about to expire within the next 7 days or has already done so.
 # It will renew the certificate automatically and non-interactive if necessary.
 
-if openssl x509 -checkend 604800 -noout -in "/etc/letsencrypt/live/$FQDN_NAME/cert.pem"
-then
-	echo "Certificate is good for at least another week!"
+if [[ -f /etc/letsencrypt/live/$FQDN_NAME/cert.pem ]]; then
+  if openssl x509 -checkend 604800 -noout -in "/etc/letsencrypt/live/$FQDN_NAME/cert.pem"
+  then
+    echo "Certificate is good for at least another week!"
+  else
+    echo "Certificate has expired or will do so within the next 7 days."
+    echo "Renewing SSL-Certificate..."
+    certbot-auto renew
+  fi
 else
-	echo "Certificate has expired or will do so within the next 7 days."
-	echo "Renewing SSL-Certificate..."
-	certbot-auto renew
+    echo "No certificates installed. Exiting the renewal process..."
+fi

@@ -197,7 +197,7 @@ service mysql start
 service apache2 start
 
 # Check if SSL-certificate should be renewed
-bash /setup-scripts/check_ssl_expiration
+bash /docker-scripts/check_ssl_expiration
 
 # Make container run endlessly
 tail -f /dev/null
