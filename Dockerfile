@@ -42,4 +42,5 @@ COPY Perl/ ./Perl/
 
 WORKDIR /docker-scripts
 RUN bash ./cqp_installation
+ENV PATH "/usr/local/cwb-3.4.19:$PATH"
 ENTRYPOINT ["bash", "./run_cqp"]
