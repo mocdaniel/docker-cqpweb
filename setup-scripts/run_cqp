@@ -195,6 +195,11 @@ fi
 # START SERVICES AND MAKE CONTAINER STAY ALIVE
 ################################################################
 
+# Sometimes needed to clean remainders of the last session
+pkill -u mysql
+sleep 5
+
+# Start services
 service mysql start
 service apache2 start
 
