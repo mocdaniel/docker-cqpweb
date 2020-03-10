@@ -4,6 +4,8 @@ This repository contains the necessary Dockerfile, source code and Scripts to bu
 
 This Readme is meant to provide a short overview over its configuration as well as installation process and known _"gotchas"_.
 
+## Changelog
+For the latest changes please take a look at the [Changelog](https://github.com/mocdaniel/docker-cqpweb/tree/master/docs/CHANGELOG.md).
 ## Features
 This container features a full stack of CQPweb and its surroundings, including
 * CQPweb
@@ -93,6 +95,17 @@ Just log into the container as root from the physical host's terminal by startin
     docker exec -it container_id bash
     
 Some useful tools for working on the command line such as *Vim* are preinstalled, of course you can install additional software.
+
+## Persistent data storage on physical disk
+**Requires image version 1.0.1 or higher**
+
+In order to save relevant data on your physical disk instead of within the docker container, add a volume declaration to your command when instantiation a container:
+
+    docker run -d -p 80:80 -v /home/user/cqpwebdata/:/cqpweb_files/ dbodky/cqpweb:1.0.1
+
+
+This saves all generated MySQL databases as well as all data uploaded to or registered and indexed by CQPweb to `/home/user/cqpwebdata` in subdirectories `./data, ./registry, ./temp, ./uploads and ./databases`
+
 
 ## Known issues 
 * Setting up a fully working SMTP mail server within a non-dedicated docker container can be mildly annoying. Therefore sending emails from within the container does not work as of now. When creating new users, make sure to choose the option **"No, auto-verify the account"**.

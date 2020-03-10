@@ -46,3 +46,30 @@ make install
 
 # Remove source files since they are not further needed
 rm -rf /tmp/3.2-latest tmp/3.4.19 /tmp/Perl
+
+# Create the data directories specified in CQPWeb's config, make Apache their owner and give "all" readwrite-access
+mkdir -p /cqpweb_files
+cd /cqpweb_files
+mkdir data registry temp uploads databases
+chown -R www-data:www-data /cqpweb_files
+chmod -R a+rwx /cqpweb_files
+
+################################################################
+# Configure MySQL
+################################################################
+
+# This is a manual execution of mysql_secure_installation which
+# sets a new password for MySQL's root user, removes anonymous
+# users, disables remote login for root, removes test databases
+# and flushes changes to MySQL's privilege tables
+service mysql start
+mysql -sfu root << EOF
+UPDATE mysql.user SET authentication_string=PASSWORD('root_password') WHERE User='root';
+DELETE FROM mysql.user WHERE User='';
+DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+DROP DATABASE IF EXISTS test;
+DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
+EOF
+service mysql stop
+# Set the place for MySQL database creation to the centralized cqpweb_files directory
+sed -i "/datadir */c\\datadir	= /cqpweb_files/databases" /etc/mysql/mysql.conf.d/mysqld.cnf

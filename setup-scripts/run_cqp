@@ -20,8 +20,6 @@ db_user_password="${DB_USER_PASSWORD:-cqpweb_password}"
 
 db_name="${DB_NAME:-cqpweb_db}"
 
-mysql_root_password="!53cur3#;secre7?$" # should not matter for the configuration at all; if it does, you can look it up here ;) 
-
 cqpweb_user="${CQPWEB_USER:-admin}"
 
 cqpweb_user_password="${CQPWEB_USER_PASSWORD:-cqpwebsecurepassword}"  
@@ -37,7 +35,32 @@ cqpweb_user_password="${CQPWEB_USER_PASSWORD:-cqpwebsecurepassword}"
 
 if ! [[ -f "/etc/cqpweb_got_created.conf" ]]; then
 
+# Create cqpweb directories after a potential mapping of local directories
+if ! [[ -f "/cqpweb_files/data" ]]; then
+mkdir -p /cqpweb_files/data
+fi
 
+if ! [[ -f "/cqpweb_files/registry" ]]; then
+mkdir -p /cqpweb_files/registry
+fi
+
+if ! [[ -f "/cqpweb_files/temp" ]]; then
+mkdir -p /cqpweb_files/temp
+fi
+
+if ! [[ -f "/cqpweb_files/uploads" ]]; then
+mkdir -p /cqpweb_files/uploads
+fi
+
+if ! [[ -f "/cqpweb_files/databases" ]]; then
+mkdir -p /cqpweb_files/databases
+fi
+
+# Copy mysql files from the installation/initialization over to 
+# the new database directory
+chown -R mysql:mysql /cqpweb_files/databases
+mv /var/lib/mysql/* /cqpweb_files/databases/
+service mysql start
 
 ################################################################
 # ADJUST PHP's WEBSERVER-, CLI- AND MYSQL-RELATED SETTINGS
@@ -72,32 +95,11 @@ echo "THIS FILE MANAGES THE SETUP STRATEGY OF THIS CONTAINER. DO NOT RENAME, MOV
 # CONFIGURE CWB, CQPWEB AND FINALIZE THE SETUP
 ################################################################
 
-# This is a manual execution of mysql_secure_installation which 
-# sets a new password for MySQL's root user, removes anonymous
-# users, disables remote login for root, removes test databases
-# and flushes the changes to MySQL's privilege tables
-service mysql start
-mysql -sfu root << EOF
-UPDATE mysql.user SET authentication_string=PASSWORD('$mysql_root_password') WHERE User='root';
-DELETE FROM mysql.user WHERE User='';
-DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
-DROP DATABASE IF EXISTS test;
-DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
-EOF
-
 # Start database server and create database and user for CQPweb
 mysql -se "create database ${db_name} default charset utf8;
 create user ${db_user} identified by '${db_user_password}';
 grant all on ${db_name}.* to ${db_user};
 grant file on *.* to ${db_user};"
-
-# Create the data directories specified in CQPweb's config and
-# give Apache2 readwrite-access
-mkdir /cqpweb_files
-cd /cqpweb_files
-mkdir data registry temp uploads
-chown -R www-data:www-data /cqpweb_files
-chmod -R ogu+rwx /cqpweb_files
 
 # Create CQPweb's config file using the autoconfig.php script
 cd /var/www/html/bin
