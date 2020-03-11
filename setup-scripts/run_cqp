@@ -56,10 +56,14 @@ if ! [[ -f "/cqpweb_files/databases" ]]; then
 mkdir -p /cqpweb_files/databases
 fi
 
+# Adjust permissions of /cqpweb_files after a possible mapping of data
+chown -R www-data:www-data /cqpweb_files
+
 # Copy mysql files from the installation/initialization over to 
 # the new database directory
-chown -R mysql:mysql /cqpweb_files/databases
+
 mv /var/lib/mysql/* /cqpweb_files/databases/
+chown -R mysql:mysql /cqpweb_files/databases
 service mysql start
 
 ################################################################
@@ -71,8 +75,8 @@ sed -i "/upload_max_filesize = */c\\upload_max_filesize = $upload_max_filesize" 
 sed -i "/upload_max_filesize = */c\\upload_max_filesize = $upload_max_filesize" /etc/php/7.2/apache2/php.ini
 
 # Max post size needs to be adjusted for CLI and web PHP
-sed -i "/post_max_size = */c\\post_max_size = $memory_limit" /etc/php/7.2/cli/php.ini
-sed -i "/post_max_size = */c\\post_max_size = $memory_limi" /etc/php/7.2/apache2/php.ini
+sed -i "/post_max_size = */c\\post_max_size = $post_max_size" /etc/php/7.2/cli/php.ini
+sed -i "/post_max_size = */c\\post_max_size = $post_max_size" /etc/php/7.2/apache2/php.ini
 
 # Memory limit needs to be adjusted for CLI and web PHP
 sed -i "/memory_limit = */c\\memory_limit = $memory_limit" /etc/php/7.2/cli/php.ini
@@ -196,11 +200,11 @@ fi
 ################################################################
 
 # Sometimes needed to clean remainders of the last session
-pkill -u mysql
-sleep 5
+#pkill -u mysql
+#sleep 5
 
 # Start services
-service mysql start
+service mysql restart
 service apache2 start
 
 # Check if SSL-certificate should be renewed
