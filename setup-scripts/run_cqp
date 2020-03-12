@@ -199,12 +199,19 @@ fi
 # START SERVICES AND MAKE CONTAINER STAY ALIVE
 ################################################################
 
-# Sometimes needed to clean remainders of the last session
-#pkill -u mysql
-#sleep 5
+
+# Clean mysql sockets to prevent database crash on startup
+if [[ -f /var/run/mysqld/mysqld.sock.lock ]]; then
+echo "Deleting locked MySQL socket..."
+rm /var/run/mysqld/mysqld.sock.lock
+fi
 
 # Start services
-service mysql restart
+if ! [[ -f /var/run/mysqld/mysqld.sock ]]; then
+echo "No running MySQL instance found, starting MySQL..."
+service mysql start
+fi
+
 service apache2 start
 
 # Check if SSL-certificate should be renewed
