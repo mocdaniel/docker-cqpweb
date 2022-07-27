@@ -338,6 +338,26 @@ cl_normalize(corpus, flags, ...)
     }
     /* else return empty list */
 
+char *
+cl_list_attributes(corpus, type)
+    Corpus* corpus 
+    int     type
+  PREINIT:
+    cl_string_list names;
+    int i, size;
+  PPCODE:
+    last_cl_error = CDA_OK;
+    names = cl_corpus_list_attributes(corpus, type);
+    size = cl_string_list_size(names);
+    /* never sets an error condition */
+    if (size > 0) {
+      EXTEND(sp, size);
+      for (i = 0; i < size; i++) {
+        PUSHs(sv_2mortal(newSVpv(cl_string_list_get(names, i), 0)));
+      }
+    }
+    cl_free_string_list(names);
+
 Attribute *
 cl_new_attribute(corpus, attribute_name, type)
     Corpus *    corpus
@@ -819,7 +839,7 @@ cl_struc2cpos(attribute, ...)
       /* Return values on stack overwrite function arguments, starting from ST(0).  This works in most
        * vectorised functions since we push one return value for each argument, i.e. we store the result
        * for ST(i+1) in ST(i).  Because cl_struc2cpos() returns two values for each argument, we have
-       * to store all results in a locally allocated array first.
+       * to store all arguments in a locally allocated array first.
        */
       Newx(arguments, size, int); /* allocate temporary array to hold arguments (converted to C ints) */
       if (!arguments)

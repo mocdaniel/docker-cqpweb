@@ -1,0 +1,24 @@
+To compile, test and install all four Perl modules, you can use the top level 
+Makefile.  (Ignore this file completely if you want to work with one or more 
+modules individually; their Make systems are wholly independent of this 
+top-level convenience utility.
+
+AVAILABLE TARGETS:
+
+make
+    Default target; run prep, then build, then test.
+
+make prep
+    Run each module's Makefile.PL script to prepare a makefile.
+
+make build
+    Run each module's Makefile default target. Implies prep.
+
+make test
+    Run tests suite of each compiled module. Implies prep and build.
+
+make install
+    Install the modules. Probably needs root (su/sudo). Implies prep and build.
+
+make clean
+    Delete all created files (i.e. go back to fresh state of downloaded code).

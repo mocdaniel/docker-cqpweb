@@ -1,6 +1,5 @@
 package CWB::Web::Cache;
 # -*-cperl-*-
-$VERSION = 3.004_015;  # version 3.0.0 in Perl format
 
 ##
 ## Short overview of module and cache architecture:
@@ -590,7 +589,7 @@ B<TODO>
 
 =head1 COPYRIGHT
 
-Copyright (C) 1999-2019 Stefan Evert [http::/purl.org/stefan.evert]
+Copyright (C) 1999-2020 Stefan Evert [http::/purl.org/stefan.evert]
 
 This software is provided AS IS and the author makes no warranty as to
 its use and performance. You may use the software, redistribute and

@@ -1,3 +1,8 @@
+Version 3.4.0
+-------------
+
+Official release of Perl/CWB-Web on CPAN compatible with CWB v3.4 series.
+
 TODO:
   - write unit tests for CWB::Web:: modules (esp. CWB::Web::Cache)
   - write extensive documentation for CWB::Web::Cache package
@@ -6,11 +11,12 @@ TODO:
   - rewrite CWB::Web::Query module for better performance and easy CWB::CEQL integration
   - re-think and re-implement CWB::Web::Search using MU-Queries and/or C code to achieve acceptable performance
 
+
 Version 3.0
 -----------
 
 This is the first official release of the Web support modules for the redesigned CWB/Perl interface.
-It is compatible with version 3.0 of the IMS Open Corpus Workbench.
+It is compatible with version 3.0 and above of the IMS Open Corpus Workbench.
 
 New features:
 

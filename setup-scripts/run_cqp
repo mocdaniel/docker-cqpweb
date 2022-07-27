@@ -71,24 +71,24 @@ service mysql start
 ################################################################
 
 # Max upload size needs to be adjusted for CLI and web PHP
-sed -i "/upload_max_filesize = */c\\upload_max_filesize = $upload_max_filesize" /etc/php/7.2/cli/php.ini
-sed -i "/upload_max_filesize = */c\\upload_max_filesize = $upload_max_filesize" /etc/php/7.2/apache2/php.ini
+sed -i "/upload_max_filesize = */c\\upload_max_filesize = $upload_max_filesize" /etc/php/7.4/cli/php.ini
+sed -i "/upload_max_filesize = */c\\upload_max_filesize = $upload_max_filesize" /etc/php/7.4/apache2/php.ini
 
 # Max post size needs to be adjusted for CLI and web PHP
-sed -i "/post_max_size = */c\\post_max_size = $post_max_size" /etc/php/7.2/cli/php.ini
-sed -i "/post_max_size = */c\\post_max_size = $post_max_size" /etc/php/7.2/apache2/php.ini
+sed -i "/post_max_size = */c\\post_max_size = $post_max_size" /etc/php/7.4/cli/php.ini
+sed -i "/post_max_size = */c\\post_max_size = $post_max_size" /etc/php/7.4/apache2/php.ini
 
 # Memory limit needs to be adjusted for CLI and web PHP
-sed -i "/memory_limit = */c\\memory_limit = $memory_limit" /etc/php/7.2/cli/php.ini
-sed -i "/memory_limit = */c\\memory_limit = $memory_limit" /etc/php/7.2/apache2/php.ini
+sed -i "/memory_limit = */c\\memory_limit = $memory_limit" /etc/php/7.4/cli/php.ini
+sed -i "/memory_limit = */c\\memory_limit = $memory_limit" /etc/php/7.4/apache2/php.ini
 
 # Max execution time needs to be adjusted for CLI and web PHP
-sed -i "/max_execution_time = */c\\max_execution_time = $max_execution_time" /etc/php/7.2/apache2/php.ini
-sed -i "/max_execution_time = */c\\max_execution_time = $max_execution_time" /etc/php/7.2/cli/php.ini
+sed -i "/max_execution_time = */c\\max_execution_time = $max_execution_time" /etc/php/7.4/apache2/php.ini
+sed -i "/max_execution_time = */c\\max_execution_time = $max_execution_time" /etc/php/7.4/cli/php.ini
 
 # MySQLi settings need to be adjusted for CLI and web PHP
-sed -i "/;mysqli.allow_local_infile = */c\\mysqli.allow_local_infile = On" /etc/php/7.2/cli/php.ini
-sed -i "/;mysqli.allow_local_infile = */c\\mysqli.allow_local_infile = On" /etc/php/7.2/apache2/php.ini
+sed -i "/;mysqli.allow_local_infile = */c\\mysqli.allow_local_infile = On" /etc/php/7.4/cli/php.ini
+sed -i "/;mysqli.allow_local_infile = */c\\mysqli.allow_local_infile = On" /etc/php/7.4/apache2/php.ini
 
 touch /etc/cqpweb_got_created.conf
 echo "THIS FILE MANAGES THE SETUP STRATEGY OF THIS CONTAINER. DO NOT RENAME, MOVE OR DELETE IT!" >> /etc/cqpweb_got_created.conf
@@ -121,10 +121,6 @@ $db_name
 localhost
 y
 EOF
-
-# Add one additional line to the created config file to indicate
-# the location of CWB's binaries
-echo "\$path_to_cwb = \"/usr/local/cwb-3.4.19/bin\";" >> /var/www/html/lib/config.inc.php
 
 # Create database schemes and finalize CQPweb's setup using the autosetup.php script 
 php autosetup.php << EOF

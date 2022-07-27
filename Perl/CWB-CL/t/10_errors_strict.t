@@ -1,4 +1,4 @@
-use Test::More tests => 45;
+use Test::More tests => 47;
 ## test errors thrown by CWB::CL in strict mode
 
 use CWB::CL::Strict;
@@ -113,7 +113,13 @@ is_deeply(\@beads, [undef, undef, undef, undef, 7777, 7792, 7760, 7776], "unalig
 eval { CWB::CL::make_set("ab c def", "WHITESPACE") }; # utility functions for feature sets
 like($@, qr/Usage:.*make_set/, "catch invalid split flag (make_set)"); # T41
 eval { CWB::CL::make_set("def|ab|c") };
-like($@, qr/invalid feature set/, "catch malformed feature set (make_set)");
+my $is_lenient = !($@ =~ /invalid feature set/);
+like($@, qr/invalid feature set/, "catch malformed feature set without surrounding delimiters (make_set)") if !$is_lenient;
+unlike($@, qr/invalid feature set/, "lenient against feature set without surrounding delimiters (make_set)") if $is_lenient;
+eval { CWB::CL::make_set("|def|ab|c") }; # always invalid
+like($@, qr/invalid feature set/, "catch malformed feature set |... (make_set)");
+eval { CWB::CL::make_set("def|ab|c|") };
+like($@, qr/invalid feature set/, "catch malformed feature set ...| (make_set)");
 eval { CWB::CL::set_intersection("|a|b|c|", "b c") };
 like($@, qr/invalid feature set/, "catch malformed feature set (set_intersection)");
 eval { CWB::CL::set_intersection("|a|b|c|", "|".("a|" x 50_000)) };
@@ -123,4 +129,4 @@ like($@, qr/invalid feature set/, "catch malformed feature set (set2hash)");
 
 diag("----- end of error tests ----- (further messages are real errors)");
 
-# total: 45 tests
+# total: 47 tests

@@ -1,7 +1,7 @@
 
-  IMS Open Corpus Workbench: CWB/Perl CL API Version 3.4.7
+  IMS Open Corpus Workbench: CWB/Perl CL API Version 3.4.33
 
-  compatible with CWB version 3.4.7+
+  compatible with CWB version 3.4.33+
 
 
 This package contains a Perl interface to the low-level corpus access library
@@ -90,7 +90,7 @@ old module is still installed on your system).
 
 COPYRIGHT
 
-Copyright (C) 1999-2016 by Stefan Evert [http::/purl.org/stefan.evert]
+Copyright (C) 1999-2022 by Stephanie Evert [https://purl.org/stephanie.evert]
 
 This software is provided AS IS and the author makes no warranty as to
 its use and performance. You may use the software, redistribute and

@@ -1,5 +1,5 @@
 # -*-cperl-*-
-## Test automatic corpus encoding and indexing with CWB::Encoder
+## Test correct handling of CR/LF line breaks by cwb-encode
 
 use Test::More;
 
@@ -16,12 +16,12 @@ else {
 }
 
 our $reg_dir = "tmp/registry";
-our $data_dir = "tmp/vss";
+our $data_dir = "tmp/vss_crlf";
 our $vrt_file = "data/vrt/vss_crlf.vrt";
 our $sencode_file = "data/vrt/vss_story_title_crlf.txt";
 mkdir $reg_dir unless -d $reg_dir;
 
-our $enc = new CWB::Encoder "VSS";
+our $enc = new CWB::Encoder "VSS_CRLF";
 isa_ok($enc, CWB::Encoder, "create CWB::Encoder object"); # T1
 
 $enc->registry($reg_dir);       # set up paths and allow encoder to overwrite existing files

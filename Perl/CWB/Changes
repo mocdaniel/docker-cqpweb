@@ -1,3 +1,52 @@
+Version 3.4.0
+-------------
+
+Official release of Perl/CWB on CPAN compatible with CWB v3.4 series.
+
+New features:
+
+  - comprehensive tests for new features up to CWB v3.4.33
+
+  - minor improvements and bug fixes
+  
+New features in the CEQL parser:
+
+  - TAB optimisation rewrite simple phrase queries to more efficien TAB syntax
+    https://www.linguistik.phil.fau.de/2021/07/18/tab-optimisation-cqpweb/
+
+
+Version 3.0.5
+-------------
+
+IMPORTANT NOTE: This version is no longer fully compatible with CWB v3.0!
+
+New features:
+
+  - updated to be compatible with, and support new features in, upcoming CWB v3.5
+
+  - many new unit tests, also as test suite for CQP and CWB command-line tools
+
+  - new utility "cwb-make-subcorpus" to create a physical, separately indexed
+    copy of a virtual subcorpus
+
+  - new utilities "cwb-split-vrt", "cwb-align-export" and "cwb-align-tmx2beads"
+
+  - miscellaneous bug fixes and small improvements
+
+New features in the CEQL parser:
+
+  - test annotations of s-attribute regions in XML start tags
+
+  - support for target markers (@) and matching strategy modifier (?longest)
+
+  - all constraints can be negated with leading !
+
+  - case and diacritic sensitivity now settable for word/pos/lemma/simple pos 
+    independently (with backwards-incompatible tweak to how attribute handles are 
+    addressed internally in v3.0.5)
+
+  - complete specification of core CEQL syntax
+
 
 Version 3.0.3
 -------------

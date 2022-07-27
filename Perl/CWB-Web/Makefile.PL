@@ -9,10 +9,10 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
   NAME         => "CWB::Web",
-  VERSION_FROM => "lib/CWB/Web/Cache.pm",
+  VERSION_FROM => "lib/CWB/Web.pm",
   PREREQ_PM    => {
-    'CWB'            => 3.000_000,
-    'CWB::CL'        => 3.000_000,
+    'CWB'            => 'v3.4.0',
+    'CWB::CL'        => 'v3.4.13',
     'HTML::Entities' => 0,
   },
   LICENSE      => 'perl',

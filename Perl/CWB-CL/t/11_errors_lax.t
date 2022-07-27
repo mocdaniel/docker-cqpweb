@@ -1,4 +1,4 @@
-use Test::More tests => 62;
+use Test::More tests => 66;
 ## test error handling in standard "lax" mode
 
 use CWB::CL;
@@ -149,9 +149,22 @@ ok(@values == 12, "range errors and other invalid arguments return undef (cpos2a
 eval { CWB::CL::make_set("ab c def", "WHITESPACE") };
 like($@, qr/Usage:.*make_set/, "invalid split flag always croaks (make_set)"); # T54
 $value = 42;
-eval { $value = CWB::CL::make_set("def|ab|c") };
-is($@, "", "don't croak on malformed feature set (make_set)");
+eval { $value = CWB::CL::make_set("|def|ab|c") };
+is($@, "", "don't croak on malformed feature set |... (make_set)");
 ok(!defined $value, "malformed feature set returns undef (make_set)");
+$value = 42;
+eval { $value = CWB::CL::make_set("def|ab|c|") };
+is($@, "", "don't croak on malformed feature set ...| (make_set)");
+ok(!defined $value, "malformed feature set returns undef (make_set)");
+$value = 42;
+eval { $value = CWB::CL::make_set("def|ab|c") };
+is($@, "", "don't croak on CoNLL feature set notation (make_set)");
+if (defined $value) {
+  is($value, "|ab|c|def|", "accept CoNLL feature set notation (make_set)");
+}
+else {
+  ok(!defined $value, "CoNLL feature set returns undef (make_set)");
+}
 $value = 42;
 eval { $value = CWB::CL::set_intersection("|a|b|c|", "b c") };
 is($@, "", "don't croak on malformed feature set (set_intersection)");
@@ -167,4 +180,4 @@ ok(!defined $value, "malformed feature set returns undef (set2hash)");
 
 diag("----- end of error tests ----- (further messages are real errors)");
 
-# total: 62 tests
+# total: 66 tests

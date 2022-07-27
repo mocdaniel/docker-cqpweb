@@ -1,0 +1,9 @@
+cat "[A1]\n";
+
+source "data/files/script_B.txt";
+
+cat "[A2]\n";
+
+source "data/files/script_B.txt";
+
+cat "[A3]\n";

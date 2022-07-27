@@ -1,7 +1,7 @@
 
-  IMS Open Corpus Workbench: CWB/Perl Version 3.0.2
+  IMS Open Corpus Workbench: CWB/Perl Version 3.4.0
 
-  compatible with CWB version 3.0.2
+  compatible with CWB version 3.4.x
 
 
 This package contains a Perl interface for the IMS Open Corpus Workbench,
@@ -48,6 +48,18 @@ its location with the --config option:
     perl Makefile.PL --config=~/cwb-3.0/bin/cwb-config
 
 
+TESTING CQP
+
+"make test" will also run a fairly comprehensive test suite for CWB command-line
+utilities and the CQP query processor. When testing CQP, additional options such
+as 
+
+    set Optimize on;
+
+can temporarily be added to "data/files/init.cqp", which is loaded by all CQP
+test scripts.
+
+
 PACKAGE OVERVIEW
 
 The CWB/Perl package contains the following Perl modules
@@ -75,7 +87,7 @@ full manual page.
 
 COPYRIGHT
 
-Copyright (C) 1999-2018 by Stefan Evert [http::/purl.org/stefan.evert]
+Copyright (C) 1999-2021 by Stephanie Evert [https://purl.org/stephanie.evert]
 
 This software is provided AS IS and the author makes no warranty as to
 its use and performance. You may use the software, redistribute and

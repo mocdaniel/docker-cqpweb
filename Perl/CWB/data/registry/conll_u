@@ -1,0 +1,41 @@
+##
+## registry entry for corpus CONLL_U
+##
+
+# long descriptive name for the corpus
+NAME "CoNLL-U format examples"
+# corpus ID (must be lowercase in registry!)
+ID   conll_u
+# path to binary data files
+HOME data/conll_u
+# optional info file (displayed by "info;" command in CQP)
+INFO data/conll_u/.info
+
+# corpus properties provide additional information about the corpus:
+##:: charset = "utf8"	# character encoding of corpus data
+##:: language = "??"	# insert ISO code for language (de, en, fr, ...)
+#========================================================================#
+
+
+##
+## p-attributes (token annotations)
+##
+
+ATTRIBUTE id
+ATTRIBUTE word
+ATTRIBUTE lemma
+ATTRIBUTE upos
+ATTRIBUTE xpos
+ATTRIBUTE feats
+ATTRIBUTE head
+ATTRIBUTE deprel
+ATTRIBUTE deps
+ATTRIBUTE misc
+
+
+##
+## s-attributes (structural markup)
+##
+
+# <s> ... </s>
+STRUCTURE s

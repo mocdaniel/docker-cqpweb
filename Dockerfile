@@ -1,5 +1,5 @@
-# Use Ubuntu 18.04 as base
-FROM ubuntu:18.04
+# Use Ubuntu 22.04 as base
+FROM ubuntu:20.04
 
 #########################################################
 # General docker image settings
@@ -23,8 +23,8 @@ ENV DEBIAN_FRONTEND noninteractive
 # Installation and setup of everything required by cwb/cqp
 #########################################################
 
-RUN apt-get update; apt-get install -y gawk tar gzip apache2 perl \
-libncurses5-dev libgtk2.0-dev libreadline-dev bison flex vim php \
+RUN apt-get update; apt-get install -y gawk tar gzip net-tools  apache2 perl \
+libglib2.0-dev libpcre3 libreadline8 libtinfo6 vim php \
 php-mysqli php-mbstring php-gd mysql-server r-base zlib1g-dev \
 certbot; mkdir /docker-scripts
 
@@ -36,11 +36,10 @@ ENV DEBIAN_FRONTEND dialog
 COPY setup-scripts/run_cqp /docker-scripts/.
 COPY setup-scripts/cqp_installation /docker-scripts/.
 COPY setup-scripts/check_ssl_expiration /docker-scripts/.
-COPY 3.4.19/ ./3.4.19/
-COPY 3.2-latest/ ./3.2-latest/
+COPY *.deb ./cwb/
+COPY CQPweb-3.2.43/ ./cqpweb/
 COPY Perl/ ./Perl/
 
 WORKDIR /docker-scripts
 RUN bash ./cqp_installation
-ENV PATH "/usr/local/cwb-3.4.19/bin:$PATH"
 ENTRYPOINT ["bash", "./run_cqp"]

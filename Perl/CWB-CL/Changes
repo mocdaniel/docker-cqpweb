@@ -1,5 +1,14 @@
-TODO:
-  - write documentation for CWB::CL package
+Version 3.4.33
+--------------
+
+Official release of Perl/CWB on CPAN compatible with CWB v3.4.33.
+Unlike the other Perl/CWB Version numbers will be kept in sync with CWB 3.4.x releases until
+the LTS version 3.5.0 is ready for release.
+
+New features:
+
+  - C API and test update in sync with CWB development up to v3.4.33
+
 
 Version 3.4.12+
 ---------------
@@ -14,4 +23,7 @@ New features:
 
   - Perl wrappers around the API functions have been eliminated wherever possible
 
-  - some additional utility functions included in Perl API (e.g. case/accent-folding of strings)
+  - some additional utility functions included in Perl API (e.g. case/accent-folding of strings,
+    listing all attributes in a corpus [v3.4.13])
+
+  - complete and thorough documentation [v3.4.13]

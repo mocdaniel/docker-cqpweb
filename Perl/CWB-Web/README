@@ -1,7 +1,7 @@
 
-  IMS Open Corpus Workbench: CWB/Perl Web GUI support Version 2.2.102 
+  IMS Open Corpus Workbench: CWB/Perl Web GUI support Version 3.4.0
 
-  compatible with CWB version 3.0 (2.2.102 and newer)
+  compatible with CWB version 3.4.x
 
 
 This package contains various support libraries for Web interfaces to
@@ -23,8 +23,8 @@ The IMS Corpus Workbench and the basic CWB/Perl interfaces must be installed
 on your computer.  In particular, the following modules are required
 
     HTML::Entities
-    CWB::CQP (version 2.2.102 or newer)
-    CWB::CL  (version 2.2.102 or newer)
+    CWB::CQP (version 3.0 or newer)
+    CWB::CL  (version 3.0 or newer)
 
 
 QUICK INSTALLATION GUIDE
@@ -47,11 +47,6 @@ and "~/perl/man/...", type the following instead of "perl Makefile.PL":
 Note that you will then have to include the appropriate subdirectories of
 "~/perl/lib/perl5/" in your Perl search path in order to use the CWB modules.
 
-If the "cwb-config" utility is not in your standard search path, you can specify
-its location with the --config option:
-
-    perl Makefile.PL --config=~/cwb-3.0/bin/cwb-config
-
 
 PACKAGE OVERVIEW
 
@@ -70,7 +65,7 @@ still incomplete information.
 
 COPYRIGHT
 
-Copyright (C) 1999-2010 by Stefan Evert [http::/purl.org/stefan.evert]
+Copyright (C) 1999-2020 by Stefan Evert [http::/purl.org/stefan.evert]
 
 This software is provided AS IS and the author makes no warranty as to
 its use and performance. You may use the software, redistribute and

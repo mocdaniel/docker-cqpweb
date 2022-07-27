@@ -147,9 +147,9 @@ check_query('<s> \L:C', "phrase_query",
 check_query('<ne> (+)+ </ne>', "phrase_query",
             '<ne> ([])+ </ne>');
 check_query('<ne=[PERS*,ORG*]> (+)+ </ne>', "phrase_query",
-            '<ne = "(PERS.*|ORG.*)"> ([])+ </ne>');
+            '<ne="(PERS.*|ORG.*)"> ([])+ </ne>');
 check_query('<ne=\A=\*> 42', "phrase_query",
-            '<ne = "\pL+=\*"> [word="42"%c]');
+            '<ne="\pL+=\*"> [word="42"%c]');
 check_error('girl|boy', "phrase_query",
             qr/alternatives sep.*within parentheses/);
 check_error('(girl||boy)', "phrase_query",

@@ -1,0 +1,26 @@
+NEW NAMES FOR CODE FILEs
+(for tidyness)
+
+
+Forget ".inc" - it's not meaningful. Just use .php
+
+We'll still keep everything in "lib" to keep life simple.
+
+Code files have their meaningful element FIRST in the filename
+
+Then one of the following suffixes:
+
+-act    -- a script that DOES something, but DOES NOT produce a UI  (must have exe stub) (currently uses -admin or -do but that's confusing)
+-ui     -- a script that renders a UI (must have exe stub, which will not itself have any suffix)
+-forms  -- functions that render a right-hand block for some tool UI (included by a -ui)
+           (maybe also some support functions, but I'm trying to migrate those to html-lib)
+-lib    -- underlying functions and classes. Both rendering HTML funcs, and doing something.
+
+Non-CQPweb based units can be exceptions, e.g. rface.php, MAYBE cqp.php
+
+AND we are going to standardise meaningful elements.
+
+IE, not both "collocation" and "colloc"; not both "conc" and "concordance".
+concordance
+
+Get rd of redirect. USE sMART formz (JS ) for forms that need more than one destination.

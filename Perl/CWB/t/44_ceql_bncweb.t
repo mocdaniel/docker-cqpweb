@@ -605,7 +605,7 @@ package BNCweb::CEQL;
 use base 'CWB::CEQL';
 
 use Encode;
-use HTML::Entities; # real BNCweb implementation uses this module to decode/encode HTML entities
+## use HTML::Entities; # real BNCweb implementation uses this module to decode/encode HTML entities
 
 # constructor: set up attribute names and define simplified POS tags
 sub new {

@@ -1,7 +1,7 @@
 
-  IMS Open Corpus Workbench: CQi reference implementation Version 2.2.102 
+  IMS Open Corpus Workbench: CQi reference implementation Version 3.0.0
 
-  compatible with CQi version 0.1 / CWB version 3.0 (2.2.102 and newer)
+  compatible with CQi version 0.1 / CWB version 3.0+
 
 
 This package contains a reference implementation of the CQi client-server
@@ -60,7 +60,7 @@ each example script.
 
 COPYRIGHT
 
-Copyright (C) 1999-2010 by Stefan Evert [http::/purl.org/stefan.evert]
+Copyright (C) 1999-2020 by Stefan Evert [http::/purl.org/stefan.evert]
 
 This software is provided AS IS and the author makes no warranty as to
 its use and performance. You may use the software, redistribute and

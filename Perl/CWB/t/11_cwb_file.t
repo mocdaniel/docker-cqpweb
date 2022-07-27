@@ -139,7 +139,7 @@ sub test_load_file {
 ## try to write & read compressed and uncompressed files
 sub test_read_write_file {
   my ($ext, $two_arg) = @_;
-  $tempfile = "/tmp/test_CWB_$$.$ext"; # set global variable for END{} cleanup
+  $tempfile = "tmp/test_CWB_$$.$ext"; # set global variable for END{} cleanup
   my $name = "write/read .$ext file (".(($two_arg) ? 1 : 2)."-argument form)";
   my $fh = undef;
   my $ok = 0;

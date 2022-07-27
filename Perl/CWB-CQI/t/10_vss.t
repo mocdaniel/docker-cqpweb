@@ -11,7 +11,7 @@ use CWB::CQI::Client;
 use CWB::CQI::Server;
 
 if (cqi_server_available()) {
-  plan tests => 31;
+  plan tests => 32;
 }
 else {
   plan skip_all => "CQPserver is not installed";
@@ -93,6 +93,10 @@ is_deeply([cqi_dump_subcorpus("VSS:Small", 'matchend', 0, $size-1)], $expected_m
 cqi_drop_subcorpus("VSS:Small");
 is_deeply([sort(cqi_list_subcorpora("VSS"))], [qw(Last)], "discard named query result"); # T30
 
+## -- check hardening against user errors
+$status = cqi_query("VSS", "Good", '"good"; ;; '); # query should not be terminated with semicolon
+is($status, $CWB::CQI::STATUS_OK, "ignore semicolon(s) at end of query"); # T31
+
 ## -- disconnect from server
 cqi_bye();
-pass("disconnect from CQi server"); # T31
+pass("disconnect from CQi server"); # T32

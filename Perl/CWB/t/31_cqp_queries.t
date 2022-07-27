@@ -1,7 +1,7 @@
 # -*-cperl-*-
-## Test basic CWB::CQP functionality
+## Test basic CWB::CQP functionality and CQP query features
 
-use Test::More tests => 48;
+use Test::More tests => 56;
 
 use CWB::CQP;
 
@@ -106,20 +106,30 @@ is_deeply(rows2hash(\@rows, 2, 0), \%expected_counts, "count PPs by lemma withou
 @rows = map { [$_->[0]." ".$_->[1], $_->[2]] } @rows;
 is_deeply(rows2hash(\@rows), \%expected_counts, "group prep:noun pairs from PPs with cut"); # T32
 
+SKIP: {
+  skip "group ... within only supported by CQP v3.4.26 and newer", 2 unless $cqp->check_version(3, 4, 26);
+  @rows = $cqp->exec_rows("group PP matchend lemma by match word within s cut 3");
+  @rows = map { [$_->[0]." ".$_->[1], $_->[2]] } @rows;
+  is_deeply(rows2hash(\@rows), \%expected_counts, "group prep:noun pairs from PPs within s"); # T33
+  @rows = $cqp->exec_rows("group PP matchend lemma by match word within story cut 3");
+  @rows = map { [$_->[0]." ".$_->[1], $_->[2]] } @rows;
+  is_deeply(rows2hash(\@rows), {"at time" => 3}, "group prep:noun pairs from PPs within story");
+}
+
 # dump/undump and subqueries
 $cqp->exec("NP = /np[]");
 ($n_matches) = $cqp->exec("size NP");
-ok($n_matches > 1200, "simple NP query"); # T33
+ok($n_matches > 1200, "simple NP query"); # T35
 
 $cqp->exec("sort NP by word \%c");
 @rows = $cqp->exec("tabulate NP 10 20 match lemma");
-ok((not grep { $_ ne "a" } @rows), "alphabetical sort (plausibility check)"); # T34
+ok((not grep { $_ ne "a" } @rows), "alphabetical sort (plausibility check)"); # T36
 
 my @dump = map { [$_->[0], $_->[1]] } $cqp->dump("NP");
 $cqp->undump("NP_copy", @dump);
 my @rows1 = $cqp->exec("tabulate NP match .. matchend lemma");
 my @rows2 = $cqp->exec("tabulate NP_copy match .. matchend lemma");
-is_deeply(\@rows1, \@rows2, "undump preserves sort order"); # T35
+is_deeply(\@rows1, \@rows2, "undump preserves sort order"); # T37
 
 @dump = map {
   my ($s, $e) = @$_;
@@ -135,7 +145,7 @@ $cqp->exec("Diff1 = diff PP PP_subquery"); # check that query results are identi
 $cqp->exec("Diff2 = diff PP_subquery PP");
 my ($n1) = $cqp->exec("size Diff1");
 my ($n2) = $cqp->exec("size Diff2");
-ok($n1 == 0 && $n2 == 0, "modified undump + subquery gives expected result"); # T36
+ok($n1 == 0 && $n2 == 0, "modified undump + subquery gives expected result"); # T38
 
 # asynchronous execution with run() / getline()
 $cqp->run("tabulate NP match .. matchend lemma");
@@ -143,18 +153,18 @@ $cqp->run("tabulate NP match .. matchend lemma");
 while (my $row = $cqp->getline) {
   push @rows, $row;
 }
-is_deeply(\@rows, \@rows1, "asynchronous execution (tabulate command)"); # T37
-ok((not defined $cqp->ready), "asychronous execution has completed"); # T38
+is_deeply(\@rows, \@rows1, "asynchronous execution (tabulate command)"); # T39
+ok((not defined $cqp->ready), "asychronous execution has completed"); # T40
 
 # progress bar handler
 my @progress_data = ();
 $cqp->set_progress_handler(sub { my $perc = shift; push @progress_data, $perc if $perc > 0 });
 $cqp->progress_on;
 $cqp->exec("Temp = [pos='IN'] /np[]");
-is_deeply(\@progress_data, [ 1 .. 100 ], "progress handler works correctly"); # T39
+is_deeply(\@progress_data, [ 1 .. 100 ], "progress handler works correctly"); # T41
 $cqp->progress_off;
 
-# matching strategy modifier (CQP v3.4.12 and newer) T40–T41
+# matching strategy modifier (CQP v3.4.12 and newer) T42–T43
 SKIP: {
   skip "matching strategy modifiers only supported by CQP v3.4.12 and newer", 2 unless $cqp->check_version(3, 4, 12);
   my $query = "[pos='JJ.*'] [pos='NNS?']+";
@@ -171,7 +181,7 @@ SKIP: {
   ok($n_diff > 0, "confirm that matching strategy makes a difference");
 }
 
-# corpus position lookup (new in CQP v3.4.17) T42-T43
+# corpus position lookup (new in CQP v3.4.17) T44-T45
 SKIP: {
   skip "corpus position lookup only available in CQP v3.4.17 and newer", 2 unless $cqp->check_version(3, 4, 17);
   $cqp->exec("CP1 = [_ = 666] []{2}");
@@ -182,7 +192,7 @@ SKIP: {
   is_deeply(\@result, [[8031, 8038, -1, -1]], "corpus position test with ... [_ >= 8038]");
 }
 
-# strlen() built-in function (new in CQP v3.4.17) T44-T48
+# strlen() built-in function (new in CQP v3.4.17) T46-T50
 SKIP: {
   skip "strlen() built-in only available in CQP v3.4.17 and newer", 5 unless $cqp->check_version(3, 4, 17);
   for my $corpus (qw(GOETHE_LATIN1 GOETHE_UTF8)) {
@@ -200,7 +210,57 @@ SKIP: {
   ok($n == 10, "strlen() test works for s-attribute annotation");
 }
 
+# validate MU Queries against corresponding finite-state queries T51-T54
+$cqp->exec("Union_MU = MU(union [lemma = 'coffee'] [lemma = 'elephant'])");
+$cqp->exec("Union_CQL = ([lemma = 'coffee'] | [lemma = 'elephant'])");
+ok(matches_eq("Union_MU", "Union_CQL"), "MU(union ...) corresponds to basic query");
+
+$cqp->exec("Meet3_MU = MU(meet 'of' 'the' -3 3)");
+$cqp->exec("Meet3_CQL = 'of'");
+$cqp->exec("set Meet3_CQL target nearest 'the' within 3 words");
+$cqp->exec("delete Meet3_CQL without target");
+ok(matches_eq("Meet3_MU", "Meet3_CQL"), "MU(meet ... -3 3) corresponds to basic query");
+
+$cqp->exec("MeetS_MU = MU(meet 'elephant' 'garden' s)");
+$cqp->exec("MeetS_CQL = 'elephant'");
+$cqp->exec("set MeetS_CQL target nearest 'garden' within s");
+$cqp->exec("delete MeetS_CQL without target");
+ok(matches_eq("MeetS_MU", "MeetS_CQL"), "MU(meet ... s) corresponds to basic query");
+
+$cqp->exec("MeetElephant_MU = MU(union (meet 'elephant' 'the'\%c -1 -1) 'elephants')");
+$cqp->exec("MeetElephant_CQL = 'the'\%c 'elephant' | 'elephants'");
+$cqp->exec("set MeetElephant_CQL match matchend"); # remove 'the' from match
+ok(matches_eq("MeetElephant_MU", "MeetElephant_CQL"), "complex MU query corresponds to basic query");
+
+# validate TAB queries against corresponding finite-state queries T55-T56
+$cqp->exec('Garden_TAB = TAB "in"%c "the"%c "garden"%c');
+$cqp->exec('Garden_CQL = "in"%c "the"%c "garden"%c');
+ok(matches_eq("Garden_TAB", "Garden_CQL"), "n-gram TAB query corresponds to basic query");
+
+$cqp->exec('Elephant_TAB = TAB [lemma="elephant"] ? "my" ? [lemma="garden"]');
+$cqp->exec('Elephant_CQL = [lemma="elephant"] []? "my" []? [lemma="garden"]');
+ok(matches_eq("Elephant_TAB", "Elephant_CQL"), "concgram TAB query corresponds to basic query");
+
 exit 0;
+
+# check that two named query results are identical
+# returns TRUE / FALSE
+sub matches_eq {
+  my $A = shift;
+  my $B = shift;
+  $cqp->exec("_Tmp = diff $A $B");
+  my ($n_AmB) = $cqp->exec("size _Tmp");
+  $cqp->exec("_Tmp = diff $B $A");
+  my ($n_BmA) = $cqp->exec("size _Tmp");
+  $cqp->exec("_Tmp = intersect $B $A");
+  my ($n_AB) = $cqp->exec("size _Tmp");
+  $cqp->exec("discard _Tmp");
+  if ($n_AmB > 0 || $n_BmA > 0) {
+    diag("Result sets A=$A and B=$B differ: (A: $n_AmB ( $n_AB ) $n_BmA :B)");
+    return 0;
+  }
+  return 1;
+}
 
 # convert list of result rows into hash for robust comparison of frequency counts
 # usage: $hashref = rows2hash($rows, $key_col=0, $val_col=1);

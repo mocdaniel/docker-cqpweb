@@ -1,4 +1,5 @@
 Changes
+lib/CWB/Web.pm
 lib/CWB/Web/Cache.pm
 lib/CWB/Web/Query.pm
 lib/CWB/Web/Search.pm

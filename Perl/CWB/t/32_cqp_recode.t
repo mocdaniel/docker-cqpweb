@@ -7,7 +7,7 @@ use Test::More tests => 18;
 use CWB::CQP;
 use Encode;
 
-our $cqp = new CWB::CQP "-r data/registry";
+our $cqp = new CWB::CQP "-r data/registry", "-I data/files/init.cqp";
 isa_ok($cqp, "CWB::CQP");
 
 $cqp->set_error_handler('ignore'); # silently ignore errors so we can test them explicitly

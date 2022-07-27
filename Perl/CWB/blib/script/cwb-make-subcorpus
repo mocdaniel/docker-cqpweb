@@ -1,0 +1,395 @@
+#!/usr/bin/perl
+## -*-cperl-*-
+## Author:  Stephanie Evert
+## Purpose: Materialize a physical subcorpus based on a CQP query
+##
+$| = 1;
+use warnings;
+use strict;
+
+use CWB;
+use CWB::CQP;
+use CWB::Encoder;
+
+use Getopt::Long;
+use Pod::Usage;
+use Time::HiRes qw(time);
+
+die "This program requires CWB version 3.4.15 or newer (you have $CWB::Config::VersionString)\n"
+  unless $CWB::CWBVersion >= 3.004_015;
+
+## configuration variables and arguments
+our $Opt_Registry = undef;      # -r <dir> ... search source corpus in registry <dir>
+our $Opt_OutRegistry = undef;   # -or <dir> ... registry directory for the new corpus (default: same as original)
+our $Opt_Unit = "text";         # -by <name> ... text unit (s-attribute) for subcorpus compilation
+our $Opt_Charset = undef;       # -c <charset> ... recode corpus to specified charset
+our $Opt_Force = 0;             # -f ... overwrite existing registry entry and/or data directory
+our $Opt_Memory = 1000;         # -M <n> ... use ca. <n> MiB of RAM for indexing
+our $Opt_Verbose = 0;           # -v ... verbose output
+our $Opt_Help = 0;              # -h ... show usage message
+
+our $Corpus = undef;            # source corpus
+our $OutCorpus = undef;         # new corpus (i.e. materialized subcorpus)
+our $OutDir = undef;            # data directory for new corpus
+our $Query = undef;             # CQP query that defines subcorpus
+
+OPTIONS_AND_USAGE:
+{
+  my $ok = GetOptions("r|registry=s" => \$Opt_Registry,
+                      "or|output-registry=s" => \$Opt_OutRegistry,
+                      "by|S=s" => \$Opt_Unit,
+                      "c|charset=s" => \$Opt_Charset,
+                      "M|memory=i" => \$Opt_Memory,
+                      "f|force" => \$Opt_Force,
+                      "v|verbose" => \$Opt_Verbose,
+                      "h|help" => \$Opt_Help,
+                     );
+  pod2usage(-msg => "(Type 'perldoc cwb-make-subcorpus' for more information.)",
+            -exitval => 0, -verbose => 1) if $Opt_Help;
+  pod2usage(-msg => "(Type 'cwb-make-subcorpus -h' for more information.)",
+            -exitval => 1, -verbose => 0) if $ok and @ARGV == 0;
+  pod2usage(-msg => "SYNTAX ERROR.", 
+            -exitval => 2, -verbose => 0)
+    unless $ok and @ARGV == 4;
+
+  ($Corpus, $OutCorpus, $OutDir, $Query) = @ARGV;
+}
+
+## global variables
+our @Registry = ($Opt_Registry) ? $Opt_Registry : CWB::RegistryDirectory(); # registry directories
+our $RegistryDir1 = undef;      # registry directory of old corpus
+our $RegistryDir2 = undef;      # registry directory of new corpus
+our $RegistryFile1 = undef;     # registry file of old corpus
+our $RegistryFile2 = undef;     # registry file of new corpus
+our $DataDir1 = undef;          # data directory of old corpus
+our $DataDir2 = $OutDir;        # data directory of new corpus
+our $Corpus1 = uc($Corpus);     # CWB name of old corpus
+our $Corpus2 = uc($OutCorpus);  # CWB name of new corpus
+our $R1 = undef;                # metadata of old corpus (CWB::RegistryFile object)
+our $R2 = undef;                # metadata of new corpus
+our $Charset1 = undef;          # character set of old corpus
+our $Charset2 = undef;          # character set of new corpus
+our $CQP = undef;               # CQP session
+our $RangeFile = undef;         # temporary file for subcorpus dump
+
+SETUP:
+{
+  ## try to locate registry file of old corpus
+  foreach my $dir (@Registry) {
+    my $filename = $dir . "/" . lc($Corpus1);
+    if (-f $filename) {
+      $RegistryDir1 = $dir;
+      $RegistryFile1 = $filename;
+      $RegistryDir2 = ($Opt_OutRegistry) ? $Opt_OutRegistry : $RegistryDir1;
+      $RegistryFile2 = $RegistryDir2 . "/" . lc($Corpus2);
+      last;
+    }
+  }
+  die "Error: can't locate corpus $Corpus1 in registry ", join(":", @Registry), "\n"
+    unless defined $RegistryFile1;
+  die "Error: old and new corpus cannot use the same registry file $RegistryFile1\n"
+    if $RegistryFile1 eq $RegistryFile2;
+
+  ## load registry file of old corpus and check metadata
+  $R1 = new CWB::RegistryFile $RegistryFile1
+    or die "Error: can't read registry file $RegistryFile1\n";
+  $DataDir1 = $R1->home;
+  die "Error: old and new corpus cannot use the same data directory $DataDir1/\n"
+    if $DataDir1 eq $DataDir2;
+  $Charset1 = $R1->property("charset");
+  $Charset2 = ($Opt_Charset) ? $Opt_Charset : $Charset1;
+
+  ## check whether new registry file and/or data directory already exist
+  die "Error: registry directory $RegistryDir2/ for new corpus doesn't exist\n"
+    unless -d $RegistryDir2;
+  if (-f $RegistryFile2) {
+    if ($Opt_Force) {
+      print " - removing existing registry entry $RegistryFile2\n"
+        if $Opt_Verbose;
+      CWB::Shell::Cmd(["rm", "-f", $RegistryFile2]);
+    }
+    else {
+      die "Error: registry file $RegistryFile2 for new corpus already exists (use --force to overwrite)\n";
+    }
+  }
+  if (-d $DataDir2) {
+    if ($Opt_Force) {
+      print " - removing existing data directory $DataDir2/\n" if $Opt_Verbose;
+      CWB::Shell::Cmd(["rm", "-rf", $DataDir2]);
+    }
+    else {
+      die "Error: data directory $DataDir2/ for new corpus already exists (use --force to overwrite)\n";
+    }
+  }
+}
+
+QUERY:
+{
+  my $type = $R1->attribute($Opt_Unit);
+  die "Error: s-attribute $Corpus1.$Opt_Unit not found. Use -by to specify an appropriate text unit.\n"
+    unless defined $type && $type eq "s";
+  $CQP = new CWB::CQP "-r", $RegistryDir1;
+  $CQP->set_error_handler('die');
+  $CQP->activate($Corpus1);
+
+  print "Executing corpus query ... \n" if $Opt_Verbose;
+  $CQP->exec_query("A = $Query");
+  my ($n_hits) = $CQP->exec("size A");
+  $CQP->exec("B = A expand to $Opt_Unit");
+  my ($n_units) = $CQP->exec("size B");
+  printf " - %d hits in %d <%s> regions\n", $n_hits, $n_units, $Opt_Unit if $Opt_Verbose;
+  
+  my $n_tokens = 0;
+  foreach my $row ($CQP->dump("B")) {
+    $n_tokens += $row->[1] - $row->[0] + 1;
+  }
+  printf "Subcorpus $Corpus2: %d <%s> units, %d tokens (= %.1f M)\n", $n_units, $Opt_Unit, $n_tokens, $n_tokens / 1e6;
+  
+  $RangeFile = new CWB::TempFile;
+  $RangeFile->finish;
+  $CQP->exec("tabulate B match, matchend > ".$CQP->quote($RangeFile->name));
+
+  print "\n" if $Opt_Verbose;
+}
+
+CREATE:
+{
+  print "Creating new data directory and registry entry ...\n" if $Opt_Verbose;
+
+  ## create new data directory
+  CWB::Shell::Cmd(["mkdir", $DataDir2]);
+
+  ## copy registry file and adjust
+  $R2 = new CWB::RegistryFile $RegistryFile1; # we've checked above that file can be loaded
+  $R2->id(lc($Corpus2));
+  $R2->name("Subcorpus of ".$R2->name.(" ($Query expand to $Opt_Unit)"));
+  $R2->home($DataDir2);
+  my $old_info_file = $R2->info;
+  if ($old_info_file and -f $old_info_file) {
+    print " - copying info file\n" if $Opt_Verbose;
+    my $new_info_file = "$DataDir2/.info"; # default name for INFO file
+    CWB::Shell::Cmd(["cp", $old_info_file, $new_info_file]);
+    $R2->info($new_info_file);
+  }
+  else {
+    print " - no info file found\n" if $Opt_Verbose;
+    $R2->delete_info();
+  }
+  foreach ($R2->list_attributes("a")) {
+    $R2->delete_attribute($_); # alignment attributes cannot be copied
+  }
+
+  ## save modified registry entry
+  $R2->property("charset", $Charset2);
+  print " - writing new registry file to $RegistryFile2\n" if $Opt_Verbose;
+  $R2->write($RegistryFile2);
+
+  print "\n" if $Opt_Verbose;
+}
+
+ENCODE:
+{
+  print "Decoding/encoding subcorpus ...\n" if $Opt_Verbose;
+  
+  ## determine whether s-attributes have annotations (-V) or not (-S)
+  my @lines;
+  CWB::Shell::Cmd([$CWB::DescribeCorpus, "-s", "-r", $RegistryDir1, $Corpus1], \@lines);
+  my %has_values = ();
+  foreach (@lines) {
+    if (/^s-ATT\s+(\S+)\s+/) {
+      my $name = $1;
+      $has_values{$name} = (/with annotation/) ? 1 : 0;
+    }
+  }
+  if ($Opt_Verbose) {
+    my $n_S = grep {$_ == 0} values %has_values;
+    my $n_V = grep {$_ == 1} values %has_values;
+    printf " - found %d -S attributes and %d -V attributes\n", $n_S, $n_V;
+  }
+
+  ## construct decode and encode commands, listing all attributes explicitly
+  my @decode = CWB::Shell::Quote($CWB::Decode, "-Cx", "-r", $RegistryDir1, "-Sf", $RangeFile->name, $Corpus1);
+  my @encode = CWB::Shell::Quote($CWB::Encode, "-x", "-c", $Charset2, "-d", $DataDir2, "-p", "-", "-0", "subcorpus");
+  
+  foreach my $att ($R1->list_attributes("p")) {
+    push @decode, "-P", CWB::Shell::Quote($att);
+    push @encode, "-P", CWB::Shell::Quote($att);    
+  }
+  foreach my $att ($R1->list_attributes("s")) {
+    push @decode, "-S", CWB::Shell::Quote($att);
+    die "INTERNAL ERROR: no information on s-attribute $Corpus1.$att\n" unless defined $has_values{$att};
+    push @encode, ($has_values{$att} ? "-V" : "-S"), CWB::Shell::Quote($att);
+  }
+  
+  ## combine into Unix pipe and insert iconv if recoding is desired
+  my $cmd = "@decode | @encode";
+  if (defined $Opt_Charset) {
+    my @iconv = CWB::Shell::Quote("iconv", "-f", $Charset1, "-t", $Charset2, "-c"); 
+    $cmd = "@decode | @iconv | @encode";
+  }
+  print " - $cmd\n" if $Opt_Verbose;
+  
+  my $t0 = time;
+  CWB::Shell::Cmd($cmd);
+  my $dT = time - $t0;
+  printf " - encoding completed in %.1f seconds\n", $dT if $Opt_Verbose;
+
+  print "\n" if $Opt_Verbose;
+}
+
+INDEX: 
+{
+  print "Indexing new corpus ...\n" if $Opt_Verbose;
+  my $Make = new CWB::Indexer "$RegistryDir2:$Corpus2";
+  $Make->memory($Opt_Memory);
+
+  my $t0 = time;
+  $Make->makeall;
+  my $dT = time - $t0;
+  printf " - indexing completed in %.1f seconds\n", $dT if $Opt_Verbose;
+
+  print "\n" if $Opt_Verbose;
+}
+
+SUMMARY:
+{
+  my @lines = ();
+  CWB::Shell::Cmd([$CWB::Lexdecode, "-r", $RegistryDir1, "-S", $Corpus1], \@lines);
+  $lines[0] =~ /^Tokens:\s*(\d+)$/ or die "Error: couldn't determine size of $Corpus1\n";
+  my $n1 = $1;
+  CWB::Shell::Cmd([$CWB::Lexdecode, "-r", $RegistryDir2, "-S", $Corpus2], \@lines);
+  $lines[0] =~ /^Tokens:\s*(\d+)$/ or die "Error: couldn't determine size of $Corpus2\n";
+  my $n2 = $1;
+  
+  print "\n";
+  print "Old corpus: $Corpus1\n";
+  print "  registry file: $RegistryFile1\n";
+  print "  index files:   $DataDir1/\n";
+  print "  encoding:      $Charset1\n";
+  printf "  size:          %.1fM = %d tokens\n", $n1 / 1e6, $n1;
+  print "\n";
+  print "New corpus: $Corpus2\n";
+  print "  registry file: $RegistryFile2\n";
+  print "  index files:   $DataDir2/\n";
+  print "  encoding:      $Charset2\n";
+  printf "  size:          %.1fM = %d tokens\n", $n2 / 1e6, $n2;
+  print "\n";
+}
+
+
+__END__
+
+=head1 NAME
+
+cwb-make-subcorpus - Materialize subcorpus as separately indexed corpus
+
+
+=head1 SYNOPSIS
+
+  cwb-make-subcorpus [options] <CORPUS> <SUBCORPUS> <datadir> '<query>'
+
+
+=head1 DESCRIPTION
+
+This script creates a physical copy of a virtual subcorpus of a CWB-indexed corpus.  It is often more convenient to access such a subcorpus as a separately indexed CWB corpus, and may be required for software packages that are not designed to operate on subsets of a corpus.  For relatively small subcorpora, working with the physical copy will also be much more efficient.
+
+The virtual subcorpus is a collection of textual units (any s-attribute, specified with option C<-S>).  It is defined by a CQP query and consists of all units that contain at least one match of the query.  This approach ensures great flexibility, allowing subcorpora to be defined in terms of metadata, lexical items and even grammatical features.
+
+B<cwb-make-subcorpus> automatically copies all positional and structural attributes, adjusting s-attribute regions as needed.  In particular, any regions outside the subcorpus are dropped, while regions spanning one or more text units from the subcorpus as well as other material are narrowed down to the subcorpus.  The script also convert the physical copy to a different character encoding, but it is better to use B<cwb-convert-to-utf8> for upgrading corpora to UTF-8 format.
+
+There are some important B<limitations>:
+
+=over 4
+
+=item *
+
+The script does I<not> copy alignment attributes (because it relies on B<cwb-decode>, which cannot handle a-attributes). Any alignments will be absent from the subcorpus.
+
+=item *
+
+Re-encoding to a different character set silently deletes invalid characters, so the content of the physical copy may no longer be identical to the virtual subcorpus.
+
+=back
+
+
+=head1 ARGUMENTS
+
+=over 4
+
+=item CORPUS
+
+CWB ID of the original corpus
+
+=item SUBCORPUS
+
+New CWB ID for the physical copy to be created
+
+=item datadir
+
+New directory for CWB index files of the physical copy. This directory must not yet exist (unless overwritten with C<--force>).
+
+=item query
+
+A CQP query that identifies text units to be included in the virtual subcorpus. Usually enclosed in single quotation marks on the command line.
+
+=back
+
+
+=head1 OPTIONS
+
+=over 4
+
+=item --registry=I<dir>, -r I<dir>
+
+Search the original corpus in registry directory I<dir> rather than the default registry path.
+
+=item --output-registry=I<dir>, -or I<dir>
+
+Create registry entry for the new corpus in I<dir>. [default: same registry directory as the original corpus]
+
+=item --by=I<att>, -S I<att>
+
+S-attribute defining basic textual units for the virtual subcorpus, which consists of all such units that contain at least one match of the CQP query. [default: C<text>]
+
+=item --charset=I<enc>, -C I<enc>
+
+Character encoding of the physical copy.  Any of the character encodings supported by CWB 3.5 may be specified.  If different from the character encoding of the original corpus, all attributes will automatically be converted, silently deleting invalid characters. [default: same as original corpus]
+
+=item --memory=I<n>, -M I<n>
+
+Allow B<cwb-make> to use approx. I<n> MBytes of RAM for indexing.
+
+=item --force, -f
+
+Silently overwrite an existing registry entry and/or data directory.  Use with caution, as this will remove all files from an existing data directory.
+
+=item --verbose, -v
+
+Show progress message for each individual attribute (recommended for large corpora).
+
+=item --help, -h
+
+Display short help page.
+
+=back
+
+
+=head1 PREREQUISITES
+
+B<cwb-make-subcorpus> requires a recent version of CWB with special support in the B<cwb-encode> utility, viz. B<CWB v3.4.15> or newer. If you have installed multiple CWB releases on your computer, make sure that the CWB/Perl modules are configured to use an appropriate CWB version.
+
+For efficiency reasons, character encodings are converted with the external B<iconv> utility, which must be installed somewhere in the system path. Your version of B<iconv> must support command line options C<-f> (source encoding), C<-t> (target encoding) and C<-c> (ignore conversion errors); it also needs to understand CWB style encoding names such as C<utf8> and C<latin1>. Suitable versions of B<iconv> are provided e.g. by Linux and Mac OS X.
+
+
+=head1 COPYRIGHT
+
+Copyright (C) 2018-2022 Stephanie Evert [https://purl.org/stephanie.evert]
+
+This software is provided AS IS and the author makes no warranty as to
+its use and performance. You may use the software, redistribute and
+modify it under the same terms as Perl itself.
+
+=cut
+
+
+

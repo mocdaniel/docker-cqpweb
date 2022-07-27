@@ -28,7 +28,7 @@ is($cqp->quotemeta("^[^0-9+*]"), "[^]\\[[^]0-9\\+\\*\\]", "use [^] to avoid conf
 
 # registry listing and corpus attributes
 my @corpora = sort $cqp->exec("show corpora");
-is_deeply(\@corpora, [qw(DICKENS GOETHE_LATIN1 GOETHE_UTF8 VSS)], "show corpora;");
+is_deeply(\@corpora, [qw(CONLL_U DICKENS GOETHE_LATIN1 GOETHE_UTF8 VSS)], "show corpora;");
 $cqp->exec("NOT_INSTALLED");
 ok(!$cqp->ok, "attempt to activate nonexistent corpus");
 $cqp->exec("VSS");
