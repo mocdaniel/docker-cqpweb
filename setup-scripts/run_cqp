@@ -118,7 +118,7 @@ $db_user
 $db_user_password
 y
 $db_name
-localhost
+127.0.0.1
 y
 EOF
 
