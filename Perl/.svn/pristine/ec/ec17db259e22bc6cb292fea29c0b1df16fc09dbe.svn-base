@@ -1,8 +1,0 @@
-Changes
-lib/CWB/Web/Cache.pm
-lib/CWB/Web/Query.pm
-lib/CWB/Web/Search.pm
-Makefile.PL
-MANIFEST
-README
-t/00_load.t

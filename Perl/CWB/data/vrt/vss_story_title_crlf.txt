@@ -1,6 +1,0 @@
-0	4194	264
-4195	4526	How To Swim
-4527	5484	Waiting
-5485	6023	A Thrilling Experience
-6024	7219	An Example of Idiomatic English
-7220	8042	The Garden

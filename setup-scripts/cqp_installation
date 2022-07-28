@@ -4,48 +4,27 @@
 # INSTALL CQPWEB, CWB and PERL API
 ################################################################
 
+# Extract source files
+cd /tmp/
+tar -xzf cwb.tar.gz
+tar -xzf cqpweb.tar.gz
+
 # Move CQPweb files to Apache's web root and adjust permissions
-mv /tmp/3.2-latest/* /var/www/html
+mv /tmp/CQPweb*/* /var/www/html
 chown -R www-data:www-data /var/www/html
 rm /var/www/html/index.html
 
-# Change the platform for CWB's installation routine
-sed -i "/PLATFORM=darwin-brew/c\\PLATFORM=linux-64" /tmp/3.4.19/config.mk
-
-# Build and install CWB
-cd /tmp/3.4.19
+# Install the CWB
+cd /tmp/cwb*src
 ./install-scripts/install-linux
 
-# Export the path to CWB's config in order to install the Perl API modules
-export CWBCONFIG=/usr/local/cwb-3.4.19/bin/cwb-config
-
 # Build and install Perl API
-cd /tmp/Perl/CWB
-perl Makefile.PL --config=$CWBCONFIG
-make
-make test
+cd /tmp/perl
 make install
-
-cd /tmp/Perl/CWB-CL
-perl Makefile.PL --config=$CWBCONFIG
-make
 make test
-make install
-
-cd /tmp/Perl/CWB-CQI
-perl Makefile.PL --config=$CWBCONFIG
-make
-make test
-make install
-
-cd /tmp/CWB-Web
-perl Makefile.PL --config=$CWBCONFIG
-make
-make test
-make install
 
 # Remove source files since they are not further needed
-rm -rf /tmp/3.2-latest tmp/3.4.19 /tmp/Perl
+rm -rf /tmp/CQPweb* /tmp/cwb* /tmp/perl
 
 # Create the data directories specified in CQPWeb's config, make Apache their owner and give "all" readwrite-access
 mkdir -p /cqpweb_files
@@ -62,13 +41,15 @@ chmod -R a+rwx /cqpweb_files
 # sets a new password for MySQL's root user, removes anonymous
 # users, disables remote login for root, removes test databases
 # and flushes changes to MySQL's privilege tables
+usermod -d /var/lib/mysql/ mysql # amend mysql user home 
 service mysql start
 mysql -sfu root << EOF
-UPDATE mysql.user SET authentication_string=PASSWORD('root_password') WHERE User='root';
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'root_password';
 DELETE FROM mysql.user WHERE User='';
 DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
 DROP DATABASE IF EXISTS test;
 DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
+FLUSH PRIVILEGES;
 EOF
 service mysql stop
 # Set the place for MySQL database creation to the centralized cqpweb_files directory

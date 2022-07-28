@@ -1,8 +1,0 @@
-## CQP init file for test scripts
-set DataDirectory "tmp";
-set Context 1 s;
-
-define macro ap (0) '([pos="RB"]* [pos="JJ.*"]+ ([word="," | pos="CC"] [pos="RB"]* [pos="JJ.*"]+)*)';
-define macro np (0) '([pos="PDT"]? [pos="W?DT"]? /ap[]* [pos="NN.*"]+ [:pos!="NN.*":])';
-define macro pp (0) '([pos="IN|TO"] /np[])';
-define macro sequence_of_NP_PP ('$0=n') '(/np[] | /pp[]){$0}';
