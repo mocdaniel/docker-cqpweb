@@ -23,7 +23,7 @@ ENV DEBIAN_FRONTEND noninteractive
 # Installation and setup of everything required by cwb/cqp
 #########################################################
 
-RUN apt-get update; apt-get install -y gawk tar gzip net-tools  apache2 perl \
+RUN apt-get update; apt-get install -y gawk tar gzip wget subversion net-tools  apache2 perl \
 libglib2.0-dev libpcre3 libreadline8 libtinfo6 vim php \
 php-mysqli php-mbstring php-gd mysql-server r-base zlib1g-dev \
 certbot; mkdir /docker-scripts
@@ -31,14 +31,15 @@ certbot; mkdir /docker-scripts
 # change back to interactive
 ENV DEBIAN_FRONTEND dialog
 
+# Fetch the latest source files
+RUN wget -O /tmp/cwb.tar.gz https://sourceforge.net/projects/cwb/files/cwb/cwb-3.5/source/cwb-3.5.0-src.tar.gz/download
+RUN wget -O /tmp/cqpweb.tar.gz https://sourceforge.net/projects/cwb/files/CQPweb/CQPweb-3.2/CQPweb-3.2.43.tar.gz/download
+RUN svn checkout https://svn.code.sf.net/p/cwb/code/perl/trunk /tmp/perl
 
 # Copy all necessary setup scripts and the CQP source code into the image
 COPY setup-scripts/run_cqp /docker-scripts/.
 COPY setup-scripts/cqp_installation /docker-scripts/.
 COPY setup-scripts/check_ssl_expiration /docker-scripts/.
-COPY *.deb ./cwb/
-COPY CQPweb-3.2.43/ ./cqpweb/
-COPY Perl/ ./Perl/
 
 WORKDIR /docker-scripts
 RUN bash ./cqp_installation

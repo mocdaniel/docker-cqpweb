@@ -1,6 +1,0 @@
-Version 3.0.0
--------------
-
-This is the first official release of the CQi reference implementation, as part
-of the CWB/Perl packages.  It is compatible with CQi draft specification 0.1 and
-versions 3.0 / 3.2 / 3.4 of the IMS Open Corpus Workbench.

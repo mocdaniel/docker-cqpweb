@@ -1,4 +1,0 @@
-set Registry "data/registry";
-VSS;
-A = "elephant";
-size A;

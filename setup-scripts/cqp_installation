@@ -4,22 +4,27 @@
 # INSTALL CQPWEB, CWB and PERL API
 ################################################################
 
+# Extract source files
+cd /tmp/
+tar -xzf cwb.tar.gz
+tar -xzf cqpweb.tar.gz
+
 # Move CQPweb files to Apache's web root and adjust permissions
-mv /tmp/cqpweb/* /var/www/html
+mv /tmp/CQPweb*/* /var/www/html
 chown -R www-data:www-data /var/www/html
 rm /var/www/html/index.html
 
 # Install the CWB
-cd /tmp/cwb
-dpkg -i ./*.deb
+cd /tmp/cwb*src
+./install-scripts/install-linux
 
 # Build and install Perl API
-cd /tmp/Perl
+cd /tmp/perl
 make install
 make test
 
 # Remove source files since they are not further needed
-rm -rf /tmp/cqpweb /tmp/cwb /tmp/Perl
+rm -rf /tmp/CQPweb* /tmp/cwb* /tmp/perl
 
 # Create the data directories specified in CQPWeb's config, make Apache their owner and give "all" readwrite-access
 mkdir -p /cqpweb_files
