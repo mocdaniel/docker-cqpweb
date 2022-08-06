@@ -17,6 +17,8 @@ jobs:
       id: meta
       uses: docker/metadata-action@v4
       with:
+        images: |
+          dbodky/cqpweb
         # generate Docker tags based on the following events/attributes
         tags: |
           type=semver,pattern={{version}}
