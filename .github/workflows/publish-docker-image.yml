@@ -9,7 +9,7 @@ jobs:
   push-images:
     name: Push images to registry
     runs-on: ubuntu-latest
-    step:
+    steps:
     - name: Check out the repository
       uses: actions/checkout@v3
     - name: Docker meta
