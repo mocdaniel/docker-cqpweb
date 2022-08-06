@@ -34,7 +34,7 @@ ENV DEBIAN_FRONTEND dialog
 # Fetch the latest source files without SSL verification (needed for GH Actions)
 RUN wget --no-check-certificate -O /tmp/cwb.tar.gz https://sourceforge.net/projects/cwb/files/cwb/cwb-3.5/source/cwb-3.5.0-src.tar.gz/download
 RUN wget --no-check-certificate -O /tmp/cqpweb.tar.gz https://sourceforge.net/projects/cwb/files/CQPweb/CQPweb-3.2/CQPweb-3.2.43.tar.gz/download
-RUN svn checkout https://svn.code.sf.net/p/cwb/code/perl/trunk /tmp/perl
+RUN svn --non-interactive --trust-server-cert checkout https://svn.code.sf.net/p/cwb/code/perl/trunk /tmp/perl
 
 # Copy all necessary setup scripts and the CQP source code into the image
 COPY setup-scripts/run_cqp /docker-scripts/.
