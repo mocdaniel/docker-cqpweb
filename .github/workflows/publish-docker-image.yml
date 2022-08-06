@@ -13,15 +13,15 @@ jobs:
     - name: Check out the repository
       uses: actions/checkout@v3
     name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          # generate Docker tags based on the following events/attributes
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        # generate Docker tags based on the following events/attributes
+        tags: |
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=sha
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2
     - name: Set up BuildX
