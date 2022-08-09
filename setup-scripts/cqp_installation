@@ -37,11 +37,16 @@ chmod -R a+rwx /cqpweb_files
 # Configure MySQL
 ################################################################
 
+usermod -d /var/lib/mysql/ mysql # amend mysql user home
+
+# Enable MySQL local file input
+echo -e "local_infile=1\n" >> /etc/mysql/mysql.conf.d/mysql.cnf
+echo -e "local_infile=1\n" >> /etc/mysql/mysql.conf.d/mysqld.cnf
+
 # This is a manual execution of mysql_secure_installation which
 # sets a new password for MySQL's root user, removes anonymous
 # users, disables remote login for root, removes test databases
 # and flushes changes to MySQL's privilege tables
-usermod -d /var/lib/mysql/ mysql # amend mysql user home 
 service mysql start
 mysql -sfu root << EOF
 ALTER USER 'root'@'localhost' IDENTIFIED BY 'root_password';
